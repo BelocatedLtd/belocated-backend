@@ -45,7 +45,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
             //     api_secret: process.env.CLOUDINARY_API_SECRET
             // });
 
-            // let fileData = {}
+            let fileData = {}
             // let result;
 
             // if (req.file) {

@@ -29,7 +29,10 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
         religion, 
         caption, 
         socialPageLink,
-        proofOfWorkMediaURL: '',
+        proofOfWorkMediaURL: {
+            public_id: "",
+            url: "",
+        },
         nameOnSocialPlatform: '',
         status: "running"
     });
