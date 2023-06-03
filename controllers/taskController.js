@@ -72,12 +72,8 @@ export const  getTasks = asyncHandler(async (req, res) => {
 
     try {
         let tasks;
-
-        if (req.user.accountType === "Admin") {
-            tasks = await Task.find().sort("-createdAt")
-        } else if (req.user.accountType === "User") {
-            tasks = await Task.find({taskPerformerId: _id}).sort("-createdAt")
-        }
+        
+        tasks = await Task.find().sort("-createdAt")
 
         if(!tasks) {
             res.status(400).json({ msg: "Cannot find any task" })
