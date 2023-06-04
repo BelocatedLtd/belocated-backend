@@ -11,7 +11,7 @@ import { v2 as cloudinary } from 'cloudinary'
 //Create New Task
 // http://localhost:6001/api/tasks/create
 export const CreateNewTask = asyncHandler(async (req, res) => {
-    const { advertId, advertiserId, taskPerformerId, title, platform, asset, desiredROI, toEarn, gender, location, community, religion, caption, socialPageLink } = req.body;
+    const { advertId, advertiserId, taskPerformerId, title, platform, service, desiredROI, toEarn, gender, state, lga, caption, socialPageLink } = req.body;
 
     //Create New Task
     const task = await Task.create({
@@ -20,13 +20,12 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
         taskPerformerId, 
         title,
         platform, 
-        asset, 
+        service, 
         desiredROI, 
         toEarn,
         gender, 
-        location,
-        community,
-        religion, 
+        state,
+        lga,
         caption, 
         socialPageLink,
         proofOfWorkMediaURL: {
@@ -96,7 +95,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     const task = await Task.findById(taskId)
     const advert = await Advert.findById(advertId)
-    const wallet = await Wallet.find({userId: req.user._id})
+    const wallet = await Wallet.find({userId: req.user._id}) 
 
     if (!task) {
         res.status(400).json({msg: "Cannot find task"});
