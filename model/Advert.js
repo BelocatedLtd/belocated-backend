@@ -9,7 +9,7 @@ const advertSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    asset: {
+    service: {
         type: String,
         required: true,
     },
@@ -29,21 +29,16 @@ const advertSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    location: {
+    state: {
         type: String,
         required: true,
     },
-    community: {
-        type: String,
-        required: true,
-    },
-    religion: {
+    lga: {
         type: String,
         required: true,
     },
     caption: {
         type: String,
-        required: true,
     },
     adAmount: {
         type: Number,

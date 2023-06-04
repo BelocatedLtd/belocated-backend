@@ -21,7 +21,7 @@ const TaskSchema = mongoose.Schema({
         type: String, //whatsApp, Facebook, IG, Twitter and Tiktok
         required: true,
     },
-    asset: {
+    service: {
         type: String,
         required: true,
     },
@@ -37,11 +37,11 @@ const TaskSchema = mongoose.Schema({
         type: String, // Male, Female, Both
         required: true,
     },
-    location: {
+    state: {
         type: String, 
         required: true,
     },
-    religion: {
+    lga: {
         type: String, 
         required: true,
     },
