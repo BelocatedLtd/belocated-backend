@@ -53,6 +53,16 @@ const userSchema = mongoose.Schema({
         required: true,
         default: 'User'
     },
+    isEmailVerified: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    isPhoneVerified: {
+        type: Boolean,
+        required: true,
+        default: false
+    }
 }, {
     timestamps: true
 })

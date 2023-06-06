@@ -1,8 +1,13 @@
 import asyncHandler from "express-async-handler";
 import User from "../model/User.js";
+import Token from "../model/Token.js"
 import Wallet from "../model/Wallet.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from 'crypto'
+import sendEMail from "../utils/sendEmail.js";
+
+
 
 
 const generateToken = (id) => {
@@ -17,13 +22,13 @@ export const registerUser = asyncHandler(async (req, res) => {
  
     //User input validation
     if ( !username || !email || !password ) {
-     res.status(400).json({message: "Please fill in all required fields"})
+     res.status(400)
      throw new Error("Please fill in all required fields")
     } 
 
     //checking for password lenght
     if (password.length < 6) {
-     res.status(400).json({message: "Password must be upto 6 characters"})
+     res.status(400)
      throw new Error("Password must be upto 6 characters")
      
     }
@@ -55,7 +60,10 @@ export const registerUser = asyncHandler(async (req, res) => {
      community: '',
      religion: '',
      gender: '',
-     accountType: 'User'
+     accountType: 'User',
+     isEmailVerified: false,
+     isPhoneVerified: false,
+     verificationToken: ''
     });
 
     if (!user) {
@@ -80,37 +88,54 @@ export const registerUser = asyncHandler(async (req, res) => {
       res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
      throw new Error("Failed to Create Wallet for Registered User, Please contact admin")
     }
-      
- 
-   //Generate token
-   const token = generateToken(user._id)
- 
-   //send HTTP-Only cookie 
-   res.cookie("token", token, {
-     path: "/",
-     httpOnly: true,
-     expires: new Date(Date.now() + 1000 * 86400), // 1 day
-     sameSite: "none",
-     secure: true
-   })
-
-   if (!token) {
-    res.status(400).json({message: "No token generated"})
-   throw new Error("No token generated")
-  }
 
 
- 
-   //return details of the created user
-    if (user && wallet && token) {
-     const {_id, username, email, accountType } = user
-     const walletId = wallet._id
-     res.status(201).json({
-         _id, username, email, walletId, accountType, token
-     })
-    } else {
-     res.status(400).json({message: "Invalid user data"})
+// Email verification Step
+  if (user && wallet) {
+    // generate verification token
+  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+
+  //Hask token before saving to DB
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+
+//Save Token to DB
+await new Token({
+  userId: user._id,
+  token: hashedToken,
+  createdAt: Date.now(),
+  expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+}).save()
+
+
+  // Contruct frontendURL
+    const frontendUrl = process.env.FRONTEND_URL
+
+    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
+
+    //Send Verification Email
+    const message = `
+    <h2>Hello, ${user.username}</h2>
+    <p>Please use the verification url to verify your belocated account.</p>
+    <p>The reset link is valid for 30minutes</p>
+
+    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
+
+    <p>Regards...</p>
+    <p>Belocated Team</p>
+    `
+
+    const subject = 'Email Verification'
+    const send_to = user.email
+    const sent_from = process.env.EMAIL_USER
+
+    try {
+      await sendEMail(subject, message, send_to, sent_from)
+      res.status(200).json({success: true, message: "Verification Email Sent"})
+    } catch (error) {
+      res.status(500)
+      throw new Error("Verification email not sent, try again")
     }
+  }
  });
 
 
@@ -141,9 +166,17 @@ export const loginUser = asyncHandler(async (req, res) => {
       res.status(400).json({message: "Incorrect Password"})
       throw new Error("Incorrect Password")
     }
+
+    //Check if user email is verified
+    if (user.isEmailVerified === false) {
+      const {username, email, isEmailVerified } = user
+     res.status(200).json({username, email, isEmailVerified})
+    }
+
+    if (user.isEmailVerified === true) {
  
      //Generate token
-   const token = generateToken(user._id)
+   let token = generateToken(user._id)
  
    //send HTTP-Only cookie 
    res.cookie("token", token, {
@@ -153,9 +186,11 @@ export const loginUser = asyncHandler(async (req, res) => {
      sameSite: "none",
      secure: true
    })
+
+  }
  
     if (user && passwordIsCorrect) {
-     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType } = user
+     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, isEmailVerified, isPhoneVerified } = user
      res.status(200).json({
          _id, 
          fullname, 
@@ -167,6 +202,8 @@ export const loginUser = asyncHandler(async (req, res) => {
          religion, 
          gender,
          accountType,
+         isEmailVerified, 
+         isPhoneVerified,
          token
      })
     } else {
@@ -231,7 +268,7 @@ export const  getUsers = asyncHandler(async(req, res) => {
           community: 1, 
           religion: 1, 
           gender: 1,
-          accountType: 1
+          accountType: 1,
       })
 
   if (!users) {
@@ -429,5 +466,124 @@ export const forgotPassword = asyncHandler(async(req, res) => {
   }
 })
 
+//Send and resend Verification Email
+export const verifyEmail = asyncHandler(async(req,res) => {
+  const {email} = req.body
 
-//Email Account Verification
+  const user = await User.findOne({email})
+
+  if (!user) {
+    res.status(404);
+    throw new Error("No user found")
+  }
+
+  if (user) {
+    //Delete token if it exists in the DB
+    let token = await Token.findOne({userId: user._id})
+
+    if (token) {
+      await token.deleteOne()
+    }
+
+  // generate new verification token
+  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+
+  console.log(verificationToken)
+
+  //Hask token before saving to DB
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+
+  //Save Token to DB
+  const newToken = await new Token({
+    userId: user._id,
+    token: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+  }).save()
+
+  if (!newToken) {
+    res.status(500);
+    throw new Error("Internal server Error")
+  }
+
+  if (newToken) {
+    
+    // Contruct frontendURL
+    const frontendUrl = process.env.FRONTEND_URL
+
+    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
+
+    //Send Verification Email
+    const message = `
+    <h2>Hello, ${user.username}</h2>
+    <p>Please use the verification url to verify your belocated account.</p>
+    <p>The reset link is valid for 30minutes</p>
+
+    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
+
+    <p>Regards...</p>
+    <p>Belocated Team</p>
+    `
+
+    const subject = 'Email Verification'
+    const send_to = user.email
+    const sent_from = process.env.EMAIL_USER
+
+    try {
+      await sendEMail(subject, message, send_to, sent_from)
+      res.status(200).json({success: true, message: "Verification Email Sent"})
+    } catch (error) {
+      res.status(500)
+      throw new Error("Verification email not sent, try again")
+    }
+  }
+  }
+  
+  
+})
+
+
+ //Email Account Verification
+ export const verifyUser = asyncHandler(async (req, res) => {
+  const token = req.params;
+
+  //Hask token, then compare with token in db
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
+
+  //find token in db
+  const userToken =await Token.findOne({
+    token: hashedToken,
+    expiresAt: {$gt: Date.now()}
+  })
+
+  if (!userToken) {
+    res.status(404);
+    throw new Error("Invalid or Expired Token");
+  }
+
+  // find user
+  const user = await User.findOne({_id: userToken.userId})
+  user.isEmailVerified = true
+
+  await user.save()
+
+  const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, isEmailVerified, isPhoneVerified } = user
+  
+  res.status(200).json({
+         _id, 
+         fullname, 
+         username, 
+         email, 
+         phone, 
+         location, 
+         community, 
+         religion, 
+         gender,
+         accountType,
+         isEmailVerified, 
+         isPhoneVerified,
+         token
+  })
+ })
+
+
