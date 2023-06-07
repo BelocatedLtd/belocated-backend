@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer"
 
-const sendEMail = async (subject, message, send_to, sent_from, reply_to)  => {
+const sendEMail = async (subject, text, message, send_to, sent_from, reply_to)  => {
     //Define Email Transporter
     const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
@@ -9,6 +9,7 @@ const sendEMail = async (subject, message, send_to, sent_from, reply_to)  => {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
+        from: process.env.EMAIL_USER,
         tls: {
             rejectUnauthorized: false
         }
@@ -20,6 +21,7 @@ const sendEMail = async (subject, message, send_to, sent_from, reply_to)  => {
         to: send_to,
         replyTo: reply_to,
         subject: subject,
+        text: text,
         html: message
     }
 

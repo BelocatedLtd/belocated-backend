@@ -113,6 +113,8 @@ await new Token({
     const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
     //Send Verification Email
+    const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
+
     const message = `
     <h2>Hello, ${user.username}</h2>
     <p>Please use the verification url to verify your belocated account.</p>
@@ -129,7 +131,7 @@ await new Token({
     const sent_from = process.env.EMAIL_USER
 
     try {
-      await sendEMail(subject, message, send_to, sent_from)
+      await sendEMail(subject, text, message, send_to, sent_from)
       res.status(200).json({success: true, message: "Verification Email Sent"})
     } catch (error) {
       res.status(500)
@@ -514,6 +516,8 @@ export const verifyEmail = asyncHandler(async(req,res) => {
     const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
     //Send Verification Email
+    const text = 'This email was sent to you because you tried to login to an unverified acount on the belocated platform'
+
     const message = `
     <h2>Hello, ${user.username}</h2>
     <p>Please use the verification url to verify your belocated account.</p>
@@ -530,7 +534,7 @@ export const verifyEmail = asyncHandler(async(req,res) => {
     const sent_from = process.env.EMAIL_USER
 
     try {
-      await sendEMail(subject, message, send_to, sent_from)
+      await sendEMail(subject, text, message, send_to, sent_from)
       res.status(200).json({success: true, message: "Verification Email Sent"})
     } catch (error) {
       res.status(500)
