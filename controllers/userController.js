@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
+import sendSMS from "../utils/sendSMS.js";
+import sendEmail from "../utils/termilEmailSend.js";
 
 
 
@@ -63,7 +65,6 @@ export const registerUser = asyncHandler(async (req, res) => {
      accountType: 'User',
      isEmailVerified: false,
      isPhoneVerified: false,
-     verificationToken: ''
     });
 
     if (!user) {
@@ -93,7 +94,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 // Email verification Step
   if (user && wallet) {
     // generate verification token
-  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+  let verificationToken = crypto.randomBytes(32).toString("hex").toUpperCase()
 
   //Hask token before saving to DB
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
@@ -101,7 +102,9 @@ export const registerUser = asyncHandler(async (req, res) => {
 //Save Token to DB
 await new Token({
   userId: user._id,
-  token: hashedToken,
+  token: '',
+  emailVerificationToken: hashedToken,
+  phoneVerificationOTP: '',
   createdAt: Date.now(),
   expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
 }).save()
@@ -110,11 +113,12 @@ await new Token({
   // Contruct frontendURL
     const frontendUrl = process.env.FRONTEND_URL
 
-    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
+   const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
     //Send Verification Email
-    const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
+    // const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
 
+    const subject = "Email Verification"
     const message = `
     <h2>Hello, ${user.username}</h2>
     <p>Please use the verification url to verify your belocated account.</p>
@@ -125,17 +129,15 @@ await new Token({
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
-
-    const subject = 'Email Verification'
     const send_to = user.email
-    const sent_from = process.env.EMAIL_USER
+    const reply_to = "noreply@noreply.com"
 
     try {
-      await sendEMail(subject, text, message, send_to, sent_from)
-      res.status(200).json({success: true, message: "Verification Email Sent"})
+      await sendEMail(subject, message, send_to, reply_to)
+      res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
-      res.status(500)
-      throw new Error("Verification email not sent, try again")
+      res.status(500);
+      throw new Error(error)
     }
   }
  });
@@ -468,6 +470,7 @@ export const forgotPassword = asyncHandler(async(req, res) => {
   }
 })
 
+
 //Send and resend Verification Email
 export const verifyEmail = asyncHandler(async(req,res) => {
   const {email} = req.body
@@ -490,25 +493,28 @@ export const verifyEmail = asyncHandler(async(req,res) => {
   // generate new verification token
   let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
 
-  console.log(verificationToken)
-
   //Hask token before saving to DB
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
 
   //Save Token to DB
-  const newToken = await new Token({
-    userId: user._id,
-    token: hashedToken,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
-  }).save()
+const saveOTPTODB = await Token.findOneAndUpdate(
+  {userId: user._id},
+  {
+  phoneVerificationToken: hashedToken,
+  createdAt: Date.now(),
+  expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+},
+{
+  new: true,
+  runValidators: true
+})
 
-  if (!newToken) {
+  if (!saveOTPTODB) {
     res.status(500);
     throw new Error("Internal server Error")
   }
 
-  if (newToken) {
+  if (saveOTPTODB) {
     
     // Contruct frontendURL
     const frontendUrl = process.env.FRONTEND_URL
@@ -516,8 +522,6 @@ export const verifyEmail = asyncHandler(async(req,res) => {
     const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
     //Send Verification Email
-    const text = 'This email was sent to you because you tried to login to an unverified acount on the belocated platform'
-
     const message = `
     <h2>Hello, ${user.username}</h2>
     <p>Please use the verification url to verify your belocated account.</p>
@@ -528,17 +532,16 @@ export const verifyEmail = asyncHandler(async(req,res) => {
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
-
     const subject = 'Email Verification'
     const send_to = user.email
-    const sent_from = process.env.EMAIL_USER
+    const reply_to = "noreply@noreply.com"
 
     try {
-      await sendEMail(subject, text, message, send_to, sent_from)
-      res.status(200).json({success: true, message: "Verification Email Sent"})
+      await sendEMail(subject, message, send_to, reply_to)
+      res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
-      res.status(500)
-      throw new Error("Verification email not sent, try again")
+      res.status(500);
+      throw new Error(error)
     }
   }
   }
@@ -562,11 +565,13 @@ export const verifyEmail = asyncHandler(async(req,res) => {
 
   if (!userToken) {
     res.status(404);
-    throw new Error("Invalid or Expired Token");
+    throw new Error("Invalid or Expired Token, request for another token");
   }
 
   // find user
   const user = await User.findOne({_id: userToken.userId})
+
+
   user.isEmailVerified = true
 
   await user.save()
@@ -588,6 +593,57 @@ export const verifyEmail = asyncHandler(async(req,res) => {
          isPhoneVerified,
          token
   })
+ })
+
+
+ //Phone Verification
+ export const verifyUserPhone = asyncHandler( async(req, res) => {
+  const {phone} = req.body
+
+  //const user = await User.findById(req.user.id)
+
+  // generate new verification token
+  let verificationToken = crypto.randomBytes(3).toString("hex").toUpperCase()
+
+  //Hask token before saving to DB
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+
+//Save Token to DB
+// const saveOTPTODB = await Token.findOneAndUpdate(
+//   {userId: user._id},
+//   {
+//   phoneVerificationToken: hashedToken,
+//   createdAt: Date.now(),
+//   expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+// },
+// {
+//   new: true,
+//   runValidators: true
+// })
+
+// if (!saveOTPTODB) {
+//   res.status(500);
+//       throw new Error("failed to save OTP")
+// }
+
+const message = 
+`Hello, Please use the OTP to verify your mobile number on belocated is: ${verificationToken}. 
+
+The OTP is valid for 30minutes.
+
+Regards...
+Belocated Team`
+
+   const response =  await sendSMS(phone, message)
+
+    if (!response) {
+      res.status(500);
+      throw new Error("failed to send OTP")
+    }
+
+    if (response) {
+      res.status(200).json({success: true, message: "OTP Sent Successfully"})
+    }
  })
 
 

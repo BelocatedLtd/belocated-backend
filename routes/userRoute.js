@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, verifyUserPhone } from "../controllers/userController.js";
 import protect from '../middleware/authMiddleware.js';
 
 
@@ -21,6 +21,8 @@ router.post("/forgotpassword", forgotPassword)
 
 router.post("/authverification", verifyEmail)
 router.put("/emailverify/:comfirmationToken", verifyUser) 
+
+router.post("/verifyphone", verifyUserPhone)
 
 
 

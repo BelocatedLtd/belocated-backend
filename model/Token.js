@@ -8,7 +8,12 @@ const tokenSchema = mongoose.Schema({
     },
     token: {
         type: String,
-        required: true,
+    },
+    emailVerificationToken: {
+        type: String,
+    },
+    phoneVerificationOTP: {
+        type: String,
     },
     createdAt: {
         type: Date,
