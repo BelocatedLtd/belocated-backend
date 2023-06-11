@@ -17,30 +17,31 @@ const generateToken = (id) => {
 }
 
 
-//Register User
+//>>>> Register User
 // http://localhost:6001/api/user/register
 export const registerUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body
  
     //User input validation
     if ( !username || !email || !password ) {
-     res.status(400)
-     throw new Error("Please fill in all required fields")
+     res.status(400).json({message: "Please fill in all required fields"})
+     throw new Error({message: "Please fill in all required fields"})
     } 
 
     //checking for password lenght
     if (password.length < 6) {
-     res.status(400)
-     throw new Error("Password must be upto 6 characters")
+     res.status(400).json({message: "Password must be upto 6 characters"})
+     throw new Error({message: "Password must be upto 6 characters"})
      
     }
+
     //check if user email already exist
     //username
     const usernameExists = await User.findOne({username: username} || {email: email})
     
     if (usernameExists) {
      res.status(400).json({message: "Username has already been registered by another user"})
-     throw new Error("Username has already been registered by another user")
+     throw new Error({message: "Username has already been registered by another user"})
     }
 
     //email
@@ -48,7 +49,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     
     if (emailExists) {
      res.status(400).json({message: "Email has already been registered, please login"})
-     throw new Error("Email has already been registered, please login")
+     throw new Error({message: "Email has already been registered, please login"})
     }
  
     //Create new user
@@ -69,7 +70,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (!user) {
       res.status(400).json({message: "Failed to register User"})
-     throw new Error("Failed to register User, please try again")
+     throw new Error({message: "Failed to register User"})
     }
 
     let wallet;
@@ -87,17 +88,19 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (!wallet) {
       res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
-     throw new Error("Failed to Create Wallet for Registered User, Please contact admin")
+     throw new Error({message: "Failed to Create Wallet for Registered User, Please contact admin"})
     }
 
 
 // Email verification Step
   if (user && wallet) {
     // generate verification token
-  let verificationToken = crypto.randomBytes(32).toString("hex").toUpperCase()
+  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+ 
 
   //Hask token before saving to DB
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+
 
 //Save Token to DB
 await new Token({
@@ -116,7 +119,7 @@ await new Token({
    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
     //Send Verification Email
-    // const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
+    //const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
 
     const subject = "Email Verification"
     const message = `
@@ -133,17 +136,19 @@ await new Token({
     const reply_to = "noreply@noreply.com"
 
     try {
-      await sendEMail(subject, message, send_to, reply_to)
+      //const response = await sendEmail(email, verificationToken)
+      const response = await sendEMail(subject, message, send_to, reply_to)
+      console.log(response)
       res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
       res.status(500);
-      throw new Error(error)
+      throw new Error({message: error})
     }
   }
  });
 
 
-//Login User
+//>>>> Login User
 // http://localhost:6001/api/user/login
 export const loginUser = asyncHandler(async (req, res) => {
     const {email, password} = req.body
@@ -151,7 +156,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     //validate login request
     if (!email || !password) {
      res.status(400).json({message: "Please add details to login"})
-     throw new Error("Please add details to login")
+     throw new Error({message: "Please add details to login"})
     }
  
     //Check if user exist
@@ -174,26 +179,30 @@ export const loginUser = asyncHandler(async (req, res) => {
     //Check if user email is verified
     if (user.isEmailVerified === false) {
       const {username, email, isEmailVerified } = user
-     res.status(200).json({username, email, isEmailVerified})
+      const userData = {
+        username, email, isEmailVerified 
+      }
+     res.status(200).json(userData)
+     return
     }
 
+  let loginToken
     if (user.isEmailVerified === true) {
  
      //Generate token
-   let token = generateToken(user._id)
+   loginToken = generateToken(user._id)
  
    //send HTTP-Only cookie 
-   res.cookie("token", token, {
+   res.cookie("token", loginToken, {
      path: "/",
      httpOnly: true,
      expires: new Date(Date.now() + 1000 * 86400), // 1 day
      sameSite: "none",
      secure: true
    })
-
   }
  
-    if (user && passwordIsCorrect) {
+    if (user && passwordIsCorrect && loginToken) {
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, isEmailVerified, isPhoneVerified } = user
      res.status(200).json({
          _id, 
@@ -208,15 +217,16 @@ export const loginUser = asyncHandler(async (req, res) => {
          accountType,
          isEmailVerified, 
          isPhoneVerified,
-         token
+         loginToken
      })
     } else {
      res.status(400).json({message: "Invalid User or Password"})
+     throw new Error({message: "Invalid User or Password"})
     }
  
  })
 
- /*  GET User */
+ //>>>> GET User 
 // http://localhost:6001/api/user/:id 
 export const  getUser = async(req, res) => {
   //const { userId } = req.body
@@ -248,7 +258,7 @@ export const  getUser = async(req, res) => {
    }
 }
 
-/*  GET ALL USERS */
+//>>>>  GET ALL USERS 
 // http://localhost:6001/api/user/all
 export const  getUsers = asyncHandler(async(req, res) => {
 
@@ -287,7 +297,7 @@ if (users) {
 }
 })
 
-/*  LOGOUT USERS */
+//>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
 export const logoutUser = asyncHandler(async(req, res) => {
     res.cookie("token", "", {
@@ -301,7 +311,7 @@ export const logoutUser = asyncHandler(async(req, res) => {
 })
 
 
-// Get Login Status
+//>>>> Get Login Status
 export const loginStatus = asyncHandler(async(req, res) => {
   const token = req.cookies.token;
   if (!token) {
@@ -318,9 +328,9 @@ export const loginStatus = asyncHandler(async(req, res) => {
 })
 
 
-//Update User details
+//>>>> Update User details
 export const updateUser = asyncHandler(async (req, res) => {
-  const { userId, username, email, fullname, phone, location, community, gender, religion  } = req.body
+  const { userId, fullname, location, community, gender, religion  } = req.body
 
   // if (userId !== req.user.id) {
   //   res.status.(400).json({message: "There's a problem with the validation for this user"})
@@ -338,9 +348,6 @@ export const updateUser = asyncHandler(async (req, res) => {
       { _id: req.user.id },
       {
         fullname: fullname || req.user.fullname,
-        username: username || req.user.username,
-        email: email || req.user.email,
-        phone: phone || req.user.phone,
         location: location || req.user.location,
         location: location || req.user.location,
         community: community || req.user.community,
@@ -378,39 +385,148 @@ export const updateUser = asyncHandler(async (req, res) => {
 })
 
 
-//Change user password
-const changePassword = asyncHandler(async (res, req) => {
-    const user = await User.findById(req.user._id)
-    const { oldPassword, password } = req.body
+export const updateUserAccountDetails = asyncHandler( async(req, res) => {
 
-    //Check if user exist
-    if(!user) {
-        res.status(400)
-        throw new Error("User not found, please register");
+  const {userId, username, email, phone} = req.body
+  //check if username and email already exist
+    //username
+
+    const user = await User.findById(userId)
+
+
+    //Check if user is authorized to make this update
+    if (user.isPhoneVerified === false) {
+      res.status(401).json({message: "You are not allowed to make this change, complete phone number verification"})
+      throw new Error({message: "You are not allowed to make this change, complete phone number verification"})
     }
 
-    //validate password
-    if(!oldPassword || !password) {
-        res.status(400)
-        throw new Error("Please add old and new password");
-    }
+    if (user.isPhoneVerified === true) {
 
-    // check if old password matches password in the db
-    const passwordIsCorrect = await bcrypt.compare(oldPassword, user.password)
+      // Check if new email has already being registered by another user
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({email})
 
-    //save new password
-    if (user && passwordIsCorrect) {
-        user.password = password
-        await user.save()
-        res.status(200).send("Password changed successfully")
-    } else {
-        res.status(400)
-        throw new Error("Old password is incorrect");
+        if (existingUser) {
+          return res.status(400).json({error: 'Email already taken'})
+        }
+      }
+
+      // Check if new username has already being registered by another user
+      if (username && username !== user.username) {
+        const existingUser = await User.findOne({username})
+
+        if (existingUser) {
+          return res.status(400).json({error: 'Username already taken'})
+        }
+      }
+
+      // Check if new phone number has already being registered by another user
+      if (phone && phone !== user.phone) {
+        const existingUser = await User.findOne({phone})
+
+        if (existingUser) {
+          return res.status(400).json({error: 'Phone number has already been taken'})
+        }
+      }
+      
+        //Update User Account Details
+          const updatedUser = await User.findByIdAndUpdate(
+          {_id: userId},
+          {
+            email: email || req.user.email,
+            username: username || req.user.username,
+            phone: phone || req.user.phone,
+          }
+          )
+
+          if (!updatedUser) {
+            res.status(500);
+            throw new Error({message: "Failed to updated user account details"})
+          }
+
+          res.status(200).json({message: "User Account Details Updated", updatedUser}) 
+          //If email was changed, reset email status
+          // if (updatedUser !== user.email) {
+          //   const changeEmailStatus = await User.findByIdAndUpdate(
+          //     {_id: userId},
+          //     {
+          //       isEmailVerified: false
+          //     }
+          //     )
+
+          //     res.status(200).json({message: "Please verify your new email address", changeEmailStatus}) 
+          // } else if (updatedUser === user.email) {
+          //   res.status(200).json({message: "User Account Details Updated", updatedUser}) 
+          //  }
+        
+          
     }
 })
 
 
-//Reset Password
+//>>>> Change user password
+export const verifyPasswordChange = asyncHandler(async (req, res) => {
+    const { userId, password } = req.body
+
+    const user = await User.findById(userId)
+
+    // Check if user exist
+     if(!user) {
+        res.status(400).json("User not found, please register");
+        throw new Error("User not found, please register");
+     }
+
+    //validate password
+     if (!password) {
+         res.status(400).json("Please add old");
+         throw new Error("Please add old");
+     }
+
+    // check if old password matches password in the db
+    const passwordIsCorrect = await bcrypt.compare(password, user.password)
+
+     if (user && passwordIsCorrect) {
+        res.status(200).json({message: "Password is Correct"})
+     } else {
+        res.status(400).json({message: "Password is Incorrect"})
+        throw new Error("Old password is Incorrect");
+     }
+})
+
+//>>>> Change user password
+export const changePassword = asyncHandler(async (req, res) => {
+  const { userId, newPassword, oldPassword } = req.body
+
+  const user = await User.findById(userId)
+
+  //Check if user exist
+  if(!user) {
+      res.status(400).json("User not found, please register");
+      throw new Error("User not found, please register");
+  }
+
+  //validate password
+  if(!newPassword || !oldPassword) {
+      res.status(400).json("unauthorized change");
+      throw new Error("unauthorized change");
+  }
+
+  // check if old password matches password in the db
+  const passwordIsCorrect = await bcrypt.compare(oldPassword, user.password)
+
+  //save new password
+  if (user && passwordIsCorrect) {
+      user.password = newPassword
+      await user.save()
+      res.status(200).json("Password changed successfully")
+  } else {
+      res.status(400)
+      throw new Error("Old password is incorrect");
+  }
+})
+
+
+//>>>> Reset Password
 export const forgotPassword = asyncHandler(async(req, res) => {
   const { email } = req.body
 
@@ -471,7 +587,7 @@ export const forgotPassword = asyncHandler(async(req, res) => {
 })
 
 
-//Send and resend Verification Email
+//>>>> Send and resend Verification Email
 export const verifyEmail = asyncHandler(async(req,res) => {
   const {email} = req.body
 
@@ -497,24 +613,19 @@ export const verifyEmail = asyncHandler(async(req,res) => {
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
 
   //Save Token to DB
-const saveOTPTODB = await Token.findOneAndUpdate(
-  {userId: user._id},
-  {
-  phoneVerificationToken: hashedToken,
-  createdAt: Date.now(),
-  expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
-},
-{
-  new: true,
-  runValidators: true
-})
+  const saveTokenToDB = await new Token({
+    userId: user._id,
+    emailVerificationToken: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+  }).save()
 
-  if (!saveOTPTODB) {
+  if (!saveTokenToDB) {
     res.status(500);
     throw new Error("Internal server Error")
   }
 
-  if (saveOTPTODB) {
+  if (saveTokenToDB) {
     
     // Contruct frontendURL
     const frontendUrl = process.env.FRONTEND_URL
@@ -540,7 +651,7 @@ const saveOTPTODB = await Token.findOneAndUpdate(
       await sendEMail(subject, message, send_to, reply_to)
       res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
-      res.status(500);
+      res.status(500).json('Email verification failed');
       throw new Error(error)
     }
   }
@@ -550,16 +661,16 @@ const saveOTPTODB = await Token.findOneAndUpdate(
 })
 
 
- //Email Account Verification
+ //>>>> Email Account Verification
  export const verifyUser = asyncHandler(async (req, res) => {
-  const token = req.params;
+  const {token} = req.params;
 
   //Hask token, then compare with token in db
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
 
   //find token in db
-  const userToken =await Token.findOne({
-    token: hashedToken,
+  const userToken = await Token.findOne({
+    emailVerificationToken: hashedToken,
     expiresAt: {$gt: Date.now()}
   })
 
@@ -569,38 +680,40 @@ const saveOTPTODB = await Token.findOneAndUpdate(
   }
 
   // find user
-  const user = await User.findOne({_id: userToken.userId})
+  const updatedUserDetails = await User.findByIdAndUpdate(
+    { _id: userToken.userId },
+    {
+      isEmailVerified: true,
+    },
+    {
+        new: true,
+        runValidators: true
+    }
+)
 
+if (!updatedUserDetails) {
+  res.status(500);
+  throw new Error("Failed to verify user");
+}
 
-  user.isEmailVerified = true
+if (updatedUserDetails) {
+ // const updatedUser = await User.findById(userToken.userId)
 
-  await user.save()
-
-  const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, isEmailVerified, isPhoneVerified } = user
+    const {_id, isEmailVerified } = updatedUserDetails
   
-  res.status(200).json({
-         _id, 
-         fullname, 
-         username, 
-         email, 
-         phone, 
-         location, 
-         community, 
-         religion, 
-         gender,
-         accountType,
-         isEmailVerified, 
-         isPhoneVerified,
-         token
-  })
- })
+  res.status(200).json({ _id, isEmailVerified })
+  }
+}
+)
 
 
- //Phone Verification
+ //>>> Phone Verification
  export const verifyUserPhone = asyncHandler( async(req, res) => {
-  const {phone} = req.body
+  const {userId, username, email, phone} = req.body
 
-  //const user = await User.findById(req.user.id)
+
+  const user = await User.findById(req.user._id)
+  const recentToken = await Token.findOne({userId: req.user._id})
 
   // generate new verification token
   let verificationToken = crypto.randomBytes(3).toString("hex").toUpperCase()
@@ -609,41 +722,109 @@ const saveOTPTODB = await Token.findOneAndUpdate(
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
 
 //Save Token to DB
-// const saveOTPTODB = await Token.findOneAndUpdate(
-//   {userId: user._id},
-//   {
-//   phoneVerificationToken: hashedToken,
-//   createdAt: Date.now(),
-//   expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
-// },
-// {
-//   new: true,
-//   runValidators: true
-// })
+const saveOTPTODB = await Token.findOneAndUpdate(
+  {userId: user._id},
+  {
+    token: recentToken.token,
+    emailVerificationToken: recentToken.emailVerificationToken,
+    phoneVerificationOTP: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+},
+{
+  new: true,
+  runValidators: true
+})
 
-// if (!saveOTPTODB) {
-//   res.status(500);
-//       throw new Error("failed to save OTP")
-// }
+if (!saveOTPTODB) {
+  res.status(500);
+      throw new Error("failed to save OTP")
+}
 
-const message = 
-`Hello, Please use the OTP to verify your mobile number on belocated is: ${verificationToken}. 
+if (saveOTPTODB) {
+
+  const message = 
+`Hello, here's the code to verify your mobile number on belocated: ${verificationToken}. 
 
 The OTP is valid for 30minutes.
 
 Regards...
 Belocated Team`
-
-   const response =  await sendSMS(phone, message)
-
-    if (!response) {
-      res.status(500);
-      throw new Error("failed to send OTP")
-    }
-
-    if (response) {
-      res.status(200).json({success: true, message: "OTP Sent Successfully"})
-    }
+  
+     const response =  await sendSMS(phone, message)
+  
+      if (!response) {
+        res.status(500);
+        throw new Error("failed to send OTP")
+      }
+  
+      if (response) {
+        res.status(200).json({success: true, message: "OTP Sent Successfully"})
+      }
+}
  })
+
+
+  //>>> Verify Phone
+  export const confirmUserPhone = asyncHandler(async (req, res) => {
+    const {OTP} = req.params;
+
+    //Reset Phone verification status to false
+    // find user ancd change phone verification status to false
+    const resetUserPhoneVerifiedStatus = await User.findByIdAndUpdate(
+      { _id: req.user._id },
+      {
+        isPhoneVerified: false,
+      },
+      {
+          new: true,
+          runValidators: true
+      }
+  )
+
+      if (!resetUserPhoneVerifiedStatus) {
+        res.status(500);
+        throw new Error({message: "Server failed to complete verification process"})
+      }
+  
+    //Hask token, then compare with token in db
+    const hashedToken = crypto.createHash('sha256').update(OTP).digest('hex')
+  
+    //find token in db
+    const userToken = await Token.findOne({
+      phoneVerificationOTP: hashedToken,
+      expiresAt: {$gt: Date.now()}
+    })
+  
+    if (!userToken) {
+      res.status(404).json({message: "Invalid or Expired Token, request for another token"});
+      throw new Error("Invalid or Expired Token, request for another token");
+    }
+
+  
+    // find user ancd change phone verification status to true
+    const userUserPhoneVerifiedStatus = await User.findByIdAndUpdate(
+      { _id: userToken.userId },
+      {
+        isPhoneVerified: true,
+      },
+      {
+          new: true,
+          runValidators: true
+      }
+  )
+  
+  if (!userUserPhoneVerifiedStatus) {
+    res.status(500);
+    throw new Error({message: "Failed to verify user by phone"});
+  }
+
+  if (userUserPhoneVerifiedStatus) {
+   const { _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified } = userUserPhoneVerifiedStatus
+    
+   res.status(200).json({ _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified })
+   }
+
+  })
 
 

@@ -7,9 +7,10 @@ const sendEMail = async (subject, message, send_to, reply_to)  => {
             host: 'smtp.gmail.com',
             port: 587,
             auth: {
-                user: 'belocatedltd@gmail.com',
-                pass: 'ecacbnygqyrhozet',
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
+            secure: false,
             tls: {
                 rejectUnauthorized: false
             },
@@ -18,7 +19,7 @@ const sendEMail = async (subject, message, send_to, reply_to)  => {
 
         //Cretae Mail Options
     const data = {
-        from: 'belocatedltd@gmail.com',
+        from: process.env.EMAIL_USER,
         subject: subject,
         html: message,
         to: send_to,

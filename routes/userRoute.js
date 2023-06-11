@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, verifyUserPhone } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, verifyUserPhone, confirmUserPhone, updateUserAccountDetails, changePassword, verifyPasswordChange } from "../controllers/userController.js";
 import protect from '../middleware/authMiddleware.js';
 
 
@@ -16,15 +16,15 @@ router.get('/', protect, getUser);
 
  //Patch
  router.patch('/update/', protect, updateUser)
-//  router.patch("/changepassword", protect, changePassword)
+ router.patch('/update/accountdetails', protect, updateUserAccountDetails)
+
+router.post("/verifypasswordchange", protect, verifyPasswordChange)
+router.patch("/changePassword", protect, changePassword)
 router.post("/forgotpassword", forgotPassword)
 
-router.post("/authverification", verifyEmail)
-router.put("/emailverify/:comfirmationToken", verifyUser) 
-
-router.post("/verifyphone", verifyUserPhone)
-
-
-
+router.post("/verifyphone", protect, verifyUserPhone) //Send phone verification token
+router.post("/authverification", verifyEmail) // Confirm Email verification token
+router.patch("/emailverify/:token", verifyUser) //Send phone verification OTP
+router.patch("/confirmphone/:OTP", protect, confirmUserPhone) // Confirm Phone verification OTP
 
 export default router;
