@@ -588,9 +588,9 @@ export const forgotPassword = asyncHandler(async(req, res) => {
 
 
 //>>>> Send and resend Verification Email
-export const verifyEmail = asyncHandler(async(req,res) => {
-  const {email} = req.body
-
+export const verifyEmail = asyncHandler(async(req, res) => {
+  const {email} = req.params
+  
   const user = await User.findOne({email})
 
   if (!user) {
@@ -652,7 +652,7 @@ export const verifyEmail = asyncHandler(async(req,res) => {
       res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
       res.status(500).json('Email verification failed');
-      throw new Error(error)
+      throw new Error('Email verification failed')
     }
   }
   }
