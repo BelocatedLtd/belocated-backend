@@ -141,8 +141,8 @@ await new Token({
       console.log(response)
       res.status(200).json('Verification Email Sent Successfully');
     } catch (error) {
-      res.status(500);
-      throw new Error({message: error})
+      res.status(500).json({message: 'Failed to register'});
+      throw new Error('Failed to register')
     }
   }
  });
