@@ -407,7 +407,7 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
         const existingUser = await User.findOne({email})
 
         if (existingUser) {
-          return res.status(400).json({error: 'Email already taken'})
+          return res.status(400).json({message: 'Email already taken'})
         }
       }
 
@@ -416,7 +416,7 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
         const existingUser = await User.findOne({username})
 
         if (existingUser) {
-          return res.status(400).json({error: 'Username already taken'})
+          return res.status(400).json({message: 'Username already taken'})
         }
       }
 
@@ -425,7 +425,7 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
         const existingUser = await User.findOne({phone})
 
         if (existingUser) {
-          return res.status(400).json({error: 'Phone number has already been taken'})
+          return res.status(400).json({message: 'Phone number is already in use'})
         }
       }
       
@@ -444,22 +444,11 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
             throw new Error({message: "Failed to updated user account details"})
           }
 
-          res.status(200).json({message: "User Account Details Updated", updatedUser}) 
-          //If email was changed, reset email status
-          // if (updatedUser !== user.email) {
-          //   const changeEmailStatus = await User.findByIdAndUpdate(
-          //     {_id: userId},
-          //     {
-          //       isEmailVerified: false
-          //     }
-          //     )
-
-          //     res.status(200).json({message: "Please verify your new email address", changeEmailStatus}) 
-          // } else if (updatedUser === user.email) {
-          //   res.status(200).json({message: "User Account Details Updated", updatedUser}) 
-          //  }
-        
-          
+          if (updateUser) {
+            const { _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified } = updatedUser
+  
+            res.status(200).json({ _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified }) 
+          }
     }
 })
 
@@ -815,8 +804,8 @@ Belocated Team`
   )
   
   if (!userUserPhoneVerifiedStatus) {
-    res.status(500);
-    throw new Error({message: "Failed to verify user by phone"});
+    res.status(500).json({message: "Failed to verify user by phone"});
+    throw new Error("Failed to verify user by phone");
   }
 
   if (userUserPhoneVerifiedStatus) {
