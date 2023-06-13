@@ -48,8 +48,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     const emailExists = await User.findOne({email: email})
     
     if (emailExists) {
-     res.status(400).json({message: "Email has already been registered, please login"})
-     throw new Error({message: "Email has already been registered, please login"})
+    return res.status(200).json({message: "Email has already been registered, please login"})
     }
  
     //Create new user
@@ -91,59 +90,18 @@ export const registerUser = asyncHandler(async (req, res) => {
      throw new Error({message: "Failed to Create Wallet for Registered User, Please contact admin"})
     }
 
-
-// Email verification Step
   if (user && wallet) {
-    // generate verification token
-  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
- 
+    const {_id, username, email, isEmailVerified } = user
+      const userData = {
+        _id, username, email, isEmailVerified 
+      }
 
-  //Hask token before saving to DB
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+    res.status(200).json(userData);
+  }
 
-
-//Save Token to DB
-await new Token({
-  userId: user._id,
-  token: '',
-  emailVerificationToken: hashedToken,
-  phoneVerificationOTP: '',
-  createdAt: Date.now(),
-  expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
-}).save()
-
-
-  // Contruct frontendURL
-    const frontendUrl = process.env.FRONTEND_URL
-
-   const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
-
-    //Send Verification Email
-    //const text = 'This email was sent to you because you tried to sign up with or login to an unverified acount on the belocated platform'
-
-    const subject = "Email Verification"
-    const message = `
-    <h2>Hello, ${user.username}</h2>
-    <p>Please use the verification url to verify your belocated account.</p>
-    <p>The reset link is valid for 30minutes</p>
-
-    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
-
-    <p>Regards...</p>
-    <p>Belocated Team</p>
-    `
-    const send_to = user.email
-    const reply_to = "noreply@noreply.com"
-
-    try {
-      //const response = await sendEmail(email, verificationToken)
-      const response = await sendEMail(subject, message, send_to, reply_to)
-      console.log(response)
-      res.status(200).json('Verification Email Sent Successfully');
-    } catch (error) {
-      res.status(500).json({message: 'Failed to register'});
-      throw new Error('Failed to register')
-    }
+  if (!user && !wallet) {
+    res.status(500).json('Registeration failed');
+    throw new Error("Registeration failed")
   }
  });
 
@@ -583,7 +541,7 @@ export const verifyEmail = asyncHandler(async(req, res) => {
   const user = await User.findOne({email})
 
   if (!user) {
-    res.status(404);
+    res.status(404).json("No user found");
     throw new Error("No user found")
   }
 
@@ -604,10 +562,14 @@ export const verifyEmail = asyncHandler(async(req, res) => {
   //Save Token to DB
   const saveTokenToDB = await new Token({
     userId: user._id,
+    token: "",
     emailVerificationToken: hashedToken,
+    phoneVerificationOTP: "",
     createdAt: Date.now(),
     expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
   }).save()
+
+ 
 
   if (!saveTokenToDB) {
     res.status(500);
@@ -636,17 +598,21 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     const send_to = user.email
     const reply_to = "noreply@noreply.com"
 
-    try {
-      await sendEMail(subject, message, send_to, reply_to)
-      res.status(200).json('Verification Email Sent Successfully');
-    } catch (error) {
+    
+
+    //Finally sending email
+    const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+    if (!emailSent) {
       res.status(500).json('Email verification failed');
       throw new Error('Email verification failed')
     }
+
+    if (emailSent) {
+      res.status(200).json('Verification Email Sent Successfully');
+    }
   }
   }
-  
-  
 })
 
 

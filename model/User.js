@@ -62,6 +62,11 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         required: true,
         default: false
+    },
+    freeTaskCount: {
+        type: Number,
+        required: true,
+        default: 3
     }
 }, {
     timestamps: true
