@@ -36,6 +36,15 @@ const userSchema = mongoose.Schema({
     religion: {
         type: String,
     },
+    bankName: {
+        type: String,
+    },
+    bankAccountNumber: {
+        type: Number,
+    },
+    accountHolderName: {
+        type: String,
+    },
     adsCreated: {
         type: Number,
         default: 0
