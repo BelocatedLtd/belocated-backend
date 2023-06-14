@@ -168,7 +168,8 @@ export const loginUser = asyncHandler(async (req, res) => {
   }
  
     if (user && passwordIsCorrect && loginToken) {
-     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, isEmailVerified, isPhoneVerified } = user
+     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
+bankAccountNumber, accountHolderName,isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount } = user
      res.status(200).json({
          _id, 
          fullname, 
