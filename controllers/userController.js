@@ -58,6 +58,9 @@ export const registerUser = asyncHandler(async (req, res) => {
      password,
      email,
      phone: null,
+     bankName: '',
+     bankAccountNumber: '',
+     accountHolderName: '',
      location: '',
      community: '',
      religion: '',
@@ -65,6 +68,10 @@ export const registerUser = asyncHandler(async (req, res) => {
      accountType: 'User',
      isEmailVerified: false,
      isPhoneVerified: false,
+     taskCompleted: 0,
+     taskOngoing: 0,
+     adsCreated: 0,
+     freeTaskCount: 3
     });
 
     if (!user) {
@@ -173,8 +180,15 @@ export const loginUser = asyncHandler(async (req, res) => {
          religion, 
          gender,
          accountType,
+          bankName,
+          bankAccountNumber,
+          accountHolderName,
          isEmailVerified, 
          isPhoneVerified,
+        taskCompleted,
+        taskOngoing,
+        adsCreated,
+        freeTaskCount,
          loginToken
      })
     } else {
@@ -208,7 +222,16 @@ export const  getUser = async(req, res) => {
           community, 
           religion, 
           gender,
-          accountType
+          accountType,
+          bankName,
+          bankAccountNumber,
+          accountHolderName,
+          isEmailVerified, 
+          isPhoneVerified,
+          taskCompleted,
+          taskOngoing,
+          adsCreated,
+          freeTaskCount,
       })
       }
    } catch (error) {
@@ -241,6 +264,15 @@ export const  getUsers = asyncHandler(async(req, res) => {
           religion: 1, 
           gender: 1,
           accountType: 1,
+          bankName: 1,
+          bankAccountNumber: 1,
+          accountHolderName: 1,
+          isEmailVerified: 1, 
+          isPhoneVerified: 1,
+          taskCompleted: 1,
+          taskOngoing: 1,
+          adsCreated: 1,
+          freeTaskCount: 1,
       })
 
   if (!users) {
@@ -324,7 +356,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
 
   if (updatedUserDetails) {
-    const {fullname, username, email, phone, location, community, religion, gender, accountType } = updatedUserDetails
+    const {fullname, username, email, phone, location, community, religion, gender, accountType,  } = updatedUserDetails
     res.status(200).json({
         fullname, 
         username, 
@@ -334,7 +366,16 @@ export const updateUser = asyncHandler(async (req, res) => {
         community, 
         religion, 
         gender,
-        accountType
+        accountType,
+        bankName,
+        bankAccountNumber,
+        accountHolderName,
+        isEmailVerified, 
+        isPhoneVerified,
+        taskCompleted,
+        taskOngoing,
+        adsCreated,
+        freeTaskCount
 
     })
    } else {

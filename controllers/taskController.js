@@ -4,6 +4,7 @@ import Advert from "../model/Advert.js";
 import Task from '../model/Task.js'
 import Wallet from "../model/Wallet.js";
 import { v2 as cloudinary } from 'cloudinary'
+import { updateUser } from "./userController.js";
 //import cloudinary from "../utils/cloudinary.js";
 
 
@@ -198,6 +199,9 @@ export const submitTask = asyncHandler(async (req, res) => {
  export const approveTask = asyncHandler(async (req, res) => {
     const {taskId, advertId, advertiserId, taskPerformerId, taskStatus, adStatus } = req.body
 
+    return res.status(200).json(req.body)
+
+    //Check if user is an admin
     if (req.user.accountType !== "Admin") {
         res.status(400).json({msg: "User Not Authorized"});
         throw new Error("User Not Authorized")
@@ -206,6 +210,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     const task = await Task.findById(taskId)
     const advert = await Advert.findById(advertId)
     const wallet = await Wallet.find({userId: taskPerformerId})
+    const taskPerformer = await User.findById(taskPerformerId)
     const advertserWallet = await Wallet.find({userId: advertiserId})
 
     if (!task) {
@@ -214,13 +219,18 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     if (task.status === "Approved") {
-        res.status(400).json({msg: "This task has already being approved, you can only be paid once for an approved Task, please perform another task"});
+        res.status(400).json({message: "This task has already being approved, you can only be paid once for an approved Task, please perform another task"});
         throw new Error("This task has already being approved, you can only be paid once for an approved Task, please perform another task")
     }
 
     if (!wallet) {
-        res.status(400).json({msg: "Cannot find user Wallet for payment"});
+        res.status(400).json("Cannot find user Wallet for payment");
         throw new Error("Cannot find user Wallet for payment")
+    }
+
+    if (!taskPerformer) {
+        res.status(400).json("Cannot find task performer details");
+        throw new Error("Cannot find task performer details")
     }
 
     if (!advertserWallet) {
@@ -233,105 +243,83 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Cannot find user Wallet to update")
     }
 
-    //Update task after user submit screenshot
-    const updatedTask = await Task.findByIdAndUpdate(
-        { _id: taskId },
-        {
-            status: taskStatus || task.status,
-          
-        },
-        {
-            new: true,
-            runValidators: true
-        }
-    )
+    if (advert.desiredROI === 0) {
+        res.status(500).json({message: "Ad campaign is no longer active"});
+        throw new Error("Ad campaign is no longer active")
+    }
+
+    //Update task status after user submit screenshot
+    task.status =  taskStatus;
+
+    //save the update on task model
+    const updatedTask = await task.save(); 
+
+    if (!updatedTask) {
+        res.status(500).json("Failed to approve task")
+        throw new Error("Failed to approve task")
+    }
+
+
+
+    // Check if user has fulfilled the weekly free task obligation
+    taskPerformer.freeTaskCount -=  1;
+
+    //save the update on user model
+    const subtractFreeTaskCount = await taskPerformer.save(); 
+
+    if (!subtractFreeTaskCount) {
+        res.status(500).json("Failed to approve task")
+        throw new Error("Failed to approve task")
+    }
 
     //Update Advert after user admin Approves Task Submittion
-    const updatedAdvertStatus = await Advert.findByIdAndUpdate(
-        { _id: advertId },
-        {
-            status: adStatus || advert.status,
-          
-        },
-        {
-            new: true,
-            runValidators: true
-        }
-    )
+    //subtrate 1 from the desired roi
+    //Update the number of tasks completed on an advert
+    advert.desiredROI -= 1;
+    advert.status = adStatus;
+    advert.tasks += 1;
 
-    const updatedAdvertDesiredROI = await Advert.findByIdAndUpdate(
-        { _id: advertId },
-        {
-            $inc: {desiredROI: -1}
-        },
-        {
-            new: true,
-            runValidators: true
-        }
-    )
+    //save the update on user model
+    const updatedAdvert = await advert.save(); 
 
-        const updatedAdvertTasksCount = await Advert.findByIdAndUpdate(
-            { _id: advertId },
-            {
-                $inc: {tasks: 1}
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
+    if (!updatedAdvert) {
+        res.status(500).json("Failed to approve task")
+        throw new Error("Failed to approve task")
+    }
 
-        if (!updatedTask || !updatedAdvertStatus || !updatedAdvertDesiredROI || !updatedAdvertTasksCount) {
-            res.status(400).json({msg: "Error, Task could not be Approved"});
-            throw new Error("Error, Task could not be Approved")
-        }
+    if (!updatedTask || !subtractFreeTaskCount || !updatedAdvert) {
+        res.status(500).json("Error, Task could not be Approved");
+        throw new Error("Error, Task could not be Approved")
+    }
 
     // Update Task performer's Wallets
-    if (updatedTask && updatedAdvertStatus && updatedAdvertDesiredROI && updatedAdvertTasksCount) {
+    if (updatedTask && subtractFreeTaskCount && updatedAdvert) {
 
-        //Update Task Performer's Wallet
-        const updatedUserPendingBalance = await Wallet.updateOne(
-            { userId:  taskPerformerId},
-            {
-                $inc: {pendingBalance: -task.toEarn}
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
 
-        const updatedUserMainWallet = await Wallet.updateOne(
-            { userId:  taskPerformerId},
-            {
-                $inc: {value: task.toEarn}
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
+    //Update Task Performer's Wallet
+    if (taskPerformer.freeTaskCount > 0) {
 
-        const updatedUserTotalEarnings = await Wallet.updateOne(
-            { userId:  taskPerformerId},
-            {
-                $inc: {totalEarning: task.toEarn}
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
+        wallet.pendingBalance -= task.toEarn;
+        wallet.value += task.toEarn;
+        wallet.totalEarning += task.toEarn
 
-        if (!updatedUserPendingBalance || !updatedUserMainWallet || !updatedUserTotalEarnings) {
-            res.status(400).json({msg: "failed to update user wallet balance"});
-            throw new Error("failed to update user wallet balance")
-        }
-    
-        if (updatedUserPendingBalance && updatedUserMainWallet && updatedUserTotalEarnings) {
-            const updatedTaskFinal = await Task.findById(taskId)
-            res.status(200).json(updatedTaskFinal);
-        }
+    //save the update on user model
+    const updatedTaskPerformerWallet = await wallet.save(); 
+
+    if (!updatedTaskPerformerWallet) {
+        res.status(500).json("Failed to update user wallet")
+        throw new Error("Failed to update user wallet")
+    }
+    }
+
+    if (taskPerformer.freeTaskCount = 0) {
+        res.status(200).json("Task approved but the weekly user free tasks obligation is stil active")
+    }
+
+    if (updatedTaskPerformerWallet && updatedTask && subtractFreeTaskCount && updatedAdvert) {
+        res.status(200).json("Task Approved");
+    }
+
     }
  })
 

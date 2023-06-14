@@ -6,9 +6,9 @@ import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post("/create", protect, CreateNewTask)
-router.post("/submit", protect, upload.single('mediaUrl'), submitTask)
-router.patch("/approve", protect, approveTask)
+router.post("/create", protect, CreateNewTask)// User opts in to perform a task
+router.post("/submit", protect, upload.single('mediaUrl'), submitTask)// User submits task after perfomring
+router.patch("/approve", protect, approveTask) //Admin approves task and user gets paid
 router.get("/", protect, getTasks)
 router.get("/task", protect, getTask)
 // router.get("/all", getAllAdvert)

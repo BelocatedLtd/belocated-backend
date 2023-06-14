@@ -13,6 +13,8 @@ import advertRoute from './routes/advertRoute.js'
 import taskRoute from './routes/taskRoute.js'
 import transactionRoute from './routes/transactionRoute.js'
 import errorHandler from './middleware/errorMiddleware.js'
+import cron from 'node-cron'
+import resetFreeTasks from './crons/resetFreeTasks.js'
 
 
 
@@ -48,6 +50,9 @@ app.use("/api/user", userRoute)
 app.use("/api/adverts", advertRoute)
 app.use("/api/tasks", taskRoute)
 app.use("/api/transactions", transactionRoute)
+
+//Cron job schedule
+cron.schedule('0 0 * * 0', resetFreeTasks)
 
 /*  MONGOOSE SETUP */
 const PORT = process.env.PORT || 7001;
