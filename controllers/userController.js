@@ -168,8 +168,9 @@ export const loginUser = asyncHandler(async (req, res) => {
   }
  
     if (user && passwordIsCorrect && loginToken) {
+      const walletId = await Wallet.find({userId: user._id})
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
-bankAccountNumber, accountHolderName,isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount } = user
+bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount } = user
      res.status(200).json({
          _id, 
          fullname, 
@@ -190,6 +191,7 @@ bankAccountNumber, accountHolderName,isEmailVerified, isPhoneVerified, taskCompl
         taskOngoing,
         adsCreated,
         freeTaskCount,
+        walletId,
          loginToken
      })
     } else {
@@ -212,7 +214,7 @@ export const  getUser = async(req, res) => {
        } 
        
        if (user) {
-        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType } = user
+        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount} = user
         res.status(200).json({
           _id, 
           fullname, 
