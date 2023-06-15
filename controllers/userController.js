@@ -10,8 +10,6 @@ import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
 
 
-
-
 const generateToken = (id) => {
     return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: "1d"})
 }
@@ -625,7 +623,7 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     // Contruct frontendURL
     const frontendUrl = process.env.FRONTEND_URL
 
-    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
+    const verificationLink = `${frontendUrl}/verified/${verificationToken}`;
 
     //Send Verification Email
     const message = `
