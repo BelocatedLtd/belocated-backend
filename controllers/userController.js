@@ -756,7 +756,7 @@ Belocated Team`
       }
   
       if (response) {
-        res.status(200).json({success: true, message: "OTP Sent Successfully"})
+        res.status(200).json("OTP Sent Successfully")
       }
 }
  })
