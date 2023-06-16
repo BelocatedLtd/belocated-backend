@@ -357,7 +357,14 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
 
   if (updatedUserDetails) {
-    const {fullname, username, email, phone, location, community, religion, gender, accountType,  } = updatedUserDetails
+    const {fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
+      bankAccountNumber,
+      accountHolderName, isEmailVerified, 
+      isPhoneVerified,
+      taskCompleted,
+      taskOngoing,
+      adsCreated,
+      freeTaskCount } = updatedUserDetails
     res.status(200).json({
         fullname, 
         username, 
@@ -623,7 +630,7 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     // Contruct frontendURL
     const frontendUrl = process.env.FRONTEND_URL
 
-    const verificationLink = `${frontendUrl}/verified/${verificationToken}`;
+    const verificationLink = `${frontendUrl}/verified?token=${verificationToken}`;
 
     //Send Verification Email
     const message = `
