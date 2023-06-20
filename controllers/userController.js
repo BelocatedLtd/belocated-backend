@@ -8,6 +8,8 @@ import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
 import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
+import sendOTP from "../utils/sendTermiiSMS.js";
+import verifyOTP from "../utils/verifyTermiiOTP.js";
 
 
 const generateToken = (id) => {
@@ -715,57 +717,50 @@ if (updatedUserDetails) {
  export const verifyUserPhone = asyncHandler( async(req, res) => {
   const {userId, username, email, phone} = req.body
 
-
   const user = await User.findById(req.user._id)
-  const recentToken = await Token.findOne({userId: req.user._id})
+  const token = await Token.findOne({userId: req.user._id})
 
-  // generate new verification token
-  let verificationToken = crypto.randomBytes(3).toString("hex").toUpperCase()
+  if (!user && !token) {
+    res.status(400);
+      throw new Error({message: "Authorization error"})
+  }
 
-  //Hask token before saving to DB
-  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
-
-//Save Token to DB
-const saveOTPTODB = await Token.findOneAndUpdate(
-  {userId: user._id},
-  {
-    token: recentToken.token,
-    emailVerificationToken: recentToken.emailVerificationToken,
-    phoneVerificationOTP: hashedToken,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
-},
-{
-  new: true,
-  runValidators: true
-})
-
-if (!saveOTPTODB) {
-  res.status(500);
-      throw new Error("failed to save OTP")
-}
-
-if (saveOTPTODB) {
-
-  const message = 
-`Hello, here's the code to verify your mobile number on belocated: ${verificationToken}. 
-
-The OTP is valid for 30minutes.
-
-Regards...
-Belocated Team`
+ const response =  await sendOTP(phone)
   
-     const response =  await sendSMS(phone, message)
-  
-      if (!response) {
-        res.status(500);
-        throw new Error("failed to send OTP")
-      }
-  
-      if (response) {
-        res.status(200).json("OTP Sent Successfully")
-      }
-}
+  if (!response) {
+    res.status(500);
+      throw new Error({message: "Sending OTP failed"})
+  }
+
+  if (response) {
+    if (response.status === 200) {
+
+    //Save phone OTP
+    const token = await Token.findOne({userId: req.user._id})
+
+    if (!token) {
+      res.status(500);
+      throw new Error({message: "Sending OTP failed"})
+    }
+
+    token.phoneVerificationOTP = response.pinId,
+    token.createdAt = Date.now(),
+    token.expiresAt = Date.now() + 30 * (60 * 1000) // Thirty minutes
+
+    //save the update on task model
+    const updatedToken = await token.save(); 
+
+    if (!updatedToken) {
+      res.status(500);
+          throw new Error("failed to send OTP")
+    }
+    
+    if (updatedToken) {
+      res.status(200).json("OTP sent successfully")
+    }
+    }
+    
+  }
  })
 
 
@@ -791,44 +786,85 @@ Belocated Team`
         throw new Error({message: "Server failed to complete verification process"})
       }
   
-    //Hask token, then compare with token in db
-    const hashedToken = crypto.createHash('sha256').update(OTP).digest('hex')
-  
-    //find token in db
-    const userToken = await Token.findOne({
-      phoneVerificationOTP: hashedToken,
-      expiresAt: {$gt: Date.now()}
-    })
-  
-    if (!userToken) {
-      res.status(404).json({message: "Invalid or Expired Token, request for another token"});
-      throw new Error("Invalid or Expired Token, request for another token");
+    //find user token
+    const token = await Token.findOne({userId: req.user._id})
+
+    if (!token) {
+      res.status(500);
+      throw new Error({message: "Verification failed"})
     }
 
-  
-    // find user ancd change phone verification status to true
-    const userUserPhoneVerifiedStatus = await User.findByIdAndUpdate(
-      { _id: userToken.userId },
-      {
-        isPhoneVerified: true,
-      },
-      {
-          new: true,
-          runValidators: true
-      }
-  )
-  
-  if (!userUserPhoneVerifiedStatus) {
-    res.status(500).json({message: "Failed to verify user by phone"});
-    throw new Error("Failed to verify user by phone");
-  }
-
-  if (userUserPhoneVerifiedStatus) {
-   const { _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified } = userUserPhoneVerifiedStatus
     
-   res.status(200).json({ _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified })
-   }
 
+    const response = await verifyOTP(token.phoneVerificationOTP, OTP)
+
+    if (!response) {
+      res.status(500);
+        throw new Error({message: "OTP verification failed"})
+    }
+  
+    if (response && response.verified === true) {
+
+      //toggle user to verified
+      const user = await User.findById(req.user._id)
+
+      user.isPhoneVerified = true
+
+      //save toggle user to verified
+      const verifiedUser = await user.save(); 
+
+      if (!verifiedUser) {
+        res.status(500).json("Failed to verify user by phone");
+        throw new Error({message: "Failed to verify user by phone"});
+      }
+    
+      if (verifiedUser) {
+      const {  _id, 
+        fullname, 
+        username, 
+        email, 
+        phone, 
+        location, 
+        community, 
+        religion, 
+        gender,
+        accountType,
+        bankName,
+        bankAccountNumber,
+        accountHolderName,
+        isEmailVerified, 
+        isPhoneVerified,
+      taskCompleted,
+      taskOngoing,
+      adsCreated,
+      freeTaskCount,
+      walletId } = verifiedUser
+        
+      res.status(200).json({  _id, 
+        fullname, 
+        username, 
+        email, 
+        phone, 
+        location, 
+        community, 
+        religion, 
+        gender,
+        accountType,
+        bankName,
+        bankAccountNumber,
+        accountHolderName,
+        isEmailVerified, 
+        isPhoneVerified,
+      taskCompleted,
+      taskOngoing,
+      adsCreated,
+      freeTaskCount,
+      walletId,
   })
+
+      }
+
+  }
+})
 
 
