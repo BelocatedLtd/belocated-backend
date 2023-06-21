@@ -868,3 +868,29 @@ if (updatedUserDetails) {
 })
 
 
+//>>> Delete User
+export const deleteUser = asyncHandler(async(req, res) => {
+  const {userId} = req.params
+
+  if (req.user.accountType !== "Admin") {
+    res.status(401);
+    throw new Error({message: "User not authorized to perform this action"})
+  }
+
+  const user = await User.findById({_id: userId })
+  
+  if(!user) {
+      res.status(400).json("User does not exist or already deleted")
+  } 
+
+  const delUser = await User.findByIdAndDelete(userId)
+
+  if (!delUser) {
+    res.status(500);
+    throw new Error({message: "Error Deleting User"})
+  }
+
+  res.status(200).json("User Deleted successfully")
+})
+
+

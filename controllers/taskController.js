@@ -34,7 +34,7 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
             url: "",
         },
         nameOnSocialPlatform: '',
-        status: "running"
+        status: "Awaiting Submission"
     });
 
     if (task) {
@@ -48,16 +48,17 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
  //Get user Task
  // http://localhost:6001/api/tasks/task
 export const  getTask = asyncHandler(async (req, res) => {
-    const { taskId } = req.body
+    //const { taskId } = req.body
     try {
-          const task = await Task.find({_id: taskId})
-         if(!task) {
+          const tasks = await Task.find({taskPerformerId: req.user._id})
+
+         if(!tasks) {
              res.status(400).json({ msg: "Cannot find task" })
              throw new Error("Cannot find task")
          } 
          
-         if (task) {
-           res.status(200).json(task)
+         if (tasks) {
+           res.status(200).json(tasks)
         }
      } catch (error) {
          res.status(500).json({error: error.message});
@@ -70,22 +71,25 @@ export const  getTask = asyncHandler(async (req, res) => {
 export const  getTasks = asyncHandler(async (req, res) => {
     const { _id } = req.user
 
-    try {
+    if (req.user.accountType !== "Admin") {
+        res.status(401).json("Not Authorized")
+        throw new Error({message: "Not authorized"})
+    }
+
+    if (req.user.accountType === "Admin") {
         let tasks;
-        
+
         tasks = await Task.find().sort("-createdAt")
 
         if(!tasks) {
-            res.status(400).json({ msg: "Cannot find any task" })
-            throw new error("Cannot find any task")
+            res.status(400).json("Cannot find any task")
+            throw new error({message: "Cannot find any task"})
         } 
-         
-         if (tasks) {
-           res.status(200).json(tasks)
-        }
-     } catch (error) {
-         res.status(500).json({error: error.message});
-     }
+
+        if (tasks) {
+            res.status(200).json(tasks)
+         }
+    }
   })
 
 

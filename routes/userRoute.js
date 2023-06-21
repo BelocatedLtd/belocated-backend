@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, verifyUserPhone, confirmUserPhone, updateUserAccountDetails, changePassword, verifyPasswordChange } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, verifyUserPhone, confirmUserPhone, updateUserAccountDetails, changePassword, verifyPasswordChange, deleteUser } from "../controllers/userController.js";
 import protect from '../middleware/authMiddleware.js';
 
 
@@ -26,5 +26,7 @@ router.post("/verifyphone", protect, verifyUserPhone) //Send phone verification 
 router.post("/authverification/:email", verifyEmail) // Send Email verification link
 router.patch("/emailverify/:token", verifyUser) //Send phone verification OTP
 router.patch("/confirmphone/:OTP", protect, confirmUserPhone) // Confirm Phone verification OTP
+
+router.delete("/delete/:userId", protect, deleteUser)
 
 export default router;

@@ -68,7 +68,7 @@ const TaskSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        default: "Awaiting Submittion", // Submitted, Pending Approval, Approved
+        default: "Awaiting Submission", // Submitted, Pending Approval, Approved, Rejected
     }
 
 }, {
