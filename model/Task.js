@@ -69,6 +69,10 @@ const TaskSchema = mongoose.Schema({
     status: {
         type: String,
         default: "Awaiting Submission", // Submitted, Pending Approval, Approved, Rejected
+    },
+    message: {
+        type: String,
+        default: "", // Take the message that conveys the reason why Admin rejected task submission
     }
 
 }, {

@@ -5,13 +5,12 @@ import Transaction from "../model/Transaction.js";
 
 //Get User Wallet
 export const  getUserWallet = asyncHandler(async (req, res) => {
-    const { userId } = req.body
     const { _id } = req.user
 
     try {
         const wallet = await Wallet.findOne({userId: _id})
          if(!wallet) {
-             res.status(400).json({ msg: "No User Wallet Found" })
+             res.status(400).json("No User Wallet Found")
          } else {
             res.status(200).json(wallet)
         }
@@ -20,6 +19,24 @@ export const  getUserWallet = asyncHandler(async (req, res) => {
      }
   })
 
+//Get User Wallet
+export const  getWallet = asyncHandler(async (req, res) => {
+    const { userId } = req.params
+
+    if (req.user.accountType !== "Admin") {
+        res.status(401);
+        throw new Error({message: "Not Authorized"})
+    }
+
+    const wallet = await Wallet.findOne({userId})
+
+        if(!wallet) {
+            res.status(400).json("No User Wallet Found")
+            throw new Error({message: "No User Wallet Found"})
+        }
+
+        res.status(200).json(wallet)
+  })
 
 
   //Fund User Wallet 
@@ -118,17 +135,20 @@ export const  getUserTransactions = asyncHandler(async (req, res) => {
 
   /*  GET ALL TRANSACTIONS */
 // http://localhost:6001/api/transactions/all
-export const  getTransactions = async(req, res) => {
-    try {
-        const transactions = await Transaction.find().sort("-createdAt")
-       if(!transactions) {
-           res.status(400).json({ msg: "No transaction found in the database" })
-       } else {
-        res.status(200).json(transactions)
-       }
+export const  getTransactions = asyncHandler(async(req, res) => {
 
+    if (req.user.accountType !== "Admin") {
+        res.status(400);
+        throw new Error({message: "Not authorized"}) 
+    }
 
-   } catch (error) {
-       res.status(500).json({error: error.message});
-   }
-  }
+    const transactions = await Transaction.find().sort("-createdAt")
+       
+    if(!transactions) {
+        res.status(400).json("No transaction found in the database")
+        throw new Error({message: "No transaction found in the database"})
+       } 
+
+    res.status(200).json(transactions)
+
+  })

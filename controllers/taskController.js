@@ -201,9 +201,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
  // Admin Approve Submitted Tasks and Pay user
  export const approveTask = asyncHandler(async (req, res) => {
-    const {taskId, advertId, advertiserId, taskPerformerId, taskStatus, adStatus } = req.body
-
-    return res.status(200).json(req.body)
+    const { taskId, advertId, advertiserId, taskPerformerId, taskStatus, message } = req.body
 
     //Check if user is an admin
     if (req.user.accountType !== "Admin") {
@@ -218,8 +216,8 @@ export const submitTask = asyncHandler(async (req, res) => {
     const advertserWallet = await Wallet.find({userId: advertiserId})
 
     if (!task) {
-        res.status(400).json({msg: "Cannot find task"});
-        throw new Error("Cannot find task")
+        res.status(400).json("Cannot find task");
+        throw new Error({message: "Cannot find task"})
     }
 
     if (task.status === "Approved") {
@@ -259,11 +257,26 @@ export const submitTask = asyncHandler(async (req, res) => {
     const updatedTask = await task.save(); 
 
     if (!updatedTask) {
-        res.status(500).json("Failed to approve task")
-        throw new Error("Failed to approve task")
+        res.status(500).json("Error trying to update task status")
+        throw new Error({message: "Failed to approve task"})
     }
 
+    if (taskStatus === "Rejected") {
+        task.message = message
 
+        const updatedTaskMessage = await task.save();
+
+        if (!updatedTaskMessage) {
+            res.status(500);
+            throw new Error({message: "Error updating task message"})
+        }
+
+        res.status(200).json("Task rejected, leave a message for the task performer")
+
+        return
+    }
+
+    if (taskStatus === "Approved") {
 
     // Check if user has fulfilled the weekly free task obligation
     taskPerformer.freeTaskCount -=  1;
@@ -280,7 +293,6 @@ export const submitTask = asyncHandler(async (req, res) => {
     //subtrate 1 from the desired roi
     //Update the number of tasks completed on an advert
     advert.desiredROI -= 1;
-    advert.status = adStatus;
     advert.tasks += 1;
 
     //save the update on user model
@@ -299,9 +311,12 @@ export const submitTask = asyncHandler(async (req, res) => {
     // Update Task performer's Wallets
     if (updatedTask && subtractFreeTaskCount && updatedAdvert) {
 
+    if (taskPerformer.freeTaskCount > 0) {
+        res.status(200).json("Task approved but the weekly user free tasks obligation is stil active")
+    }
 
     //Update Task Performer's Wallet
-    if (taskPerformer.freeTaskCount > 0) {
+    if (taskPerformer.freeTaskCount === 0) {
 
         wallet.pendingBalance -= task.toEarn;
         wallet.value += task.toEarn;
@@ -316,15 +331,38 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
     }
 
-    if (taskPerformer.freeTaskCount = 0) {
-        res.status(200).json("Task approved but the weekly user free tasks obligation is stil active")
-    }
 
     if (updatedTaskPerformerWallet && updatedTask && subtractFreeTaskCount && updatedAdvert) {
-        res.status(200).json("Task Approved");
+        res.status(200).json(task);
     }
 
     }
+    }
  })
+
+ //>>> Delete Task
+export const deleteTask = asyncHandler(async(req, res) => {
+    const {taskId} = req.params
+  
+    if (req.user.accountType !== "Admin") {
+      res.status(401);
+      throw new Error({message: "User not authorized to perform this action"})
+    }
+  
+    const task = await Task.findById({_id: taskId })
+    
+    if(!task) {
+        res.status(400).json("Task does not exist or already deleted")
+    } 
+  
+    const delTask = await Task.findByIdAndDelete(taskId)
+  
+    if (!delTask) {
+      res.status(500);
+      throw new Error({message: "Error Deleting Task"})
+    }
+  
+    res.status(200).json("Task Deleted successfully")
+  })
 
 

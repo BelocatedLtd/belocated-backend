@@ -1,11 +1,12 @@
 import express from 'express'
-import { fundUserWallet, getTransactions, getUserTransactions, getUserWallet } from '../controllers/transController.js';
+import { fundUserWallet, getTransactions, getUserTransactions, getUserWallet, getWallet } from '../controllers/transController.js';
 import protect from '../middleware/authMiddleware.js';
 
 
 const router = express.Router();
 
-router.get("/", protect, getUserWallet)
+router.get("/wallet", protect, getUserWallet)
+router.get("/wallet/:userId", protect, getWallet)
 router.patch("/fund", protect, fundUserWallet)
 
 
