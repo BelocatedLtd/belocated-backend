@@ -330,12 +330,7 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Failed to update user wallet")
     }
     }
-
-
-    if (updatedTaskPerformerWallet && updatedTask && subtractFreeTaskCount && updatedAdvert) {
         res.status(200).json(task);
-    }
-
     }
     }
  })

@@ -31,6 +31,7 @@
     "nodemailer": "^6.9.3",
     "nodemon": "^2.0.22",
     "path": "^0.12.7",
-    "smtp-connection": "^4.0.2"
+    "smtp-connection": "^4.0.2",
+    "socket.io": "^4.7.0"
   }
 }
