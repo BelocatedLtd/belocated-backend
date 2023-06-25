@@ -2,6 +2,24 @@ import asyncHandler from "express-async-handler";
 import User from "../model/User.js";
 import Advert from '../model/Advert.js'
 import Transaction from "../model/Transaction.js";
+import Feed from "../model/Feed.js";
+
+// Save new Feed to DB
+export const saveActivity = asyncHandler(async(data) => {
+
+    const newActivity = await Feed.create({
+        userId: data.userId,
+        action: data.action,
+    });
+
+    if (!newActivity) {
+        throw new Error({message: "Failed to save new activity"})
+    }
+
+    if (newActivity) {
+        console.log("New activity saved!")
+    }
+})
 
 export const getFeed = asyncHandler(async(req, res) => {
     const activityFeed = await Feed.find().sort("-createdAt")

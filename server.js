@@ -16,9 +16,9 @@ import transactionRoute from './routes/transactionRoute.js'
 import feedRoute from './routes/feedRoute.js'
 import errorHandler from './middleware/errorMiddleware.js'
 import {Server} from 'socket.io'
-import {handleConnection} from './socket.js'
 import cron from 'node-cron'
 import resetFreeTasks from './crons/resetFreeTasks.js'
+import { saveActivity } from './controllers/feedController.js'
 
 
 /*  CONFIGURATIONS */
@@ -63,14 +63,33 @@ app.use("/api/user", userRoute)
 app.use("/api/adverts", advertRoute)
 app.use("/api/tasks", taskRoute)
 app.use("/api/transactions", transactionRoute)
-app.use("/activities", feedRoute)
+app.use("/api/activities", feedRoute)
 
 
 //Cron job schedule
 cron.schedule('0 0 * * 0', resetFreeTasks)
 
 // Setup Socket.io connection and listen to events
-io.on('connection', handleConnection);
+//io.on('connection', handleConnection);
+
+io.on("connection", (socket) => {
+    console.log(`User Connected: ${socket.id}`)
+
+    // Listen for events coming from client
+    socket.on("sendActivity", (data) => {
+
+        //Save event to db
+        saveActivity(data)
+
+        //Emit events back to client
+        socket.broadcast.emit("recievedActivity", data)
+    })
+
+     //Handle disconnection
+     socket.on('disconnect', () => {
+        console.log('A user disconnected');
+    });
+})
 
 server.prependListener('request', (req,res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
