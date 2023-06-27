@@ -10,6 +10,7 @@ import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
 import sendOTP from "../utils/sendTermiiSMS.js";
 import verifyOTP from "../utils/verifyTermiiOTP.js";
+//import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
 
 
 const generateToken = (id) => {
@@ -715,7 +716,7 @@ if (updatedUserDetails) {
 
  //>>> Phone Verification
  export const verifyUserPhone = asyncHandler( async(req, res) => {
-  const {userId, username, email, phone} = req.body
+  const {phone} = req.body
 
   const user = await User.findById(req.user._id)
   const token = await Token.findOne({userId: req.user._id})
@@ -725,11 +726,13 @@ if (updatedUserDetails) {
       throw new Error({message: "Authorization error"})
   }
 
- const response =  await sendOTP(phone)
+  
+  const response =  await sendOTP(phone)
+ //const response =  await sendVerification(phone)
   
   if (!response) {
     res.status(500);
-      throw new Error({message: "Sending OTP failed"})
+      throw new Error("Sending OTP failed")
   }
 
   if (response) {
@@ -793,17 +796,16 @@ if (updatedUserDetails) {
       res.status(500);
       throw new Error({message: "Verification failed"})
     }
-
     
-
     const response = await verifyOTP(token.phoneVerificationOTP, OTP)
+    //const response = await verifyOTP(phone, OTP)
 
     if (!response) {
       res.status(500);
         throw new Error({message: "OTP verification failed"})
     }
   
-    if (response && response.verified === true) {
+    if (response && response.verified === 'True') {
 
       //toggle user to verified
       const user = await User.findById(req.user._id)

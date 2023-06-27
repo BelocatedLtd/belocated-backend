@@ -5,13 +5,13 @@ const sendOTP = async(phone) => {
     "api_key": process.env.TERMIL_KEY,
     "message_type": "NUMERIC",
     "to": phone,
-    "from": "Belocated",
-    "channel": "generic",
+    "from": "N-Alert",
+    "channel": "dnd",
     "pin_attempts": 10,
     "pin_time_to_live": 5,
     "pin_length": 6,
     "pin_placeholder": "<1234>",
-    "message_text": "Your verification pin is <1234>",
+    "message_text": "Your BELOCATED Confirmation code is <1234>, it Expires in 30 minutes",
     "pin_type": "NUMERIC"
   };
 
