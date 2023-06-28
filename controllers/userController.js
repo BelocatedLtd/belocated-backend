@@ -8,9 +8,9 @@ import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
 import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
-import sendOTP from "../utils/sendTermiiSMS.js";
-import verifyOTP from "../utils/verifyTermiiOTP.js";
-//import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
+//import sendOTP from "../utils/sendTermiiSMS.js";
+//import verifyOTP from "../utils/verifyTermiiOTP.js";
+import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
 
 
 const generateToken = (id) => {
@@ -727,26 +727,16 @@ if (updatedUserDetails) {
   }
 
   
-  const response =  await sendOTP(phone)
- //const response =  await sendVerification(phone)
-  
-  if (!response) {
-    res.status(500);
-      throw new Error("Sending OTP failed")
-  }
-
-  if (response) {
-    if (response.status === 200) {
+  //const response =  await sendOTP(phone)
+ await sendVerification(phone)
 
     //Save phone OTP
-    const token = await Token.findOne({userId: req.user._id})
-
     if (!token) {
       res.status(500);
       throw new Error({message: "Sending OTP failed"})
     }
 
-    token.phoneVerificationOTP = response.pinId,
+    token.phoneVerificationOTP = Date.now(),
     token.createdAt = Date.now(),
     token.expiresAt = Date.now() + 30 * (60 * 1000) // Thirty minutes
 
@@ -761,15 +751,16 @@ if (updatedUserDetails) {
     if (updatedToken) {
       res.status(200).json("OTP sent successfully")
     }
-    }
     
-  }
+    
+  
  })
+
 
 
   //>>> Verify Phone
   export const confirmUserPhone = asyncHandler(async (req, res) => {
-    const {OTP} = req.params;
+    const {phone, OTP} = req.body;
 
     //Reset Phone verification status to false
     // find user ancd change phone verification status to false
@@ -797,15 +788,15 @@ if (updatedUserDetails) {
       throw new Error({message: "Verification failed"})
     }
     
-    const response = await verifyOTP(token.phoneVerificationOTP, OTP)
-    //const response = await verifyOTP(phone, OTP)
+    //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
+    const response = await verifyOTP(phone, OTP)
 
     if (!response) {
       res.status(500);
         throw new Error({message: "OTP verification failed"})
     }
   
-    if (response && response.verified === 'True') {
+    if (response === 'Phone Verified Successfully') {
 
       //toggle user to verified
       const user = await User.findById(req.user._id)

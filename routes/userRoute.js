@@ -25,7 +25,7 @@ router.post("/forgotpassword", forgotPassword)
 router.post("/verifyphone", protect, verifyUserPhone) //Send phone verification token
 router.post("/authverification/:email", verifyEmail) // Send Email verification link
 router.patch("/emailverify/:token", verifyUser) //Send phone verification OTP
-router.patch("/confirmphone/:OTP", protect, confirmUserPhone) // Confirm Phone verification OTP
+router.patch("/confirmphone", protect, confirmUserPhone) // Confirm Phone verification OTP
 
 router.delete("/delete/:userId", protect, deleteUser)
 

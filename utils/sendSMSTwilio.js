@@ -1,39 +1,53 @@
 import twilio from 'twilio'
 
-const accountSid = "AC4b0cc3cdec88648268740e316b04a715";
-const authToken = "3a2aa6f1cd28865dcc607162c96b9feb";
-const verifyService = "VA0db4626ae6c1d17ded26227fb0f4d9a6";
+const accountSid = "ACe10b0b4673a05fd64a6a465abe4e2438";
+const authToken = "dc6684ec09d44b67df02aee2c420731b";
+const verifySid = "VA0db4626ae6c1d17ded26227fb0f4d9a6";
 
 const client = twilio(accountSid, authToken);
 
 export const sendVerification = (phone) => {
-    client.verify.v2.services(verifyService)
-    .verifications
-    .create({to: phone, channel: 'sms'})
-    .then(verification => {
-        console.log(verification)
-        return verification
-    })
-    .catch(error => {
+    try {
+        client.verify.v2
+        .services(verifySid)
+        .verifications.create(
+            { 
+                to: phone, 
+                channel: "sms" 
+            })
+        .then((verification) => {
+            console.log(verification.dateCreated)
+            if (verification.status === "pending") {
+                return "OTP sent successfully"
+            }
+        }
+        )
+    } catch (error) {
         console.log(error)
         return error
-    })
+    }
 }
 
+
 export const verifyOTP = (phone, OTP) => {
-    client.verify.v2.services(verifyService)
-    .verificationChecks
-    .create({to: phone, code: OTP})
-    .then(verificationCheck => {
-        if (verificationCheck.status === 'approved') {
-            console.log('Verification successful')
-            return verificationCheck
-        } else {
-            console.log('Verification Failed')
-        }
-    })
-    .catch(error => {
+    try{
+        client.verify.v2
+        .services(verifySid)
+        .verificationChecks.create(
+            { 
+                to: phone, 
+                code: OTP 
+            })
+        .then((verification_check) => {
+            {
+                console.log(verification_check)
+                if (verification_check.status === "approved") {
+                    return "Phone Verified Successfully"
+                }
+            }
+        })
+    } catch {
         console.log(error)
         return error
-    })
+    }
 }
