@@ -789,14 +789,7 @@ if (updatedUserDetails) {
     }
     
     //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
-    const response = await verifyOTP(phone, OTP)
-
-    if (!response) {
-      res.status(500);
-        throw new Error({message: "OTP verification failed"})
-    }
-  
-    if (response === 'Phone Verified Successfully') {
+    await verifyOTP(phone, OTP)
 
       //toggle user to verified
       const user = await User.findById(req.user._id)
@@ -857,7 +850,7 @@ if (updatedUserDetails) {
 
       }
 
-  }
+  
 })
 
 

@@ -16,7 +16,6 @@ export const sendVerification = (phone) => {
                 channel: "sms" 
             })
         .then((verification) => {
-            console.log(verification.dateCreated)
             if (verification.status === "pending") {
                 return "OTP sent successfully"
             }
@@ -40,7 +39,6 @@ export const verifyOTP = (phone, OTP) => {
             })
         .then((verification_check) => {
             {
-                console.log(verification_check)
                 if (verification_check.status === "approved") {
                     return "Phone Verified Successfully"
                 }
