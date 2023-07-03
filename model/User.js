@@ -45,6 +45,9 @@ const userSchema = mongoose.Schema({
     accountHolderName: {
         type: String,
     },
+    referrersId: {
+        type: String,
+    },
     adsCreated: {
         type: Number,
         default: 0
@@ -76,6 +79,11 @@ const userSchema = mongoose.Schema({
         type: Number,
         required: true,
         default: 3
+    },
+    referrals: {
+        type: Number,
+        required: true,
+        default: 0
     }
 }, {
     timestamps: true

@@ -67,12 +67,14 @@ export const registerUser = asyncHandler(async (req, res) => {
      religion: '',
      gender: '',
      accountType: 'User',
+     referrersId: '',
      isEmailVerified: false,
      isPhoneVerified: false,
      taskCompleted: 0,
      taskOngoing: 0,
      adsCreated: 0,
-     freeTaskCount: 3
+     freeTaskCount: 3,
+     referrals: 0
     });
 
     if (!user) {
@@ -790,9 +792,6 @@ if (updatedUserDetails) {
     
     //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
     const response = await verifyOTP(phone, OTP)
-
-    console.log(response)
-    return
 
       //toggle user to verified
       const user = await User.findById(req.user._id)
