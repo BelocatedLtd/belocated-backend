@@ -25,7 +25,7 @@ const sendEMail = async (subject, message, send_to, reply_to)  => {
 
         //Cretae Mail Options
     const data = {
-        from: process.env.EMAIL_USER,
+        from: 'cs@belocated.ng',
         subject: subject,
         html: message,
         to: send_to,

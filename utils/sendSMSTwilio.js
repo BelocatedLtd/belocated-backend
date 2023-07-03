@@ -40,7 +40,7 @@ export const verifyOTP = (phone, OTP) => {
         .then((verification_check) => {
             {
                 if (verification_check.status === "approved") {
-                    return "Phone Verified Successfully"
+                    return verification_check.status
                 }
             }
         })

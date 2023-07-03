@@ -789,7 +789,10 @@ if (updatedUserDetails) {
     }
     
     //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
-    await verifyOTP(phone, OTP)
+    const response = await verifyOTP(phone, OTP)
+
+    console.log(response)
+    return
 
       //toggle user to verified
       const user = await User.findById(req.user._id)
