@@ -70,20 +70,15 @@ const userSchema = mongoose.Schema({
         required: true,
         default: false
     },
-    isPhoneVerified: {
-        type: Boolean,
-        required: true,
-        default: false
-    },
+    // isPhoneVerified: {
+    //     type: Boolean,
+    //     required: true,
+    //     default: false
+    // },
     freeTaskCount: {
         type: Number,
         required: true,
         default: 3
-    },
-    referCount: {
-        type: Number,
-        required: true,
-        default: 0
     },
     referrals: {
         type: [String],

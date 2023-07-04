@@ -67,7 +67,7 @@ export const registerUser = asyncHandler(async (req, res) => {
      religion: '',
      gender: '',
      accountType: 'User',
-     referrersId,
+     referrersId: referrersId ? referrersId : "",
      isEmailVerified: false,
      isPhoneVerified: false,
      taskCompleted: 0,
@@ -101,16 +101,18 @@ export const registerUser = asyncHandler(async (req, res) => {
      throw new Error({message: "Failed to Create Wallet for Registered User, Please contact admin"})
     }
 
+    let referrer;
     if (referrersId) {
-      const referrer = User.findById(referrersId) 
-
-      if (referrer) {
-        referrer.referCount += 1
-        referre
-
-        //save the update on task model
-        const updatedRefererCount = await token.save(); 
-      }
+      referrer = User.findByIdAndUpdate(
+        {_id: referrersId},
+        {
+          $push: {referrals: referrersId}
+        },
+        {
+          new: true,
+          upsert: true
+        }
+      ) 
     }
 
   if (user && wallet) {
@@ -126,6 +128,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     res.status(500).json('Registeration failed');
     throw new Error("Registeration failed")
   }
+
  });
 
 
@@ -186,7 +189,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (user && passwordIsCorrect && loginToken) {
       const walletId = await Wallet.find({userId: user._id})
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
-bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount } = user
+bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
      res.status(200).json({
          _id, 
          fullname, 
@@ -208,6 +211,8 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
         adsCreated,
         freeTaskCount,
         walletId,
+        referrals,
+        referrersId,
          loginToken
      })
     } else {
@@ -230,7 +235,7 @@ export const  getUser = async(req, res) => {
        } 
        
        if (user) {
-        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount} = user
+        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
         res.status(200).json({
           _id, 
           fullname, 
@@ -251,6 +256,8 @@ export const  getUser = async(req, res) => {
           taskOngoing,
           adsCreated,
           freeTaskCount,
+          referrals,
+          referrersId
       })
       }
    } catch (error) {
@@ -292,6 +299,8 @@ export const  getUsers = asyncHandler(async(req, res) => {
           taskOngoing: 1,
           adsCreated: 1,
           freeTaskCount: 1,
+          referrals: 1,
+          referrersId: 1,
       })
 
   if (!users) {
@@ -420,12 +429,12 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
 
 
     //Check if user is authorized to make this update
-    if (user.isPhoneVerified === false) {
-      res.status(401).json({message: "You are not allowed to make this change, complete phone number verification"})
-      throw new Error({message: "You are not allowed to make this change, complete phone number verification"})
-    }
+    // if (user.isPhoneVerified === false) {
+    //   res.status(401).json({message: "You are not allowed to make this change, complete phone number verification"})
+    //   throw new Error({message: "You are not allowed to make this change, complete phone number verification"})
+    // }
 
-    if (user.isPhoneVerified === true) {
+    //if (user.isPhoneVerified === true) {
 
       // Check if new email has already being registered by another user
       if (email && email !== user.email) {
@@ -470,11 +479,11 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
           }
 
           if (updateUser) {
-            const { _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified } = updatedUser
+            const { password, ...userData } = updatedUser.toObject();
   
-            res.status(200).json({ _id, fullname, username, email, phone, location, community, gender, accountType, isEmailVerified, isPhoneVerified }) 
+            res.status(200).json(userData) 
           }
-    }
+    //}
 })
 
 
@@ -682,6 +691,90 @@ export const verifyEmail = asyncHandler(async(req, res) => {
   }
 })
 
+//>>>> Send and resend Verification Email
+export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
+  const {email} = req.params
+  
+  const user = await User.findOne({email})
+
+  if (!user) {
+    res.status(404).json("No user found");
+    throw new Error("No user found")
+  }
+
+  if (user) {
+    //Delete token if it exists in the DB
+    let token = await Token.findOne({userId: user._id})
+
+    if (token) {
+      await token.deleteOne()
+    }
+
+  // generate new verification token
+  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+
+  //Hask token before saving to DB
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
+
+  //Save Token to DB
+  const saveTokenToDB = await new Token({
+    userId: user._id,
+    token: "",
+    emailVerificationToken: hashedToken,
+    phoneVerificationOTP: "",
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
+  }).save()
+
+ 
+
+  if (!saveTokenToDB) {
+    res.status(500);
+    throw new Error("Internal server Error")
+  }
+
+  if (saveTokenToDB) {
+    
+    // Contruct frontendURL
+    const frontendUrl = process.env.FRONTEND_URL
+
+    const verificationLink = `${frontendUrl}/pass?token=${verificationToken}`;
+
+    //Send Verification Email
+    const message = `
+    <h2>Hello, ${user.username}</h2>
+    <p>Someone requested for a password change on your account. 
+    Please use the verification url to verify you are the owner of this Belocated account.</p>
+    <p>The password reset link is valid for 10minutes</p>
+
+    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
+
+    <p>Regards...</p>
+    <p>Belocated Team</p>
+    `
+    const subject = 'Verify Password Change'
+    const send_to = user.email
+    const reply_to = "noreply@noreply.com"
+
+    
+
+    //Finally sending email
+    const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+    if (!emailSent) {
+      res.status(500).json('Password change verification failed');
+      throw new Error('Password change verification failed')
+    }
+
+    if (emailSent) {
+      res.status(200).json('Password Reset Link Sent Successfully');
+    }
+  }
+  }
+})
+
+
+
 
  //>>>> Email Account Verification
  export const verifyUser = asyncHandler(async (req, res) => {
@@ -730,143 +823,143 @@ if (updatedUserDetails) {
 
 
  //>>> Phone Verification
- export const verifyUserPhone = asyncHandler( async(req, res) => {
-  const {phone} = req.body
+//  export const verifyUserPhone = asyncHandler( async(req, res) => {
+//   const {phone} = req.body
 
-  const user = await User.findById(req.user._id)
-  const token = await Token.findOne({userId: req.user._id})
+//   const user = await User.findById(req.user._id)
+//   const token = await Token.findOne({userId: req.user._id})
 
-  if (!user && !token) {
-    res.status(400);
-      throw new Error({message: "Authorization error"})
-  }
+//   if (!user && !token) {
+//     res.status(400);
+//       throw new Error({message: "Authorization error"})
+//   }
 
   
-  //const response =  await sendOTP(phone)
- await sendVerification(phone)
+//   //const response =  await sendOTP(phone)
+//  await sendVerification(phone)
 
-    //Save phone OTP
-    if (!token) {
-      res.status(500);
-      throw new Error({message: "Sending OTP failed"})
-    }
+//     //Save phone OTP
+//     if (!token) {
+//       res.status(500);
+//       throw new Error({message: "Sending OTP failed"})
+//     }
 
-    token.phoneVerificationOTP = Date.now(),
-    token.createdAt = Date.now(),
-    token.expiresAt = Date.now() + 30 * (60 * 1000) // Thirty minutes
+//     token.phoneVerificationOTP = Date.now(),
+//     token.createdAt = Date.now(),
+//     token.expiresAt = Date.now() + 30 * (60 * 1000) // Thirty minutes
 
-    //save the update on task model
-    const updatedToken = await token.save(); 
+//     //save the update on task model
+//     const updatedToken = await token.save(); 
 
-    if (!updatedToken) {
-      res.status(500);
-          throw new Error("failed to send OTP")
-    }
+//     if (!updatedToken) {
+//       res.status(500);
+//           throw new Error("failed to send OTP")
+//     }
     
-    if (updatedToken) {
-      res.status(200).json("OTP sent successfully")
-    }
+//     if (updatedToken) {
+//       res.status(200).json("OTP sent successfully")
+//     }
     
     
   
- })
+//  })
 
 
 
   //>>> Verify Phone
-  export const confirmUserPhone = asyncHandler(async (req, res) => {
-    const {phone, OTP} = req.body;
+//   export const confirmUserPhone = asyncHandler(async (req, res) => {
+//     const {phone, OTP} = req.body;
 
-    //Reset Phone verification status to false
-    // find user ancd change phone verification status to false
-    const resetUserPhoneVerifiedStatus = await User.findByIdAndUpdate(
-      { _id: req.user._id },
-      {
-        isPhoneVerified: false,
-      },
-      {
-          new: true,
-          runValidators: true
-      }
-  )
+//     //Reset Phone verification status to false
+//     // find user ancd change phone verification status to false
+//     const resetUserPhoneVerifiedStatus = await User.findByIdAndUpdate(
+//       { _id: req.user._id },
+//       {
+//         isPhoneVerified: false,
+//       },
+//       {
+//           new: true,
+//           runValidators: true
+//       }
+//   )
 
-      if (!resetUserPhoneVerifiedStatus) {
-        res.status(500);
-        throw new Error({message: "Server failed to complete verification process"})
-      }
+//       if (!resetUserPhoneVerifiedStatus) {
+//         res.status(500);
+//         throw new Error({message: "Server failed to complete verification process"})
+//       }
   
-    //find user token
-    const token = await Token.findOne({userId: req.user._id})
+//     //find user token
+//     const token = await Token.findOne({userId: req.user._id})
 
-    if (!token) {
-      res.status(500);
-      throw new Error({message: "Verification failed"})
-    }
+//     if (!token) {
+//       res.status(500);
+//       throw new Error({message: "Verification failed"})
+//     }
     
-    //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
-    const response = await verifyOTP(phone, OTP)
+//     //const response = await verifyOTP(token.phoneVerificationOTP, OTP)
+//     const response = await verifyOTP(phone, OTP)
 
-      //toggle user to verified
-      const user = await User.findById(req.user._id)
+//       //toggle user to verified
+//       const user = await User.findById(req.user._id)
 
-      user.isPhoneVerified = true
+//       user.isPhoneVerified = true
 
-      //save toggle user to verified
-      const verifiedUser = await user.save(); 
+//       //save toggle user to verified
+//       const verifiedUser = await user.save(); 
 
-      if (!verifiedUser) {
-        res.status(500).json("Failed to verify user by phone");
-        throw new Error({message: "Failed to verify user by phone"});
-      }
+//       if (!verifiedUser) {
+//         res.status(500).json("Failed to verify user by phone");
+//         throw new Error({message: "Failed to verify user by phone"});
+//       }
     
-      if (verifiedUser) {
-      const {  _id, 
-        fullname, 
-        username, 
-        email, 
-        phone, 
-        location, 
-        community, 
-        religion, 
-        gender,
-        accountType,
-        bankName,
-        bankAccountNumber,
-        accountHolderName,
-        isEmailVerified, 
-        isPhoneVerified,
-      taskCompleted,
-      taskOngoing,
-      adsCreated,
-      freeTaskCount,
-      walletId } = verifiedUser
+//       if (verifiedUser) {
+//       const {  _id, 
+//         fullname, 
+//         username, 
+//         email, 
+//         phone, 
+//         location, 
+//         community, 
+//         religion, 
+//         gender,
+//         accountType,
+//         bankName,
+//         bankAccountNumber,
+//         accountHolderName,
+//         isEmailVerified, 
+//         isPhoneVerified,
+//       taskCompleted,
+//       taskOngoing,
+//       adsCreated,
+//       freeTaskCount,
+//       walletId } = verifiedUser
         
-      res.status(200).json({  _id, 
-        fullname, 
-        username, 
-        email, 
-        phone, 
-        location, 
-        community, 
-        religion, 
-        gender,
-        accountType,
-        bankName,
-        bankAccountNumber,
-        accountHolderName,
-        isEmailVerified, 
-        isPhoneVerified,
-      taskCompleted,
-      taskOngoing,
-      adsCreated,
-      freeTaskCount,
-      walletId,
-  })
+//       res.status(200).json({  _id, 
+//         fullname, 
+//         username, 
+//         email, 
+//         phone, 
+//         location, 
+//         community, 
+//         religion, 
+//         gender,
+//         accountType,
+//         bankName,
+//         bankAccountNumber,
+//         accountHolderName,
+//         isEmailVerified, 
+//         isPhoneVerified,
+//       taskCompleted,
+//       taskOngoing,
+//       adsCreated,
+//       freeTaskCount,
+//       walletId,
+//   })
 
-      }
+//       }
 
   
-})
+// })
 
 
 //>>> Delete User
