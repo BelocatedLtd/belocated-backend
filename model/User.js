@@ -80,11 +80,15 @@ const userSchema = mongoose.Schema({
         required: true,
         default: 3
     },
-    referrals: {
+    referCount: {
         type: Number,
         required: true,
         default: 0
-    }
+    },
+    referrals: {
+        type: [String],
+        default: []
+    },
 }, {
     timestamps: true
 })

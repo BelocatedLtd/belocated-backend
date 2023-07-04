@@ -21,7 +21,7 @@ const generateToken = (id) => {
 //>>>> Register User
 // http://localhost:6001/api/user/register
 export const registerUser = asyncHandler(async (req, res) => {
-    const { username, email, password } = req.body
+    const { username, email, password, referrersId } = req.body
  
     //User input validation
     if ( !username || !email || !password ) {
@@ -67,14 +67,15 @@ export const registerUser = asyncHandler(async (req, res) => {
      religion: '',
      gender: '',
      accountType: 'User',
-     referrersId: '',
+     referrersId,
      isEmailVerified: false,
      isPhoneVerified: false,
      taskCompleted: 0,
      taskOngoing: 0,
      adsCreated: 0,
      freeTaskCount: 3,
-     referrals: 0
+     referCount: 0,
+     referrals: []
     });
 
     if (!user) {
@@ -98,6 +99,18 @@ export const registerUser = asyncHandler(async (req, res) => {
     if (!wallet) {
       res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
      throw new Error({message: "Failed to Create Wallet for Registered User, Please contact admin"})
+    }
+
+    if (referrersId) {
+      const referrer = User.findById(referrersId) 
+
+      if (referrer) {
+        referrer.referCount += 1
+        referre
+
+        //save the update on task model
+        const updatedRefererCount = await token.save(); 
+      }
     }
 
   if (user && wallet) {
