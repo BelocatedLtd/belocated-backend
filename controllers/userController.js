@@ -487,7 +487,7 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
 })
 
 
-//>>>> Change user password
+//>>>> Verify user password
 export const verifyPasswordChange = asyncHandler(async (req, res) => {
     const { userId, newPassword } = req.body
 
@@ -500,10 +500,10 @@ export const verifyPasswordChange = asyncHandler(async (req, res) => {
      }
 
     //validate password
-     if (!newPassword) {
-         res.status(400).json("Please add old");
-         throw new Error("Please add old");
-     }
+    //  if (!newPassword) {
+    //      res.status(400).json("Please add old");
+    //      throw new Error("Please add old");
+    //  }
 
     // check if old password matches password in the db
     const passwordIsCorrect = await bcrypt.compare(newPassword, user.password)
@@ -516,6 +516,37 @@ export const verifyPasswordChange = asyncHandler(async (req, res) => {
      if (passwordIsCorrect) {
         res.status(200).json("Password is Correct")
      } 
+})
+
+//>>>> Verify Old user password
+export const verifyOldPassword = asyncHandler(async (req, res) => {
+  const { userId, oldPassword } = req.body
+
+  const user = await User.findById(userId)
+
+  // Check if user exist
+   if(!user) {
+      res.status(400).json("User not found, please register");
+      throw new Error("User not found, please register");
+   }
+
+  //validate password
+   if (!oldPassword) {
+       res.status(400).json("Please add old password");
+       throw new Error("Please add old password");
+   }
+
+  // check if old password matches password in the db
+  const passwordIsCorrect = await bcrypt.compare(oldPassword, user.password)
+
+   if (!passwordIsCorrect) {
+      res.status(400).json({message: "Password is Incorrect"})
+      throw new Error("Old password is Incorrect");
+   }
+
+   if (passwordIsCorrect) {
+      res.status(200).json("Password is Correct")
+   } 
 })
 
 //>>>> Change user password
@@ -764,7 +795,11 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
     }
 
     if (emailSent && emailSent.status === 200) {
-      res.status(200).json('Password Reset Link Sent Successfully');
+      const emailResponse = {
+        userId: user._id,
+        message: "Verification OTP Sent"
+      }
+      res.status(200).json(emailResponse);
     }
   }
   }
