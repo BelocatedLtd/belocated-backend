@@ -1,44 +1,33 @@
 import nodemailer from "nodemailer"
+import formData from 'form-data';
+import Mailgun from 'mailgun.js';
 
-// const emailData = {
-//     emailHost: process.env.EMAIL_HOST,
-//     emailUser: process.env.EMAIL_USER,
-//     emailPass: process.env.EMAIL
-//   }
 
-const sendEMail = async (subject, message, send_to, reply_to)  => {
-    try {
-         //Define Email Transporter
-         const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: 587,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-            secure: false,
-            tls: {
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 5 * 60 * 1000, // 5 min
-        })
+//import mg from 'nodemailer-mailgun-transport'
 
-        //Cretae Mail Options
-    const data = {
-        from: 'cs@belocated.ng',
-        subject: subject,
-        html: message,
+const API_KEY = '49fc01aab5a7282b28de67edd833f5fa-e5475b88-c8344dc2';
+const DOMAIN = 'mail.belocated.ng';
+
+
+const mailgun = new Mailgun(formData);
+const client = mailgun.client({username: 'api', key: API_KEY});
+
+const sendEMail = async(subject, message, send_to, reply_to)  => {
+    const messageData = {
+        from: 'Belocated <cs@belocated.ng>',
         to: send_to,
-        replyTo: reply_to,
-    }
+        subject: subject,
+        html: message
+      };
 
-    // Send Email
-    const info = await transporter.sendMail(data)
-        return info
+    try {
+          const res = client.messages.create(DOMAIN, messageData)
+          console.log(res)
+          return res
     } catch (error) {
+        console.log(error)
         throw new Error(error)
     }
 }
-
 
 export default sendEMail

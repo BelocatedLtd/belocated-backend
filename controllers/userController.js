@@ -489,7 +489,7 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
 
 //>>>> Change user password
 export const verifyPasswordChange = asyncHandler(async (req, res) => {
-    const { userId, password } = req.body
+    const { userId, newPassword } = req.body
 
     const user = await User.findById(userId)
 
@@ -500,20 +500,22 @@ export const verifyPasswordChange = asyncHandler(async (req, res) => {
      }
 
     //validate password
-     if (!password) {
+     if (!newPassword) {
          res.status(400).json("Please add old");
          throw new Error("Please add old");
      }
 
     // check if old password matches password in the db
-    const passwordIsCorrect = await bcrypt.compare(password, user.password)
+    const passwordIsCorrect = await bcrypt.compare(newPassword, user.password)
 
-     if (user && passwordIsCorrect) {
-        res.status(200).json({message: "Password is Correct"})
-     } else {
+     if (!passwordIsCorrect) {
         res.status(400).json({message: "Password is Incorrect"})
         throw new Error("Old password is Incorrect");
      }
+
+     if (passwordIsCorrect) {
+        res.status(200).json("Password is Correct")
+     } 
 })
 
 //>>>> Change user password
@@ -671,7 +673,7 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     <p>Belocated Team</p>
     `
     const subject = 'Email Verification'
-    const send_to = user.email
+    const send_to = email
     const reply_to = "noreply@noreply.com"
 
     
@@ -684,14 +686,14 @@ export const verifyEmail = asyncHandler(async(req, res) => {
       throw new Error('Email verification failed')
     }
 
-    if (emailSent) {
+    if (emailSent && emailSent.status === 200) {
       res.status(200).json('Verification Email Sent Successfully');
     }
   }
   }
 })
 
-//>>>> Send and resend Verification Email
+//>>>> Send and resend Password Verification Email
 export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
   const {email} = req.params
   
@@ -711,7 +713,7 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
     }
 
   // generate new verification token
-  let verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+  let verificationToken = crypto.randomBytes(3).toString("hex").toUpperCase()
 
   //Hask token before saving to DB
   const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex')
@@ -720,8 +722,8 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
   const saveTokenToDB = await new Token({
     userId: user._id,
     token: "",
-    emailVerificationToken: hashedToken,
-    phoneVerificationOTP: "",
+    emailVerificationToken: "",
+    phoneVerificationOTP: hashedToken,
     createdAt: Date.now(),
     expiresAt: Date.now() + 30 * (60 * 1000) // Thirty minutes
   }).save()
@@ -734,20 +736,15 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
   }
 
   if (saveTokenToDB) {
-    
-    // Contruct frontendURL
-    const frontendUrl = process.env.FRONTEND_URL
-
-    const verificationLink = `${frontendUrl}/pass?token=${verificationToken}`;
 
     //Send Verification Email
     const message = `
     <h2>Hello, ${user.username}</h2>
-    <p>Someone requested for a password change on your account. 
-    Please use the verification url to verify you are the owner of this Belocated account.</p>
-    <p>The password reset link is valid for 10minutes</p>
+    <p>A request for a sensitive change was made on your Belocated account. 
+    To make sure you initiated this action, here is your verification code.</p>
+    <p>The code is valid for 10minutes.</p>
 
-    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
+    ${verificationToken}
 
     <p>Regards...</p>
     <p>Belocated Team</p>
@@ -766,15 +763,12 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
       throw new Error('Password change verification failed')
     }
 
-    if (emailSent) {
+    if (emailSent && emailSent.status === 200) {
       res.status(200).json('Password Reset Link Sent Successfully');
     }
   }
   }
 })
-
-
-
 
  //>>>> Email Account Verification
  export const verifyUser = asyncHandler(async (req, res) => {
@@ -817,6 +811,33 @@ if (updatedUserDetails) {
     const {_id, isEmailVerified } = updatedUserDetails
   
   res.status(200).json({ _id, isEmailVerified })
+  }
+}
+)
+
+
+ //>>>> Email OTP Verification
+ export const confirmEmailOTP = asyncHandler(async (req, res) => {
+  const {OTP} = req.params;
+
+  //Hask token, then compare with token in db
+  const hashedToken = crypto.createHash('sha256').update(OTP).digest('hex')
+
+  //find token in db
+  const userOTP = await Token.findOne({
+    phoneVerificationOTP: hashedToken,
+    expiresAt: {$gt: Date.now()}
+  })
+
+  if (!userOTP) {
+    res.status(404);
+    throw new Error("Invalid or Expired OTP, request for another OTP");
+  }
+
+if (userOTP) {
+ // const updatedUser = await User.findById(userToken.userId)
+  
+  res.status(200).json("Verification Successful")
   }
 }
 )
