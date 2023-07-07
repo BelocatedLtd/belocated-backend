@@ -534,7 +534,7 @@ export const updateUserBankDetails = asyncHandler( async(req, res) => {
 export const verifyPasswordChange = asyncHandler(async (req, res) => {
     const { userId, newPassword } = req.body
 
-    const user = await User.findById(userId)
+    const user = await User.find(userId)
 
     // Check if user exist
      if(!user) {
@@ -569,13 +569,13 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
 
   // Check if user exist
    if(!user) {
-      res.status(400).json("User not found, please register");
+      res.status(400).json({message: "User not found, please register"});
       throw new Error("User not found, please register");
    }
 
   //validate password
    if (!oldPassword) {
-       res.status(400).json("Please add old password");
+       res.status(400).json({message: "Please add old password"});
        throw new Error("Please add old password");
    }
 
@@ -584,7 +584,7 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
 
    if (!passwordIsCorrect) {
       res.status(400).json({message: "Password is Incorrect"})
-      throw new Error("Old password is Incorrect");
+      throw new Error("Password is Incorrect");
    }
 
    if (passwordIsCorrect) {
@@ -600,13 +600,13 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   //Check if user exist
   if(!user) {
-      res.status(400).json("User not found, please register");
+      res.status(400).json({message: "User not found, please register"});
       throw new Error("User not found, please register");
   }
 
   //validate password
   if(!newPassword || !oldPassword) {
-      res.status(400).json("unauthorized change");
+      res.status(400).json({message: "unauthorized change"});
       throw new Error("unauthorized change");
   }
 
@@ -627,62 +627,34 @@ export const changePassword = asyncHandler(async (req, res) => {
 
 //>>>> Reset Password
 export const forgotPassword = asyncHandler(async(req, res) => {
-  const { email } = req.body
+  const { userId, email, newPassword } = req.body
 
-  const user = await User.findOne({email})
+  //checking for password lenght
+  if (newPassword.length < 6) {
+    res.status(400).json({message: "Password must be upto 6 characters"})
+    throw new Error("Password must be upto 6 characters")
+   }
+
+  const user = await User.findById(userId)
 
   if (!user) {
-      res.status.apply(404)
+      res.status(404).json({message: "User does not exist"})
       throw new Error("User does not exist")
   }
 
-  //Create reset token
-  let resetToken = crypto.randomBytes(32).toString("hex") + user._id
+  //save new password
+  if (user) {
+    user.password = newPassword
+    const passwordChanged = await user.save()
 
-  //Hash token before saving to db
-  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex")
+    if (!passwordChanged) {
+      res.status(500).json({message: "Error changing password"})
+    }
 
-  //Save token to DB
-
-  await new Token({
-      userId: user._id,
-      token: hashedToken,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * (60 * 1000) // 30 minutes
-  }).save()
-
-
-  // contruct Reset URL
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
-
-  //Reset Email
-  const message = `
-  <h2>Hello ${user.username} </h2>
-  <p>Please use the url below to reset your password</p>
-  <p>This reset link is valid for only 30minutes</p>
-
-  <a href=${resetUrl} clicktracking=off>${resetUrl}</a>
-
-  <p>Regards</p>
-  <p>Belocated Team</p>
-
-  `;
-
-  const subject = "Password Reset Request"
-  const send_to = user.email
-  const sent_from = process.env.EMAIL_USER
-
-  try {
-      await sendEmail(subject, message, send_to, sent_from)
-      res.status(200).json(
-          {
-              success: true, 
-              message: "reset email sent"
-          })
-  } catch (error) {
-      res.status(500)
-      throw new Error("Reset email not sent, please try again or contact admin")
-  }
+    if (passwordChanged) {
+      res.status(200).json("Password changed successfully")
+    }
+  }   
 })
 
 
