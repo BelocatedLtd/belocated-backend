@@ -421,7 +421,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 
 export const updateUserAccountDetails = asyncHandler( async(req, res) => {
 
-  const {userId, username, email, phone} = req.body
+  const {userId, username, email, phone } = req.body
   //check if username and email already exist
     //username
 
@@ -476,6 +476,49 @@ export const updateUserAccountDetails = asyncHandler( async(req, res) => {
           if (!updatedUser) {
             res.status(500);
             throw new Error({message: "Failed to updated user account details"})
+          }
+
+          if (updateUser) {
+            const { password, ...userData } = updatedUser.toObject();
+  
+            res.status(200).json(userData) 
+          }
+    //}
+})
+
+//Update Bank Account Details
+export const updateUserBankDetails = asyncHandler( async(req, res) => {
+
+  const {userId, bankName, accountHolderName, bankAccountNumber } = req.body
+  
+    const user = await User.findById(userId)
+
+      // Check if new bankAccountName && Account Number has already being registered by another user
+      if (bankAccountNumber && bankAccountNumber !== user.bankAccountNumber) {
+        const existingUser = await User.findOne({bankAccountNumber})
+
+        if (existingUser) {
+          return res.status(400).json({message: 'Bank Details already in use'})
+        }
+      }
+      
+        //Update User Account Details
+          const updatedUser = await User.findByIdAndUpdate(
+          {_id: userId},
+          {
+            bankName: bankName || req.user.bankName,
+            accountHolderName: accountHolderName || req.user.accountHolderName,
+            bankAccountNumber: bankAccountNumber || req.user.bankAccountNumber,
+          },
+          {
+             new: true,
+            runValidators: true
+          }
+          )
+
+          if (!updatedUser) {
+            res.status(500).json({message: "Failed to updated user bank account details"});
+            throw new Error({message: "Failed to updated user bank account details"})
           }
 
           if (updateUser) {
@@ -865,7 +908,7 @@ if (updatedUserDetails) {
   })
 
   if (!userOTP) {
-    res.status(404);
+    res.status(404).json({message: "Invalid or Expired OTP, request for another OTP"});
     throw new Error("Invalid or Expired OTP, request for another OTP");
   }
 
