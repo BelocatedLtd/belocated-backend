@@ -80,10 +80,12 @@ const userSchema = mongoose.Schema({
         required: true,
         default: 2
     },
-    referrals: {
-        type: [String],
-        default: []
-    },
+    referrals: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    ]
 }, {
     timestamps: true
 })

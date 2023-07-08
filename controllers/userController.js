@@ -21,7 +21,7 @@ const generateToken = (id) => {
 //>>>> Register User
 // http://localhost:6001/api/user/register
 export const registerUser = asyncHandler(async (req, res) => {
-    const { username, email, password, referrersId } = req.body
+    const { username, email, password } = req.body
  
     //User input validation
     if ( !username || !email || !password ) {
@@ -42,7 +42,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     
     if (usernameExists) {
      res.status(400).json({message: "Username has already been registered by another user"})
-     throw new Error({message: "Username has already been registered by another user"})
+     throw new Error("Username has already been registered by another user")
     }
 
     //email
@@ -67,7 +67,7 @@ export const registerUser = asyncHandler(async (req, res) => {
      religion: '',
      gender: '',
      accountType: 'User',
-     referrersId: referrersId ? referrersId : "",
+     referrersId: "",
      isEmailVerified: false,
      isPhoneVerified: false,
      taskCompleted: 0,
@@ -80,13 +80,12 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (!user) {
       res.status(400).json({message: "Failed to register User"})
-     throw new Error({message: "Failed to register User"})
+     throw new Error("Failed to register User")
     }
 
+    //Create new wallet for User
     let wallet;
-
     if (user) {
-      //Create new wallet for User
         wallet = await Wallet.create({
         userId: user._id,
         value: 0,
@@ -98,38 +97,146 @@ export const registerUser = asyncHandler(async (req, res) => {
 
     if (!wallet) {
       res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
-     throw new Error({message: "Failed to Create Wallet for Registered User, Please contact admin"})
+     throw new Error("Failed to Create Wallet for Registered User, Please contact admin")
     }
 
-    let referrer;
-    if (referrersId) {
-      referrer = User.findByIdAndUpdate(
-        {_id: referrersId},
-        {
-          $push: {referrals: referrersId}
-        },
-        {
-          new: true,
-          upsert: true
+
+    if (user && wallet) {
+      const {_id, username, email, isEmailVerified } = user
+        const userData = {
+          _id, username, email, isEmailVerified 
         }
-      ) 
+
+      res.status(200).json(userData);
     }
 
-  if (user && wallet) {
-    const {_id, username, email, isEmailVerified } = user
-      const userData = {
-        _id, username, email, isEmailVerified 
-      }
-
-    res.status(200).json(userData);
-  }
-
-  if (!user && !wallet) {
-    res.status(500).json('Registeration failed');
-    throw new Error("Registeration failed")
-  }
+    if (!user && !wallet) {
+      res.status(500).json({message: 'Registeration failed'});
+      throw new Error("Registeration failed")
+    }
 
  });
+
+ //>>>> Register User For Ref
+// http://localhost:6001/api/user/refregister
+export const refRegisterUser = asyncHandler(async (req, res) => {
+  const { username, email, password, referrerId } = req.body
+
+  //User input validation
+  if ( !username || !email || !password || !referrerId ) {
+   res.status(400).json({message: "Please fill in all required fields"})
+   throw new Error("Please fill in all required fields")
+  } 
+
+  if ( !referrerId ) {
+    res.status(400).json({message: "No referrer data recorded"})
+    throw new Error("No referrer data recorded")
+   } 
+
+   //Check if the referrer still exist
+   const userRef = await User.findById(referrerId)
+
+   if (!userRef) {
+    res.status(400).json({message: "Referrer does not exist"})
+    throw new Error("Referrer does not exist")
+   }
+
+  //checking for password lenght
+  if (password.length < 6) {
+   res.status(400).json({message: "Password must be upto 6 characters"})
+   throw new Error("Password must be upto 6 characters")
+  }
+
+  //check if user email already exist
+  //username
+  const usernameExists = await User.findOne({username: username} || {email: email})
+  
+  if (usernameExists) {
+   res.status(400).json({message: "Username has already been registered by another user"})
+   throw new Error("Username has already been registered by another user")
+  }
+
+  //email exist
+  const emailExists = await User.findOne({email: email})
+  
+  if (emailExists) {
+  return res.status(200).json({message: "Email has already been registered, please login"})
+  }
+
+  //Create new user
+  const user = await User.create({
+   fullname: '',
+   username,
+   password,
+   email,
+   phone: null,
+   bankName: '',
+   bankAccountNumber: '',
+   accountHolderName: '',
+   location: '',
+   community: '',
+   religion: '',
+   gender: '',
+   accountType: 'User',
+   referrersId: referrerId,
+   isEmailVerified: false,
+   isPhoneVerified: false,
+   taskCompleted: 0,
+   taskOngoing: 0,
+   adsCreated: 0,
+   freeTaskCount: 2,
+   referCount: 0,
+   referrals: []
+  });
+
+  if (!user) {
+    res.status(400).json({message: "Failed to register User"})
+   throw new Error("Failed to register User")
+  }
+
+   //Create new wallet for User
+  let wallet;
+  if (user) {
+      wallet = await Wallet.create({
+      userId: user._id,
+      value: 0,
+      totalEarning: 0,
+      pendingBalance: 0,
+      amountSpent: 0
+      });
+  }
+
+  if (!wallet) {
+    res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
+   throw new Error("Failed to Create Wallet for Registered User, Please contact admin")
+  }
+
+
+  //Update the referrer's referredUser's array
+  userRef.referrals.push(user._id);
+  const referrer = await userRef.save();
+   
+
+if (!referrer) {
+  res.status(500).json({message: "Internal error with referral system from the server"})
+  throw new Error("Internal error with referral system from the server")
+}
+
+if (user && wallet && referrer) {
+  const {_id, username, email, referrersId, isEmailVerified } = user
+    const userData = {
+      _id, username, email, referrersId, isEmailVerified
+    }
+
+  res.status(200).json(userData);
+}
+
+if (!user && !wallet) {
+  res.status(500).json('Registeration failed');
+  throw new Error("Registeration failed")
+}
+
+});
 
 
 //>>>> Login User

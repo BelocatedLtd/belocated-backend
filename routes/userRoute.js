@@ -1,11 +1,12 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, deleteUser, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, deleteUser, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails, refRegisterUser } from "../controllers/userController.js";
 import protect from '../middleware/authMiddleware.js';
 
 
 const router = express.Router();
 
 router.post("/register", registerUser)
+router.post("/refregister", refRegisterUser)
 router.post('/login', loginUser);
 
 // Get Routes
