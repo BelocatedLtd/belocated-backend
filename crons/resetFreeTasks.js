@@ -7,7 +7,7 @@ const resetFreeTasksCount = async() => {
         const users = await User.find();
 
         for (const user of users) {
-            user.freeTaskCount = 3;
+            user.freeTaskCount = 2;
             await user.validate();
             await user.save();
         }
