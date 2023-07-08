@@ -53,7 +53,7 @@ export const  getTask = asyncHandler(async (req, res) => {
           const tasks = await Task.find({taskPerformerId: req.user._id})
 
          if(!tasks) {
-             res.status(400).json({ msg: "Cannot find task" })
+             res.status(400).json({ message: "Cannot find task" })
              throw new Error("Cannot find task")
          } 
          
@@ -72,8 +72,8 @@ export const  getTasks = asyncHandler(async (req, res) => {
     const { _id } = req.user
 
     if (req.user.accountType !== "Admin") {
-        res.status(401).json("Not Authorized")
-        throw new Error({message: "Not authorized"})
+        res.status(401).json({message:"Not Authorized"})
+        throw new Error("Not authorized")
     }
 
     if (req.user.accountType === "Admin") {
@@ -103,7 +103,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     const wallet = await Wallet.find({userId: req.user._id}) 
 
     if (!task) {
-        res.status(400).json({msg: "Cannot find task"});
+        res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")
     }
 
@@ -113,19 +113,19 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     if (!wallet) {
-        res.status(400).json({msg: "Cannot find user Wallet to update"});
+        res.status(400).json({message: "Cannot find user Wallet to update"});
         throw new Error("Cannot find user Wallet to update")
     }
 
     if (!advert) {
-        res.status(400).json({msg: "Cannot find the ad for this task"});
+        res.status(400).json({message: "Cannot find the ad for this task"});
         throw new Error("Cannot find user Wallet to update")
     }
 
     //Upload Media to Cloudinary
 
     if (!req.file) {
-        res.status(400).json({msg: "Cannot read media file"});
+        res.status(400).json({message: "Cannot read media file"});
         throw new Error("Cannot read media file")
     }
 
@@ -144,7 +144,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     
     
         if (!result) {
-            res.status(400).json({msg: "Failed to upload screenshot"});
+            res.status(400).json({message: "Failed to upload screenshot"});
             throw new Error("Failed to upload screenshot")
         }
     }
@@ -169,7 +169,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     )
 
     if (!updatedTask) {
-        res.status(400).json({msg: "Task could not be submitted"});
+        res.status(400).json({message: "Task could not be submitted"});
         throw new Error("Task could not be submitted")
     }
 
@@ -205,7 +205,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     //Check if user is an admin
     if (req.user.accountType !== "Admin") {
-        res.status(400).json({msg: "User Not Authorized"});
+        res.status(400).json({message: "User Not Authorized"});
         throw new Error("User Not Authorized")
     }
 
@@ -216,8 +216,8 @@ export const submitTask = asyncHandler(async (req, res) => {
     const advertserWallet = await Wallet.find({userId: advertiserId})
 
     if (!task) {
-        res.status(400).json("Cannot find task");
-        throw new Error({message: "Cannot find task"})
+        res.status(400).json({message:"Cannot find task"});
+        throw new Error("Cannot find task")
     }
 
     if (task.status === "Approved") {
@@ -226,22 +226,22 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     if (!wallet) {
-        res.status(400).json("Cannot find user Wallet for payment");
+        res.status(400).json({message:"Cannot find user Wallet for payment"});
         throw new Error("Cannot find user Wallet for payment")
     }
 
     if (!taskPerformer) {
-        res.status(400).json("Cannot find task performer details");
+        res.status(400).json({message:"Cannot find task performer details"});
         throw new Error("Cannot find task performer details")
     }
 
     if (!advertserWallet) {
-        res.status(400).json({msg: "Cannot find Advertisers Wallet for payment retrieval"});
+        res.status(400).json({message: "Cannot find Advertisers Wallet for payment retrieval"});
         throw new Error("Cannot find user Wallet Advertisers for payment retrieval")
     }
 
     if (!advert) {
-        res.status(400).json({msg: "Cannot find the ad for this task"});
+        res.status(400).json({message: "Cannot find the ad for this task"});
         throw new Error("Cannot find user Wallet to update")
     }
 
@@ -257,8 +257,8 @@ export const submitTask = asyncHandler(async (req, res) => {
     const updatedTask = await task.save(); 
 
     if (!updatedTask) {
-        res.status(500).json("Error trying to update task status")
-        throw new Error({message: "Failed to approve task"})
+        res.status(500).json({message: "Error trying to update task status"})
+        throw new Error("Failed to approve task")
     }
 
     if (taskStatus === "Rejected") {
@@ -267,8 +267,8 @@ export const submitTask = asyncHandler(async (req, res) => {
         const updatedTaskMessage = await task.save();
 
         if (!updatedTaskMessage) {
-            res.status(500);
-            throw new Error({message: "Error updating task message"})
+            res.status(500).json({message: "Error updating task message"});
+            throw new Error("Error updating task message")
         }
 
         res.status(200).json("Task rejected, leave a message for the task performer")
@@ -299,17 +299,30 @@ export const submitTask = asyncHandler(async (req, res) => {
     const updatedAdvert = await advert.save(); 
 
     if (!updatedAdvert) {
-        res.status(500).json("Failed to approve task")
+        res.status(500).json({message: "Failed to approve task"})
         throw new Error("Failed to approve task")
     }
 
     if (!updatedTask || !subtractFreeTaskCount || !updatedAdvert) {
-        res.status(500).json("Error, Task could not be Approved");
+        res.status(500).json({message: "Error, Task could not be Approved"});
         throw new Error("Error, Task could not be Approved")
     }
 
     // Update Task performer's Wallets
     if (updatedTask && subtractFreeTaskCount && updatedAdvert) {
+
+    //Check if advertunit is zero and mark advert as completed
+    if (advert.desiredROI === 0) {
+        advert.status = "Completed"
+
+        //save the update on user model
+        const updatedAdvert = await advert.save(); 
+
+        if (!updatedAdvert) {
+            res.status(500).json({message: " Advert unit exhausted, but advert could not be marked complete"});
+            throw new Error("Error, Advert unit exhausted, but advert could not be marked complete")
+        }
+    }
 
     if (taskPerformer.freeTaskCount > 0) {
         res.status(200).json("Task approved but the weekly user free tasks obligation is stil active")
@@ -326,7 +339,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     const updatedTaskPerformerWallet = await wallet.save(); 
 
     if (!updatedTaskPerformerWallet) {
-        res.status(500).json("Failed to update user wallet")
+        res.status(500).json({message:"Failed to update user wallet"})
         throw new Error("Failed to update user wallet")
     }
     }
@@ -340,8 +353,8 @@ export const deleteTask = asyncHandler(async(req, res) => {
     const {taskId} = req.params
   
     if (req.user.accountType !== "Admin") {
-      res.status(401);
-      throw new Error({message: "User not authorized to perform this action"})
+      res.status(401).json({message: "User not authorized to perform this action"});
+      throw new Error("User not authorized to perform this action")
     }
   
     const task = await Task.findById({_id: taskId })
@@ -353,8 +366,8 @@ export const deleteTask = asyncHandler(async(req, res) => {
     const delTask = await Task.findByIdAndDelete(taskId)
   
     if (!delTask) {
-      res.status(500);
-      throw new Error({message: "Error Deleting Task"})
+      res.status(500).json({message: "Error Deleting Task"});
+      throw new Error("Error Deleting Task")
     }
   
     res.status(200).json("Task Deleted successfully")

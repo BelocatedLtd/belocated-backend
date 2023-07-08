@@ -73,7 +73,7 @@ export const registerUser = asyncHandler(async (req, res) => {
      taskCompleted: 0,
      taskOngoing: 0,
      adsCreated: 0,
-     freeTaskCount: 3,
+     freeTaskCount: 2,
      referCount: 0,
      referrals: []
     });
@@ -530,37 +530,6 @@ export const updateUserBankDetails = asyncHandler( async(req, res) => {
 })
 
 
-//>>>> Verify user password
-export const verifyPasswordChange = asyncHandler(async (req, res) => {
-    const { userId, newPassword } = req.body
-
-    const user = await User.find(userId)
-
-    // Check if user exist
-     if(!user) {
-        res.status(400).json("User not found, please register");
-        throw new Error("User not found, please register");
-     }
-
-    //validate password
-    //  if (!newPassword) {
-    //      res.status(400).json("Please add old");
-    //      throw new Error("Please add old");
-    //  }
-
-    // check if old password matches password in the db
-    const passwordIsCorrect = await bcrypt.compare(newPassword, user.password)
-
-     if (!passwordIsCorrect) {
-        res.status(400).json({message: "Password is Incorrect"})
-        throw new Error("Old password is Incorrect");
-     }
-
-     if (passwordIsCorrect) {
-        res.status(200).json("Password is Correct")
-     } 
-})
-
 //>>>> Verify Old user password
 export const verifyOldPassword = asyncHandler(async (req, res) => {
   const { userId, oldPassword } = req.body
@@ -592,7 +561,7 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
    } 
 })
 
-//>>>> Change user password
+//>>>> Change user old password
 export const changePassword = asyncHandler(async (req, res) => {
   const { userId, newPassword, oldPassword } = req.body
 

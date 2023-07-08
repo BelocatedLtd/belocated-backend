@@ -21,19 +21,19 @@ export const createAdvert = asyncHandler(async (req, res) => {
             // Getting user wallet
             const wallet = await Wallet.findOne({userId: req.user._id})
             if (!wallet) {
-                res.status(400).json({msg: "Wallet not found"})
+                res.status(400).json({message: "Wallet not found"})
                 throw new Error("Wallet not found")
             }
     
            // Match existing wallet to the loggedin user 
             if (wallet.userId !== userId && userId !== req.user._id) {
-                res.status(401).json("User not authorized to make this transaction")
+                res.status(401).json({message: "User not authorized to make this transaction"})
                 throw new Error("User not authorized to make this transaction") 
             }
     
             // Checking if user wallet is sufficient to fund ad purchase
             if (wallet.value < adAmount) {
-                res.status(400).json({msg: "Wallet insufficient to pay for ad, please fund wallet"})
+                res.status(400).json({message: "Wallet insufficient to pay for ad, please fund wallet"})
                 throw new Error("Wallet insufficient to pay for ad, please fund wallet") 
             }
 
@@ -89,7 +89,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
             });
             
             if (!advert) {
-                res.status(400).json({msg: "Advert wasnt created, please try again"});
+                res.status(400).json({message: "Advert wasnt created, please try again"});
                     throw new Error("Advert wasnt created, please try again")
             }
 
@@ -122,7 +122,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 )
 
             if (!updatedUserWallet || !updateAmountSpent) {
-                res.status(400).json("Cannot access user wallet to make ad payment")
+                res.status(400).json({message: "Cannot access user wallet to make ad payment"})
                 throw new Error("Cannot access user wallet to make ad payment")
             }
 
@@ -142,7 +142,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 )
 
                 if (!updateAdStatus) {
-                    res.status(400).json("Failed to switch ad status to running")
+                    res.status(400).json({message: "Failed to switch ad status to running"})
                     throw new Error("Failed to switch ad status to running")
                 }
 
@@ -162,7 +162,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
                     });
 
                 if (!transaction) {
-                    res.status(400).json("Failed to create transaction")
+                    res.status(400).json({message: "Failed to create transaction"})
                     throw new Error("Failed to create transaction")
                 }
                 
@@ -188,7 +188,7 @@ export const  getAdvert = asyncHandler(async (req, res) => {
     try {
           const adverts = await Advert.find({userId: _id}).sort("-createdAt")
          if(!adverts) {
-             res.status(400).json({ msg: "Cannot find any ad for this user" })
+             res.status(400).json({ mesage: "Cannot find any ad for this user" })
              throw new error("Cannot find any ad for this user")
          } 
          
@@ -207,7 +207,7 @@ export const  getAllAdvert = asyncHandler(async (req, res) => {
         try {
             const advert = await Advert.find().sort("-createdAt")
            if(!advert) {
-               res.status(400).json({ msg: "No advert found in the database" })
+               res.status(400).json({ message: "No advert found in the database" })
            } else {
             res.status(200).json(advert)
            }
@@ -225,21 +225,22 @@ export const deleteAdvert = asyncHandler(async(req, res) => {
     const {advertId} = req.params
   
     if (req.user.accountType !== "Admin") {
-      res.status(401);
-      throw new Error({message: "User not authorized to perform this action"})
+      res.status(401).json({message: "User not authorized to perform this action"});
+      throw new Error("User not authorized to perform this action")
     }
   
     const advert = await Advert.findById({_id: advertId })
     
     if(!advert) {
-        res.status(400).json("User does not exist or already deleted")
+        res.status(400).json({message: "Advert does not exist or already deleted"})
+        throw new Error("Advert does not exist or already deleted")
     } 
   
     const delAdvert = await Advert.findByIdAndDelete(advertId)
   
     if (!delAdvert) {
-      res.status(500);
-      throw new Error({message: "Error Deleting Advert"})
+      res.status(500).json({message: "Error Deleting Advert"});
+      throw new Error("Error Deleting Advert")
     }
   
     res.status(200).json("Advert Deleted successfully")

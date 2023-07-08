@@ -78,7 +78,7 @@ const userSchema = mongoose.Schema({
     freeTaskCount: {
         type: Number,
         required: true,
-        default: 3
+        default: 2
     },
     referrals: {
         type: [String],

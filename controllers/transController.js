@@ -24,15 +24,15 @@ export const  getWallet = asyncHandler(async (req, res) => {
     const { userId } = req.params
 
     if (req.user.accountType !== "Admin") {
-        res.status(401);
-        throw new Error({message: "Not Authorized"})
+        res.status(401).json({message: "Not Authorized"});
+        throw new Error("Not Authorized")
     }
 
     const wallet = await Wallet.findOne({userId})
 
         if(!wallet) {
-            res.status(400).json("No User Wallet Found")
-            throw new Error({message: "No User Wallet Found"})
+            res.status(400).json({message: "No User Wallet Found"})
+            throw new Error("No User Wallet Found")
         }
 
         res.status(200).json(wallet)
@@ -45,7 +45,7 @@ export const  getWallet = asyncHandler(async (req, res) => {
 
          // Validation
          if ( !userId || !chargedAmount || !trxId || !paymentRef ) {
-            res.status(400).json('Some required fields are missing!');
+            res.status(400).json({message: 'Some required fields are missing!'});
             throw new error("Some required fields are empty")
          }
 
@@ -64,13 +64,13 @@ export const  getWallet = asyncHandler(async (req, res) => {
             // Getting user wallet
             const wallet = await Wallet.findOne({userId: req.user._id})
             if (!wallet) {
-                res.status(400).json({msg: "Wallet not found"})
+                res.status(400).json({message: "Wallet not found"})
                 throw new error("wallet not found")
             }
     
            // Match existing wallet to the loggedin user 
             if (wallet.userId !== userId) {
-                res.status(401).json("User not authorized 2") 
+                res.status(401).json({message: "User not authorized 2"}) 
                 throw new error("User not authorized 2")
             }
             
@@ -85,6 +85,11 @@ export const  getWallet = asyncHandler(async (req, res) => {
                     runValidators: true
                 }
             )
+
+            if (!updatedUserWallet) {
+                res.status(401).json({message: "Faild to fund wallet, contact Admin"}) 
+                throw new error("Faild to fund wallet, contact Admin")
+            }
 
             if (updatedUserWallet) {
                 //Create New Transaction
@@ -121,7 +126,7 @@ export const  getUserTransactions = asyncHandler(async (req, res) => {
     try {
           const transactions = await Transaction.find({userId: _id}).sort("-createdAt")
          if(!transactions) {
-             res.status(400).json({ msg: "Cannot find any transaction made by this user" })
+             res.status(400).json({ message: "Cannot find any transaction made by this user" })
              throw new error("Cannot find any transaction made by this user")
          } 
          
@@ -138,15 +143,15 @@ export const  getUserTransactions = asyncHandler(async (req, res) => {
 export const  getTransactions = asyncHandler(async(req, res) => {
 
     if (req.user.accountType !== "Admin") {
-        res.status(400);
-        throw new Error({message: "Not authorized"}) 
+        res.status(400).json({message: "Not authorized"});
+        throw new Error("Not authorized") 
     }
 
     const transactions = await Transaction.find().sort("-createdAt")
        
     if(!transactions) {
-        res.status(400).json("No transaction found in the database")
-        throw new Error({message: "No transaction found in the database"})
+        res.status(400).json({message: "No transaction found in the database"})
+        throw new Error("No transaction found in the database")
        } 
 
     res.status(200).json(transactions)
