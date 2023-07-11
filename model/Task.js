@@ -47,6 +47,9 @@ const TaskSchema = mongoose.Schema({
     },
     caption: {
         type: String, 
+    },
+    taskVerification: {
+        type: String, 
         required: true,
     },
     socialPageLink: {

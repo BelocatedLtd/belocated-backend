@@ -1,11 +1,24 @@
 import { v2 as cloudinary } from 'cloudinary'
-//import cloudinary from 'cloudinary'
 
 // Return "https" URLs by setting secure: true
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: "dlmmbvsir",
+  api_key: "318122474438856",
+  api_secret: "2HPYE35_CPP2bMnjd2F8BntHFYE",
 });
+
+export const imagesUploader = (images) => {
+  try {
+    for (const image of images) {
+      const uploadedImages = cloudinary.uploader.upload(image, {folder: 'Task Submit Screenshots', resource_type: 'image'})
+      return uploadedImages.secure_url
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+  
+}
+
+
 
 export default cloudinary

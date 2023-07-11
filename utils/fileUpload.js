@@ -24,7 +24,9 @@ const storage = multer.diskStorage({
 
  }
 
- export const upload = multer({ storage, fileFilter })
+ export const upload = multer({storage, fileFilter})
+
+
 
  // File Size Formatter
  export const fileSizeFormatter = (bytes, decimal) => {

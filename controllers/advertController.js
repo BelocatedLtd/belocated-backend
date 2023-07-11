@@ -9,11 +9,11 @@ import { v2 as cloudinary } from 'cloudinary'
 //Create New Advert
 // http://localhost:6001/api/advert/create
 export const createAdvert = asyncHandler(async (req, res) => {
-    const { userId, platform, service, desiredROI, costPerTask, earnPerTask, gender, state, lga, religion, caption, mediaURL, adAmount, socialPageLink } = req.body;
+    const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, religion, caption, mediaURL, adAmount, socialPageLink } = req.body;
 
          // Validation
-         if ( !platform || !service || !desiredROI || !costPerTask || !earnPerTask || !gender || !state || !lga || !adAmount ) {
-            res.status(400).json('Please fill in all the required fields');
+         if ( !platform || !service || !adTitle|| !desiredROI || !costPerTask || !earnPerTask || !gender || !state || !lga || !adAmount ) {
+            res.status(400).json({message: 'Please fill in all the required fields'});
             throw new Error("Please fill in all fields")
          }
 
@@ -74,6 +74,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 userId, 
                 platform, 
                 service, 
+                adTitle,
                 desiredROI, 
                 costPerTask,
                 earnPerTask,

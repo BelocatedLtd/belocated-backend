@@ -13,6 +13,10 @@ const advertSchema = mongoose.Schema({
         type: String,
         required: true,
     },
+    adTitle: {
+        type: String,
+        required: true,
+    },
     desiredROI: {
         type: Number,
         required: true,
