@@ -131,16 +131,8 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     if (selectedImages) {
 
-        // fileData = {
-        //     fileName: req.file.originalname,
-        //     filePath: req.file.path,
-        //     fileType: req.file.mimetype,
-        //     fileSize: fileSizeFormatter(req.file.size, 2),
-        // }
-
        const filesData = await imagesUploader(selectedImages)
        console.log(filesData)
-       return
     }
 
    
@@ -155,8 +147,8 @@ export const submitTask = asyncHandler(async (req, res) => {
         {
             nameOnSocialPlatform: userSocialName || task.nameOnSocialPlatform,
             proofOfWorkMediaURL: {
-                public_id: result.public_id,
-                url: result.secure_url
+                public_id: '',
+                url: ''
             },
             status: status || task.status,
           
@@ -173,28 +165,28 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     // Update User wallet
-    // if (updatedTask) {
-    //     const updatedUserWallet = await Wallet.updateOne(
-    //         { userId:  req.user._id},
-    //         {
-    //             $inc: {pendingBalance: task.toEarn}
-    //         },
-    //         {
-    //             new: true,
-    //             runValidators: true
-    //         }
-    //     )
+    if (updatedTask) {
+        const updatedUserWallet = await Wallet.updateOne(
+            { userId:  req.user._id},
+            {
+                $inc: {pendingBalance: task.toEarn}
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        )
 
-    //     if (!updatedUserWallet) {
-    //         res.status(400).json({msg: "failed to update user pending balance"});
-    //         throw new Error("failed to update user pending balance")
-    //     }
+        if (!updatedUserWallet) {
+            res.status(400).json({msg: "failed to update user pending balance"});
+            throw new Error("failed to update user pending balance")
+        }
     
-    //     if (updatedTask && updatedUserWallet) {
-    //         const updatedTask = await Task.findById(taskId)
-    //         res.status(200).json(updatedTask);
-    //     }
-    // }
+        if (updatedTask && updatedUserWallet) {
+            const updatedTask = await Task.findById(taskId)
+            res.status(200).json(updatedTask);
+        }
+    }
  });
 
 
