@@ -55,16 +55,12 @@ const TaskSchema = mongoose.Schema({
     socialPageLink: {
         type: String, 
     },
-    proofOfWorkMediaURL: {
-        public_id: {
-            type: String,
-            default: ""
-        },
-        url: {
-            type: String,
-            default: ""
+    proofOfWorkMediaURL: [
+        {
+          secure_url: { type: String },
+          public_id: { type: String },
         }
-    },
+    ],
     nameOnSocialPlatform: {
         type: String,
         default: "",

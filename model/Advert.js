@@ -63,6 +63,9 @@ const advertSchema = mongoose.Schema({
         type: String, //Pending, Running, Allocating, Allocated, Completed
         required: true,
     },
+    isFree: {
+        type: Boolean,
+    },
    
 }, {
     timestamps: true

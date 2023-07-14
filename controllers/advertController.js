@@ -9,7 +9,7 @@ import { v2 as cloudinary } from 'cloudinary'
 //Create New Advert
 // http://localhost:6001/api/advert/create
 export const createAdvert = asyncHandler(async (req, res) => {
-    const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, religion, caption, mediaURL, adAmount, socialPageLink } = req.body;
+    const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, religion, caption, mediaURL, adAmount, socialPageLink, isFree } = req.body;
 
          // Validation
          if ( !platform || !service || !adTitle|| !desiredROI || !costPerTask || !earnPerTask || !gender || !state || !lga || !adAmount ) {
@@ -37,34 +37,8 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 throw new Error("Wallet insufficient to pay for ad, please fund wallet") 
             }
 
-
-             //Upload Media to Cloudinary
-            //  cloudinary.config({
-            //     cloud_name: process.env.CLOUDINARY_NAME,
-            //     api_key: process.env.CLOUDINARY_API_KEY,
-            //     api_secret: process.env.CLOUDINARY_API_SECRET
-            // });
-
             let fileData = {}
-            // let result;
 
-            // if (req.file) {
-            //     try {
-            //         result = await cloudinary.uploader.upload(req.file.path, {
-            //             folder: "Belocated Ad Media"
-            //         })            
-            //     } catch (error) {
-            //         res.status(500)
-            //             throw new Error("Image could not be uploaded")
-            //     }
-
-            //     fileData = {
-            //         fileName: req.file.originalname,
-            //         filePath: result.secure_url,
-            //         fileType: req.file.mimetype,
-            //         fileSize: req.file.size
-            //     };
-            // }
 
 
             //After image has being uploaded to cloudinary - Now create advert
@@ -86,7 +60,8 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 adAmount,
                 socialPageLink,
                 tasks: 0,
-                status: "Pending Payment" //Pending Payment, Running, Allocating, Allocated, Completed
+                status: "Pending Payment", //Pending Payment, Running, Allocating, Allocated, Completed
+                isFree: false
             });
             
             if (!advert) {
@@ -178,6 +153,32 @@ export const createAdvert = asyncHandler(async (req, res) => {
             } catch (error) {
                 res.status(500).json({error: error.message});
             }
+ });
+
+//Create New Advert
+// http://localhost:6001/api/advert/create
+export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
+    const { advertId } = req.body;
+
+    const advert = await Advert.findById(advertId)
+
+    if (!advert) {
+        res.status(404).json({message: "Cannot find advert"})
+        throw new Error("Failed to find Advert")
+    }
+
+    if (advert) {
+        isFree = !advert.isFree
+
+        const updatedFreeAd = await advert.save()
+
+        if (!updatedFreeAd) {
+            res.status(500).json({message: "Failed to change advert free status"})
+            throw new Error("Failed to change advert free status")
+        }
+
+        res.status(200).json(updatedFreeAd)
+    }
  });
 
 

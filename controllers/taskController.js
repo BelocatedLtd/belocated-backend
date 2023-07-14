@@ -4,9 +4,10 @@ import Advert from "../model/Advert.js";
 import Task from '../model/Task.js'
 import Wallet from "../model/Wallet.js";
 import { v2 as cloudinary } from 'cloudinary'
+import streamifier from 'streamifier'
 // import cloudinary from "../utils/cloudinary.js";
-import { fileSizeFormatter } from "../utils/fileUpload.js";
-import {imagesUploader} from '../utils/cloudinary.js'
+//import { fileSizeFormatter } from "../utils/fileUpload.js";
+//import {uploadMultipleImages} from '../utils/cloudinary.js'
 
 
 
@@ -101,23 +102,25 @@ export const  getTasks = asyncHandler(async (req, res) => {
 //Submit Task
 // http://localhost:6001/api/tasks/submit
 export const submitTask = asyncHandler(async (req, res) => {
-    const { taskId, advertId, taskPerformerId, userSocialName, socialPageLink, selectedImages, status } = req.body;
+    // res.status(200).json(req.files);
+    // return
+
+    const { taskId,  userSocialName } = req.body;
 
     const task = await Task.findById(taskId)
-    const advert = await Advert.findById(advertId)
+    const advert = await Advert.findById(task.advertId)
+    const user = await User.findById(req.user._id)
     const wallet = await Wallet.find({userId: req.user._id}) 
-    //const files = req.files;
 
-   
     if (!task) {
         res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")
     }
 
-    if (task.status === "Submitted") {
-        res.status(400).json({message: "You have already submitted this task, you can only submit once, please wait for approval"});
-        throw new Error("You have submitted your task, you can only submit once, please wait for approval")
-    }
+    // if (task.status === "Submitted") {
+    //     res.status(400).json({message: "You have already submitted this task, you can only submit once, please wait for approval"});
+    //     throw new Error("You have submitted your task, you can only submit once, please wait for approval")
+    // }
 
     if (!wallet) {
         res.status(400).json({message: "Cannot find user Wallet to update"});
@@ -129,43 +132,69 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Cannot find user Wallet to update")
     }
 
-    if (selectedImages) {
-
-       const filesData = await imagesUploader(selectedImages)
-       console.log(filesData)
-    }
+    //Cloudinary configuration
+// Return "https" URLs by setting secure: true
+    cloudinary.config({
+        cloud_name: "dlmmbvsir",
+        api_key: "318122474438856",
+        api_secret: "2HPYE35_CPP2bMnjd2F8BntHFYE",
+    });
 
    
 
-   
-
-    
-
-    //Update task after user submit screenshot
-    const updatedTask = await Task.findByIdAndUpdate(
-        { _id: taskId },
-        {
-            nameOnSocialPlatform: userSocialName || task.nameOnSocialPlatform,
-            proofOfWorkMediaURL: {
-                public_id: '',
-                url: ''
-            },
-            status: status || task.status,
-          
-        },
-        {
-            new: true,
-            runValidators: true
-        }
-    )
-
-    if (!updatedTask) {
-        res.status(400).json({message: "Task could not be submitted"});
-        throw new Error("Task could not be submitted")
+    if(req.files) {
+        let updatedTask;
+        try {
+            const uploadedImages = [];
+        
+            for (const file of req.files) {
+                const result = await cloudinary.uploader.upload(file.path, { folder: 'Task Submit Screenshots' });
+        
+                    uploadedImages.push({
+                        secure_url: result.secure_url,
+                        public_id: result.public_id
+                    });
+        
+                }
+        
+                updatedTask = await Task.findByIdAndUpdate(
+                    { _id: taskId },
+                    {
+                        nameOnSocialPlatform: userSocialName,
+                        proofOfWorkMediaURL: uploadedImages,
+                        status: "Submitted" || task.status
+                    },
+                    {
+                        new: true,
+                        runValidators: true
+                    }
+                )
+           } catch (error) {
+            console.error(error);
+            res.status(500).json({message: "Error uploading images"})
+           }
     }
+
+  
+
+   if (user.freeTaskCount > 0) {
+    res.status(200).json("Task submitted successfully");
+   }
 
     // Update User wallet
-    if (updatedTask) {
+    if (user.freeTaskCount === 0) {
+
+        const updatedAdvertiserWallet = await Wallet.updateOne(
+            { userId:  task.advertiserId},
+            {
+                $inc: {value: -advert.costPerTask}
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        )
+
         const updatedUserWallet = await Wallet.updateOne(
             { userId:  req.user._id},
             {
@@ -177,14 +206,13 @@ export const submitTask = asyncHandler(async (req, res) => {
             }
         )
 
-        if (!updatedUserWallet) {
-            res.status(400).json({msg: "failed to update user pending balance"});
+        if (!updatedUserWallet && !updatedAdvertiserWallet) {
+            res.status(400).json({message: "failed to update user pending balance and advertiser Wallet"});
             throw new Error("failed to update user pending balance")
         }
     
-        if (updatedTask && updatedUserWallet) {
-            const updatedTask = await Task.findById(taskId)
-            res.status(200).json(updatedTask);
+        if (updatedUserWallet && updatedAdvertiserWallet) {
+            res.status(200).json("Task submitted successfully");
         }
     }
  });
