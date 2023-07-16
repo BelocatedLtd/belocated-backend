@@ -1,13 +1,17 @@
 import express from 'express'
 import { createAdvert, deleteAdvert, getAdvert, getAllAdvert, toggleAdvertFreeStatus } from "../controllers/advertController.js";
-import { upload } from '../utils/fileUpload.js'
 import protect from '../middleware/authMiddleware.js';
+import multer from 'multer';
+
+//Multer storage configuration
+const  storage = multer.diskStorage({});
+const upload =  multer({storage});
 
 
 const router = express.Router();
 
-router.post("/create", protect, upload.single('mediaURL'), createAdvert)
-router.post("/setadfree/:advertId", protect, toggleAdvertFreeStatus)
+router.post("/create", protect, upload.array('images'), createAdvert)
+router.patch("/setadfree/:id", protect, toggleAdvertFreeStatus)
 router.get("/", protect, getAdvert)
 router.get("/all", getAllAdvert)
 

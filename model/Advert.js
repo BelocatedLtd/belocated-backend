@@ -48,10 +48,12 @@ const advertSchema = mongoose.Schema({
         type: Number,
         required: true,
     },
-    mediaURL: {
-        type: Object,
-        default: {},
-    },
+    mediaURL: [
+        {
+          secure_url: { type: String },
+          public_id: { type: String },
+        }
+    ],
     socialPageLink: {
         type: String,
     },
@@ -64,7 +66,8 @@ const advertSchema = mongoose.Schema({
         required: true,
     },
     isFree: {
-        type: Boolean,
+        type: Boolean, 
+        default: false
     },
    
 }, {

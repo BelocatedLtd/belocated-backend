@@ -9,7 +9,7 @@ import { v2 as cloudinary } from 'cloudinary'
 //Create New Advert
 // http://localhost:6001/api/advert/create
 export const createAdvert = asyncHandler(async (req, res) => {
-    const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, religion, caption, mediaURL, adAmount, socialPageLink, isFree } = req.body;
+    const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, caption, adAmount, socialPageLink } = req.body;
 
          // Validation
          if ( !platform || !service || !adTitle|| !desiredROI || !costPerTask || !earnPerTask || !gender || !state || !lga || !adAmount ) {
@@ -37,7 +37,35 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 throw new Error("Wallet insufficient to pay for ad, please fund wallet") 
             }
 
-            let fileData = {}
+             //Cloudinary configuration
+// Return "https" URLs by setting secure: true
+    cloudinary.config({
+        cloud_name: "dlmmbvsir",
+        api_key: "318122474438856",
+        api_secret: "2HPYE35_CPP2bMnjd2F8BntHFYE",
+    });
+
+   
+    //Upload screenshots to databse
+    let uploadedImages = [];
+
+    if(req.files) {
+       
+        try {
+           
+            for (const file of req.files) {
+                const result = await cloudinary.uploader.upload(file.path, { folder: 'Advert Media Contents' });
+        
+                    uploadedImages.push({
+                        secure_url: result.secure_url,
+                        public_id: result.public_id
+                    });
+                }
+                } catch (error) {
+                    console.error(error);
+                    res.status(500).json({message: "Error uploading images"})
+                }
+    }
 
 
 
@@ -56,12 +84,12 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 state,
                 lga,
                 caption, 
-                mediaURL: fileData,
+                mediaURL: uploadedImages,
                 adAmount,
                 socialPageLink,
                 tasks: 0,
+                isFree: false,
                 status: "Pending Payment", //Pending Payment, Running, Allocating, Allocated, Completed
-                isFree: false
             });
             
             if (!advert) {
@@ -155,29 +183,66 @@ export const createAdvert = asyncHandler(async (req, res) => {
             }
  });
 
-//Create New Advert
+//Change Advert Free Status
 // http://localhost:6001/api/advert/create
 export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
-    const { advertId } = req.body;
+    const { id } = req.params;
 
-    const advert = await Advert.findById(advertId)
+    const advert = await Advert.findById(id)
+    const user = await User.findById(req.user.id)
+
+    if(user.accountType !== "Admin") {
+        res.status(401).json({message: "Unauthorized User"})
+        throw new Error("Unauthorized User")
+    }
 
     if (!advert) {
         res.status(404).json({message: "Cannot find advert"})
         throw new Error("Failed to find Advert")
     }
 
-    if (advert) {
-        isFree = !advert.isFree
-
-        const updatedFreeAd = await advert.save()
-
-        if (!updatedFreeAd) {
-            res.status(500).json({message: "Failed to change advert free status"})
-            throw new Error("Failed to change advert free status")
+    if (advert.isFree === false) {
+        const toggleAdTypeFalseToTrue = await Advert.findByIdAndUpdate(
+            { _id: id },
+            {
+              isFree: true,
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        )
+      
+        if (!toggleAdTypeFalseToTrue) {
+            res.status(404).json({message: "Failed to change advert type"});
+            throw new Error
         }
 
-        res.status(200).json(updatedFreeAd)
+        if (toggleAdTypeFalseToTrue) {
+            res.status(200).json(toggleAdTypeFalseToTrue)
+        }
+    }
+
+    if (advert.isFree === true) {
+        const toggleAdTypeTrueToFalse = await Advert.findByIdAndUpdate(
+            { _id: id },
+            {
+              isFree: false,
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        )
+      
+        if (!toggleAdTypeTrueToFalse) {
+            res.status(404).json({message: "Failed to change advert type"});
+            throw new Error
+        }
+
+        if (toggleAdTypeTrueToFalse) {
+            res.status(200).json(toggleAdTypeTrueToFalse)
+        }
     }
  });
 
