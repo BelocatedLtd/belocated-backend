@@ -14,7 +14,7 @@ import { v2 as cloudinary } from 'cloudinary'
 //Create New Task
 // http://localhost:6001/api/tasks/create
 export const CreateNewTask = asyncHandler(async (req, res) => {
-    const { advertId, advertiserId, taskPerformerId, title, platform, service, desiredROI, toEarn, gender, state, lga, caption, taskVerification, socialPageLink } = req.body;
+    const { advertId, advertiserId, taskPerformerId, title, platform, service, desiredROI, toEarn, gender, state, lga, caption, taskVerification, socialPageLink, adMedia } = req.body;
 
     //Create New Task
     const task = await Task.create({
@@ -37,6 +37,7 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
             url: "",
         },
         nameOnSocialPlatform: '',
+        adMedia,
         status: "Awaiting Submission"
     });
 
