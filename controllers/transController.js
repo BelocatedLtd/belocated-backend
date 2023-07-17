@@ -238,9 +238,6 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     const wdRequest = await Withdraw.findById(withdrawalRequestId)
     const wdTrx = await Transaction.find({userId: withdrawalRequestId})
 
-    res.status(200).json(wdTrx)
-    return
-
     if (!wdRequest) {
         res.status(400).json({message:"Cannot find withdrawal request"});
         throw new Error("Cannot find withdrawal request")

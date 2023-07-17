@@ -222,7 +222,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
  // Admin Approve Submitted Tasks and Pay user
  export const approveTask = asyncHandler(async (req, res) => {
-    const { taskId } = req.body
+    const { taskId, status, message } = req.body
 
     //Check if user is an admin
     if (req.user.accountType !== "Admin") {
@@ -271,11 +271,26 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Ad campaign is no longer active")
     }
 
-    //Update task status after user submit screenshot
-    task.status =  "Approved";
+    let updatedTask;
 
-    //save the update on task model
-    const updatedTask = await task.save(); 
+    if (status === "Partial Approval") {
+         //Update task status after user submit screenshot
+        task.status =  status;
+        task.message = message
+
+        //save the update on task model
+        updatedTask = await task.save(); 
+    } 
+    
+    if (status === "Approved") {
+        //Update task status after user submit screenshot
+        task.status =  "Approved";
+
+        //save the update on task model
+        updatedTask = await task.save(); 
+    }
+
+    
 
     if (!updatedTask) {
         res.status(500).json({message: "Error trying to update task status"})
@@ -358,10 +373,10 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     const task = await Task.findById(taskId)
-    const advert = await Advert.findById(task?.advertId)
-    const wallet = await Wallet.find({userId: task?.taskPerformerId})
-    const taskPerformer = await User.findById(task?.taskPerformerId)
-    const advertserWallet = await Wallet.find({userId: task?.advertiserId})
+    const advert = await Advert.findById(task.advertId)
+    const wallet = await Wallet.find({userId: task.taskPerformerId})
+    const taskPerformer = await User.findById(task.taskPerformerId)
+    const advertserWallet = await Wallet.find({userId: task.advertiserId})
 
     if (!task) {
         res.status(400).json({message:"Cannot find task"});
@@ -371,6 +386,11 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (task.status === "Rejected") {
         res.status(400).json({message: "This task has already being rejected, read the admins message and follow the instructions"});
         throw new Error("This task has already being rejected, read the admins message and follow the instructions")
+    }
+
+    if (task.status === "Approved") {
+        res.status(400).json({message: "This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin"});
+        throw new Error("This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin")
     }
 
     if (!wallet) {
@@ -411,7 +431,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     //Rejection Successful
-    if (updatedTask && taskPerformer.freeTaskCount === 0) {
+    if (taskPerformer.freeTaskCount === 0) {
     // Subtract Task performer's Wallets
     wallet.pendingBalance -= task.toEarn
 
