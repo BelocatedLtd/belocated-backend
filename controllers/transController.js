@@ -125,8 +125,6 @@ export const  getWallet = asyncHandler(async (req, res) => {
    export const withdrawWallet = asyncHandler(async(req, res) => {
     const { userId, withdrawAmount,  withdrawalMethod } = req.body;
 
-    
-
      // Validation
      if ( !userId || !withdrawAmount || !withdrawalMethod ) {
         res.status(400).json({message: 'Some required fields are missing!'});
@@ -177,12 +175,12 @@ export const  getWallet = asyncHandler(async (req, res) => {
 
                    //Create New Transaction
                 const transaction = await Transaction.create({
-                    userId: withdrawalRequest._id, 
-                    email: user.email, 
+                    userId: userId,
+                    email: user?.email, 
                     date: Date.now(), 
                     chargedAmount: withdrawAmount, 
                     trxId: `wd-${userId}`,
-                    paymentRef: `wd-${userId}`,
+                    paymentRef: withdrawalRequest._id,
                     trxType: `Withdraw by - ${withdrawalMethod}`,
                     status: "Pending Approval"
                 });
@@ -236,7 +234,7 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     }
 
     const wdRequest = await Withdraw.findById(withdrawalRequestId)
-    const wdTrx = await Transaction.find({userId: withdrawalRequestId})
+    const wdTrx = await Transaction.find({paymentRef: withdrawalRequestId})
 
     if (!wdRequest) {
         res.status(400).json({message:"Cannot find withdrawal request"});
@@ -254,10 +252,16 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     }
 
     //Update task status after user submit screenshot
-    wdRequest.status =  "Approved";
-
-    //save the update on task model
-    const updatedwdRequest = await wdRequest.save(); 
+    const updatedwdRequest = await Withdraw.findByIdAndUpdate(
+        { _id: withdrawalRequestId},
+        {
+            status: "Approved"
+        },
+        {
+            new: true,
+            runValidators: true
+        }
+    )
 
     if (!updatedwdRequest) {
         res.status(500).json({message: "Error trying to update task status"})
@@ -265,11 +269,13 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     }
 
     if (updatedwdRequest) {
-        //Update task status after user submit screenshot
-        wdTrx.status =  "Approved";
-
-        //save the update on task model
-        const updatedTrx = await wdTrx.save(); 
+        //Update trx status
+        const updatedTrx = await Transaction.updateOne(
+            {paymentRef: withdrawalRequestId},
+            {
+                status: "Approved"
+            }
+        )
 
         if (!updatedTrx) {
             res.status(500).json({message: "Error trying to update trx status"})
@@ -284,6 +290,9 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
         //Delete Withdrawal Request
 export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
     const { withdrawalRequestId } = req.params
+
+    // const wdRequest = await Withdraw.findById(withdrawalRequestId)
+    const wdTrx = await Transaction.find({paymentRef: withdrawalRequestId})
 
     if (req.user.accountType !== "Admin") {
         res.status(401).json({ message: "Unauthorized user" })
@@ -303,6 +312,21 @@ export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
       res.status(500).json({message: "Error Deleting"});
       throw new Error("Error Deleting")
     }
+
+    if (delWdRequest) {
+        //Update task status after user submit screenshot
+        const updatedTrx = await Transaction.updateOne(
+            {paymentRef: withdrawalRequestId},
+            {
+                status: "Rejected"
+            }
+        )
+
+        if (!updatedTrx) {
+            res.status(500).json({message: "Error trying to update trx status"})
+            throw new Error("Error trying to update trx status")
+        }
+    }  
 
     const wdRequests = await Withdraw.find().sort("-createdAt")
     res.status(200).json(wdRequests)
