@@ -301,7 +301,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     if (updatedTask) {
     // Check if user has fulfilled the weekly free task obligation
-    if (taskPerformer.freeTaskCount > 0) {
+    if (taskPerformer.freeTaskCount > 0 && status === "Approved") {
         taskPerformer.freeTaskCount -=  1;
 
         //save the update on user model
@@ -315,7 +315,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     //User' can completed hisher free task count
-    if (taskPerformer.freeTaskCount === 0) {
+    if (taskPerformer.freeTaskCount === 0 && status === "Approved") {
         //Update Advert after user admin Approves Task Submittion
         //subtrate 1 from the desired roi
         //Update the number of tasks completed on an advert
@@ -347,7 +347,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
 
     //Check if advertunit is zero and mark advert as completed
-    if (advert.desiredROI === 0) {
+    if (advert.desiredROI === 0 && status === "Approved") {
         advert.status = "Completed"
 
         //save the update on user model
