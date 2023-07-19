@@ -40,9 +40,9 @@ export const createAdvert = asyncHandler(async (req, res) => {
              //Cloudinary configuration
 // Return "https" URLs by setting secure: true
     cloudinary.config({
-        cloud_name: "dlmmbvsir",
-        api_key: "318122474438856",
-        api_secret: "2HPYE35_CPP2bMnjd2F8BntHFYE",
+        cloud_name: process.env.CLOUDINARY_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
     });
 
    

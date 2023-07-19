@@ -1,11 +1,14 @@
 import nodemailer from "nodemailer"
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 
 //import mg from 'nodemailer-mailgun-transport'
 
-const API_KEY = '49fc01aab5a7282b28de67edd833f5fa-e5475b88-c8344dc2';
+const API_KEY = process.env.MAILGUN_API_KEY;
 const DOMAIN = 'mail.belocated.ng';
 
 
