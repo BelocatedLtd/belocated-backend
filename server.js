@@ -41,7 +41,7 @@ app.use(cookieParser());
 app.use(morgan("common"));
 app.disable('x-powered-by');
 app.use(cors({
-    origin: [process.env.FRONTEND_URL],
+    origin: [process.env.FRONTEND_URL, 'https://res.cloudinary.com'],
     credentials: true
 }));
 app.use(bodyParser.json({limit: '30mb', extended: true }));
