@@ -326,8 +326,8 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
          loginToken
      })
     } else {
-     res.status(400).json({message: "Invalid User or Password"})
-     throw new Error("Invalid User or Password")
+     res.status(400).json({message: "Invalid user email or Password"})
+     throw new Error("Invalid user email or Password")
     }
  
  })
