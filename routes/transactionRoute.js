@@ -5,7 +5,7 @@ import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get("/wallet", protect, getUserWallet)
+router.get("/wallet/user/:userId", protect, getUserWallet)
 router.get("/wallet/:userId", protect, getWallet)
 router.patch("/fund", protect, fundUserWallet)
 router.post("/withdraw", protect, withdrawWallet)

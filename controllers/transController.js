@@ -7,10 +7,10 @@ import User from "../model/User.js";
 
 //Get User Wallet
 export const  getUserWallet = asyncHandler(async (req, res) => {
-    const { _id } = req.user
+    const { userId } = req.params
 
     try {
-        const wallet = await Wallet.findOne({userId: _id})
+        const wallet = await Wallet.findOne({userId: userId})
          if(!wallet) {
              res.status(400).json("No User Wallet Found")
          } else {
