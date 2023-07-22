@@ -437,6 +437,7 @@ export const logoutUser = asyncHandler(async(req, res) => {
 
 //>>>> Get Login Status
 export const loginStatus = asyncHandler(async(req, res) => {
+  
   const token = req.cookies.jwt;
   if (!token) {
     return res.json(false)
