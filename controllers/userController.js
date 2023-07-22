@@ -338,7 +338,7 @@ export const  getUser = async(req, res) => {
   const { _id } = req.user
 
   try {
-        const user = await User.findById({_id: _id })
+        const user = await User.findById("64a6040ddefff9ff30d8d652")
        if(!user) {
            res.status(400).json({ msg: "Cannot find user" })
             throw new Error("Cannot find user")
