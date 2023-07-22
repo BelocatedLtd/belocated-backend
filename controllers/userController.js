@@ -323,7 +323,6 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
         walletId,
         referrals,
         referrersId,
-         loginToken
      })
     } else {
      res.status(400).json({message: "Invalid user email or Password"})
@@ -428,12 +427,9 @@ if (users) {
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
 export const logoutUser = asyncHandler(async(req, res) => {
-    res.cookie("token", "", {
-      path: "/",
+    res.cookie("jwt", "", {
       httpOnly: true,
       expires: new Date(0),
-      sameSite: "none",
-      secure: true
     })
   return res.status(200).json({message: "Successfully Logged Out"})
 })
