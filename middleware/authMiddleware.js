@@ -3,29 +3,6 @@ import User from "../model/User.js";
 import jwt from "jsonwebtoken";
 
 const protect = asyncHandler(async (req, res, next) => {
-    // try {
-    //     const token = req.cookies.token
-    //     if(!token) {
-    //         res.status(401)
-    //         throw new Error("Not authorized")
-    //     }
-    //     //Verify token
-    //     const  verified = jwt.verify(token, process.env.JWT_SECRET)
-    //     // Get user ID  from token
-    //     const user = await User.findById(verified.id).select("-password")
-
-    //     if(!user) {
-    //         res.status(401)
-    //         throw new Error("User not found")
-    //     }
-    //     req.user = user
-
-    //     next()
-    // } catch (error) {
-    //     res.status(401)
-    //     throw new Error("User not authorized")
-    // }
-
     let token;
 
     token = req.cookies.jwt;
@@ -38,11 +15,11 @@ const protect = asyncHandler(async (req, res, next) => {
 
             next();
         } catch (error) {
-            res.status(401);
+            res.status(401).json("Not Authorizeddd, invalid token");;
             throw new Error('Not authorized, invalid token')
         }
     } else {
-        res.status(401);
+        res.status(401).json("Not Authorizedd, no token");
         throw new Error({message: 'Not Authorized, no token '})
     }
 })
