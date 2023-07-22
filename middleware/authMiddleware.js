@@ -3,27 +3,47 @@ import User from "../model/User.js";
 import jwt from "jsonwebtoken";
 
 const protect = asyncHandler(async (req, res, next) => {
-    try {
-        const token = req.cookies.token
-        if(!token) {
-            res.status(401)
-            throw new Error("Not authorized")
-        }
-        //Verify token
-        const  verified = jwt.verify(token, process.env.JWT_SECRET)
-        // Get user ID  from token
-        const user = await User.findById(verified.id).select("-password")
+    // try {
+    //     const token = req.cookies.token
+    //     if(!token) {
+    //         res.status(401)
+    //         throw new Error("Not authorized")
+    //     }
+    //     //Verify token
+    //     const  verified = jwt.verify(token, process.env.JWT_SECRET)
+    //     // Get user ID  from token
+    //     const user = await User.findById(verified.id).select("-password")
 
-        if(!user) {
-            res.status(401)
-            throw new Error("User not found")
-        }
-        req.user = user
+    //     if(!user) {
+    //         res.status(401)
+    //         throw new Error("User not found")
+    //     }
+    //     req.user = user
 
-        next()
-    } catch (error) {
-        res.status(401)
-        throw new Error("User not authorized")
+    //     next()
+    // } catch (error) {
+    //     res.status(401)
+    //     throw new Error("User not authorized")
+    // }
+
+    let token;
+
+    token = req.cookies.jwt;
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            req.user = await User.findById(decoded.userId).select('-password');
+
+            next();
+        } catch (error) {
+            res.status(401);
+            throw new Error('Not authorized, invalid token')
+        }
+    } else {
+        res.status(401);
+        throw new Error({message: 'Not Authorized, no token '})
     }
 })
 

@@ -286,7 +286,7 @@ export const loginUser = asyncHandler(async (req, res) => {
      //Generate token
   // loginToken = generateToken(user._id)
  
-   //send HTTP-Only cookie 
+  //  //send HTTP-Only cookie 
   //  res.cookie("token", loginToken, {
   //    path: "/",
   //    httpOnly: true,

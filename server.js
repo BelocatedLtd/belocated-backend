@@ -36,7 +36,7 @@ const io = new Server(server, {
 
 dotenv.config();
 app.use(express.json());
-app.use(cookieParser());
+
 
 app.use(morgan("common"));
 app.disable('x-powered-by');
@@ -52,8 +52,11 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin"}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+
 //Error middleware
 app.use(errorHandler);
+
+app.use(cookieParser());
 
 
 /* ROUTES WITH FILES */
