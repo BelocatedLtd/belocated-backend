@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
+import generateToken from "../utils/generateToken.js";
 import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
 //import sendOTP from "../utils/sendTermiiSMS.js";
@@ -13,9 +14,9 @@ import sendEmail from "../utils/termilEmailSend.js";
 import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
 
 
-const generateToken = (id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: "1d"})
-}
+// const generateToken = (id) => {
+//     return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: "1d"})
+// }
 
 
 //>>>> Register User
@@ -279,18 +280,20 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   let loginToken
     if (user.isEmailVerified === true) {
+
+      loginToken =  generateToken(res, user._id)
  
      //Generate token
-   loginToken = generateToken(user._id)
+  // loginToken = generateToken(user._id)
  
    //send HTTP-Only cookie 
-   res.cookie("token", loginToken, {
-     path: "/",
-     httpOnly: true,
-     expires: new Date(Date.now() + 1000 * 86400), // 1 day
-     sameSite: "none",
-     secure: true
-   })
+  //  res.cookie("token", loginToken, {
+  //    path: "/",
+  //    httpOnly: true,
+  //    expires: new Date(Date.now() + 1000 * 86400), // 1 day
+  //    sameSite: "none",
+  //    secure: true
+  //  })
   }
  
     if (user && passwordIsCorrect && loginToken) {
@@ -324,7 +327,7 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
      })
     } else {
      res.status(400).json({message: "Invalid User or Password"})
-     throw new Error({message: "Invalid User or Password"})
+     throw new Error("Invalid User or Password")
     }
  
  })
