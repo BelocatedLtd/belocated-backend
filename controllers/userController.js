@@ -336,6 +336,7 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
 export const  getUser = async(req, res) => {
   //const { userId } = req.body
   const { _id } = req.user
+
   try {
         const user = await User.findById({_id: _id })
        if(!user) {
@@ -437,7 +438,7 @@ export const logoutUser = asyncHandler(async(req, res) => {
 
 //>>>> Get Login Status
 export const loginStatus = asyncHandler(async(req, res) => {
-  
+
   const token = req.cookies.jwt;
   if (!token) {
     return res.json(false)
@@ -461,7 +462,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   //   res.status.(400).json({message: "There's a problem with the validation for this user"})
   // }
 
-  const user = await User.findById(req.user.id)
+  const user = await User.findById(req.user._id)
 
   //When request is not found
   if (!user ) {
