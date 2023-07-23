@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
-import generateToken from "../utils/generateToken.js";
+//import generateToken from "../utils/generateToken.js";
 import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
 //import sendOTP from "../utils/sendTermiiSMS.js";
@@ -14,9 +14,9 @@ import sendEmail from "../utils/termilEmailSend.js";
 import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
 
 
-// const generateToken = (id) => {
-//     return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: "1d"})
-// }
+const generateToken = (id) => {
+    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: "1d"})
+}
 
 
 //>>>> Register User
@@ -281,41 +281,41 @@ export const loginUser = asyncHandler(async (req, res) => {
   let loginToken
     if (user.isEmailVerified === true) {
 
-      loginToken =  generateToken(res, user._id)
+     // loginToken =  generateToken(res, user._id)
  
      //Generate token
-  // loginToken = generateToken(user._id)
+  loginToken = generateToken(user._id)
  
-  //  //send HTTP-Only cookie 
-  //  res.cookie("token", loginToken, {
-  //    path: "/",
-  //    httpOnly: true,
-  //    expires: new Date(Date.now() + 1000 * 86400), // 1 day
-  //    sameSite: "none",
-  //    secure: true
-  //  })
+  //send HTTP-Only cookie 
+   res.cookie("token", loginToken, {
+     path: "/",
+     httpOnly: true,
+     expires: new Date(Date.now() + 1000 * 86400), // 1 day
+     sameSite: "none",
+     secure: true
+   })
   }
  
     if (user && passwordIsCorrect && loginToken) {
       const walletId = await Wallet.find({userId: user._id})
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
-bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
+      bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
      res.status(200).json({
-         _id, 
-         fullname, 
-         username, 
-         email, 
-         phone, 
-         location, 
-         community, 
-         religion, 
-         gender,
-         accountType,
-          bankName,
-          bankAccountNumber,
-          accountHolderName,
-         isEmailVerified, 
-         isPhoneVerified,
+        _id, 
+        fullname, 
+        username, 
+        email, 
+        phone, 
+        location, 
+        community, 
+        religion, 
+        gender,
+        accountType,
+        bankName,
+        bankAccountNumber,
+        accountHolderName,
+        isEmailVerified, 
+        isPhoneVerified,
         taskCompleted,
         taskOngoing,
         adsCreated,
@@ -323,6 +323,7 @@ bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskComp
         walletId,
         referrals,
         referrersId,
+        loginToken
      })
     } else {
      res.status(400).json({message: "Invalid user email or Password"})
@@ -338,7 +339,7 @@ export const  getUser = async(req, res) => {
   const { _id } = req.user
 
   try {
-        const user = await User.findById("64a6040ddefff9ff30d8d652")
+        const user = await User.findById(_id)
        if(!user) {
            res.status(400).json({ msg: "Cannot find user" })
             throw new Error("Cannot find user")
@@ -428,24 +429,24 @@ if (users) {
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
 export const logoutUser = asyncHandler(async(req, res) => {
-    res.cookie("jwt", "", {
+    res.clearCookie("token", {
       httpOnly: true,
-      expires: new Date(0),
-    })
-  return res.status(200).json({message: "Successfully Logged Out"})
+      sameSite: 'none',
+      secure: true
+    }).status(200).send("Successfully Logged Out")
 })
 
 
 //>>>> Get Login Status
 export const loginStatus = asyncHandler(async(req, res) => {
 
-  const token = req.cookies.jwt;
-  if (!token) {
+  const authToken = req.cookies.token;
+  if (!authToken) {
     return res.json(false)
   }
 
   //Verify token
-  const  verified = jwt.verify(token, process.env.JWT_SECRET)
+  const  verified = jwt.verify(authToken, process.env.JWT_SECRET)
   if (verified) {
     return res.json(true)
   } else {

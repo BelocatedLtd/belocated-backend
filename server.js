@@ -40,6 +40,7 @@ app.use(express.json());
 
 app.use(morgan("common"));
 app.disable('x-powered-by');
+app.use(cookieParser());
 app.use(cors({
     origin: [process.env.FRONTEND_URL, 'https://res.cloudinary.com'],
     credentials: true
@@ -56,12 +57,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 //Error middleware
 app.use(errorHandler);
 
-app.use(cookieParser());
 
 
-/* ROUTES WITH FILES */
-app.get('/', (req, res) => {
-    res.status(201).json("This is phome")})
+
+
 
 app.use("/api/user", userRoute)
 app.use("/api/adverts", advertRoute)
