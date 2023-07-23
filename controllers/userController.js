@@ -280,8 +280,6 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   let loginToken
     if (user.isEmailVerified === true) {
-
-     // loginToken =  generateToken(res, user._id)
  
      //Generate token
   loginToken = generateToken(user._id)

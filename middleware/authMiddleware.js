@@ -9,9 +9,14 @@ const protect = asyncHandler(async (req, res, next) => {
 
     if (authToken) {
         try {
+            //Get token from the bearer
+
+            //token = req.header.authorization.split(' ')[1]
             const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
 
-            req.user = await User.findById(decoded.userId).select('-password');
+            //Get user from token
+
+            req.user = await User.findById(decoded.id).select('-password');
 
             next();
         } catch (error) {

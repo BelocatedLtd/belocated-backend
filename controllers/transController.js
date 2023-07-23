@@ -10,7 +10,7 @@ export const  getUserWallet = asyncHandler(async (req, res) => {
     const { userId } = req.params
 
     try {
-        const wallet = await Wallet.findOne({userId: userId})
+        const wallet = await Wallet.findOne({userId: req.user._id})
          if(!wallet) {
              res.status(400).json("No User Wallet Found")
          } else {
