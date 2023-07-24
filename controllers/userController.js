@@ -278,11 +278,10 @@ export const loginUser = asyncHandler(async (req, res) => {
      return
     }
 
-  let token
     if (user.isEmailVerified === true) {
  
      //Generate token
-  token = generateToken(user._id)
+  const token = generateToken(user._id)
  
   //send HTTP-Only cookie 
    res.cookie("token", token, {
@@ -425,11 +424,13 @@ if (users) {
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
 export const logoutUser = asyncHandler(async(req, res) => {
-    res.clearCookie("token", {
+    res.cookie("token", "", {
       httpOnly: true,
+      expires: new Date(0),
       sameSite: 'none',
       secure: true
-    }).status(200).send("Successfully Logged Out")
+    })
+    return res.status(200).json("Successfully Logged Out")
 })
 
 
