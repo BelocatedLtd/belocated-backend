@@ -278,23 +278,22 @@ export const loginUser = asyncHandler(async (req, res) => {
      return
     }
 
-  let loginToken
+  let token
     if (user.isEmailVerified === true) {
  
      //Generate token
-  loginToken = generateToken(user._id)
+  token = generateToken(user._id)
  
   //send HTTP-Only cookie 
-   res.cookie("token", loginToken, {
+   res.cookie("token", token, {
      path: "/",
      httpOnly: true,
      expires: new Date(Date.now() + 1000 * 86400), // 1 day
      sameSite: "none",
      secure: true
    })
-  }
  
-    if (user && passwordIsCorrect && loginToken) {
+    if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
       bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
@@ -321,23 +320,22 @@ export const loginUser = asyncHandler(async (req, res) => {
         walletId,
         referrals,
         referrersId,
-        loginToken
+        token
      })
     } else {
      res.status(400).json({message: "Invalid user email or Password"})
      throw new Error("Invalid user email or Password")
     }
+  }
  
  })
 
  //>>>> GET User 
 // http://localhost:6001/api/user/:id 
 export const  getUser = async(req, res) => {
-  //const { userId } = req.body
-  const { _id } = req.user
 
   try {
-        const user = await User.findById(_id)
+        const user = await User.findById(req.user._id)
        if(!user) {
            res.status(400).json({ msg: "Cannot find user" })
             throw new Error("Cannot find user")

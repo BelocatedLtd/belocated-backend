@@ -1,6 +1,6 @@
 import express from 'express'
 import { createAdvert, deleteAdvert, getAdvert, getAllAdvert, toggleAdvertFreeStatus } from "../controllers/advertController.js";
-import protect from '../middleware/authMiddleware.js';
+import {protect} from '../middleware/authMiddleware.js';
 import multer from 'multer';
 
 //Multer storage configuration

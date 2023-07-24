@@ -3,7 +3,7 @@ import multer from 'multer'
 import { CreateNewTask, approveTask, deleteTask, getTask, getTasks, rejectTask, submitTask } from "../controllers/taskController.js";
 //import { upload } from '../utils/fileUpload.js'
 //const upload = multer({ dest: 'uploads/' });
-import protect from '../middleware/authMiddleware.js';
+import {protect} from '../middleware/authMiddleware.js';
 
 
 const router = express.Router();

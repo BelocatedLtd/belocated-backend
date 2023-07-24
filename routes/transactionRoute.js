@@ -1,6 +1,6 @@
 import express from 'express'
 import { confirmWithdrawalRequest, deleteWithdrawalRequest, fundUserWallet, getTransactions, getUserTransactions, getUserWallet, getUserWithdrawals, getWallet, getWithdrawals, withdrawWallet } from '../controllers/transController.js';
-import protect from '../middleware/authMiddleware.js';
+import {protect} from '../middleware/authMiddleware.js';
 
 
 const router = express.Router();
