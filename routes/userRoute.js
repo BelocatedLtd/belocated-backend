@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, logoutUser, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, deleteUser, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails, refRegisterUser } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, deleteUser, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails, refRegisterUser } from "../controllers/userController.js";
 import {protect} from '../middleware/authMiddleware.js';
 
 
@@ -13,7 +13,6 @@ router.post('/login', loginUser);
 router.get('/', protect, getUser);
  router.get('/all', protect, getUsers);
  router.get('/loggedin', loginStatus);
- router.get('/logout', logoutUser);
 
  //Patch
  router.patch('/update/', protect, updateUser)

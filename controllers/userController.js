@@ -296,7 +296,7 @@ export const loginUser = asyncHandler(async (req, res) => {
      const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
       bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
      res.status(200).json({
-        _id, 
+        id: _id, 
         fullname, 
         username, 
         email, 
@@ -345,7 +345,7 @@ export const  getUser = async(req, res) => {
        if (user) {
         const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
         res.status(200).json({
-          _id, 
+          id: _id, 
           fullname, 
           username, 
           email, 
@@ -427,15 +427,15 @@ if (users) {
 
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
-export const logoutUser = asyncHandler(async(req, res) => {
-    res.cookie("token", "", {
-      httpOnly: true,
-      expires: new Date(0),
-      sameSite: 'none',
-      secure: true
-    })
-    return res.status(200).json("Successfully Logged Out")
-})
+// export const logoutUser = asyncHandler(async(req, res) => {
+//     res.cookie("token", "", {
+//       httpOnly: true,
+//       expires: new Date(0),
+//       sameSite: 'none',
+//       secure: true
+//     })
+//     return res.status(200).json("Successfully Logged Out")
+// })
 
 
 //>>>> Get Login Status
