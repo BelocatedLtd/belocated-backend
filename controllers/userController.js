@@ -338,6 +338,9 @@ export const  getUser = async(req, res) => {
            res.status(400).json({ msg: "Cannot find user" })
             throw new Error("Cannot find user")
        } 
+
+           //Generate token
+      const token = generateToken(user._id)
        
        if (user) {
         const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
@@ -362,7 +365,9 @@ export const  getUser = async(req, res) => {
           adsCreated,
           freeTaskCount,
           referrals,
-          referrersId
+          referrersId,
+          token
+
       })
       }
    } catch (error) {
@@ -596,7 +601,7 @@ export const updateUserBankDetails = asyncHandler( async(req, res) => {
 
   const {userId, bankName, accountHolderName, bankAccountNumber } = req.body
   
-    const user = await User.findById(userId)
+    const user = await User.findById(req.user._id)
 
       // Check if new bankAccountName && Account Number has already being registered by another user
       if (bankAccountNumber && bankAccountNumber !== user.bankAccountNumber) {
@@ -639,7 +644,7 @@ export const updateUserBankDetails = asyncHandler( async(req, res) => {
 export const verifyOldPassword = asyncHandler(async (req, res) => {
   const { userId, oldPassword } = req.body
 
-  const user = await User.findById(userId)
+  const user = await User.findById(req.user._id)
 
   // Check if user exist
    if(!user) {

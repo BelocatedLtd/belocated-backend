@@ -354,9 +354,8 @@ export const  getUserWithdrawals = asyncHandler(async (req, res) => {
    //Get user Transactions
  // http://localhost:6001/api/transactions/userall
 export const  getUserTransactions = asyncHandler(async (req, res) => {
-    const { _id } = req.user
     try {
-          const transactions = await Transaction.find({userId: _id}).sort("-createdAt")
+          const transactions = await Transaction.find({userId: req.user_id}).sort("-createdAt")
          if(!transactions) {
              res.status(400).json({ message: "Cannot find any transaction made by this user" })
              throw new error("Cannot find any transaction made by this user")
