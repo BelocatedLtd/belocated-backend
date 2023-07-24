@@ -25,12 +25,6 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 throw new Error("Wallet not found")
             }
     
-           // Match existing wallet to the loggedin user 
-            if (wallet.userId !== userId && userId !== req.user._id) {
-                res.status(401).json({message: "User not authorized to make this transaction"})
-                throw new Error("User not authorized to make this transaction") 
-            }
-    
             // Checking if user wallet is sufficient to fund ad purchase
             if (wallet.value < adAmount) {
                 res.status(400).json({message: "Wallet insufficient to pay for ad, please fund wallet"})
