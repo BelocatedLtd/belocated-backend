@@ -7,7 +7,6 @@ import User from "../model/User.js";
 
 //Get User Wallet
 export const  getUserWallet = asyncHandler(async (req, res) => {
-    const { userId } = req.params
 
     try {
         const wallet = await Wallet.findOne({userId: req.user._id})

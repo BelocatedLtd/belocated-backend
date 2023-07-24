@@ -284,12 +284,12 @@ export const loginUser = asyncHandler(async (req, res) => {
   const token = generateToken(user._id)
  
   //send HTTP-Only cookie 
-   res.cookie("token", token, {
-     httpOnly: true,
-     expires: new Date(Date.now() + 1000 * 86400), // 1 day
-     sameSite: "none",
-     secure: true
-   })
+  //  res.cookie("token", token, {
+  //    httpOnly: true,
+  //    expires: new Date(Date.now() + 1000 * 86400), // 1 day
+  //    sameSite: "none",
+  //    secure: true
+  //  })
  
     if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})
