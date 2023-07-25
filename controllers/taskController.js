@@ -187,16 +187,16 @@ export const submitTask = asyncHandler(async (req, res) => {
     // Update User wallet
     if (user.freeTaskCount === 0) {
 
-        // const updatedAdvertiserWallet = await Wallet.updateOne(
-        //     { userId:  task.advertiserId},
-        //     {
-        //         $inc: {value: -advert.costPerTask}
-        //     },
-        //     {
-        //         new: true,
-        //         runValidators: true
-        //     }
-        // )
+        const updatedAdvertiserWallet = await Wallet.updateOne(
+            { userId:  task.advertiserId},
+            {
+                $inc: {value: -advert.costPerTask}
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        )
 
         const updatedUserWallet = await Wallet.updateOne(
             { userId:  req.user._id},

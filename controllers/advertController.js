@@ -180,10 +180,12 @@ export const createAdvert = asyncHandler(async (req, res) => {
 //Change Advert Free Status
 // http://localhost:6001/api/advert/create
 export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { advertId } = req.body;
 
-    const advert = await Advert.findById(id)
-    const user = await User.findById(req.user.id)
+    const advert = await Advert.findById(advertId)
+
+
+    const user = await User.findById(req.user._id)
 
     if(user.accountType !== "Admin") {
         res.status(401).json({message: "Unauthorized User"})
@@ -197,7 +199,7 @@ export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
 
     if (advert.isFree === false) {
         const toggleAdTypeFalseToTrue = await Advert.findByIdAndUpdate(
-            { _id: id },
+            { _id: advertId },
             {
               isFree: true,
             },
@@ -219,7 +221,7 @@ export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
 
     if (advert.isFree === true) {
         const toggleAdTypeTrueToFalse = await Advert.findByIdAndUpdate(
-            { _id: id },
+            { _id: advertId },
             {
               isFree: false,
             },

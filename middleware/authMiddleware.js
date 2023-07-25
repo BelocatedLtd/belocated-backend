@@ -3,9 +3,6 @@ import User from "../model/User.js";
 import jwt from "jsonwebtoken";
 
 export const protect = asyncHandler(async (req, res, next) => {
-   // let authToken;
-
-    //authToken = req.cookies.token;
 
     const authToken = req.headers.authorization?.split(' ')[1];
 

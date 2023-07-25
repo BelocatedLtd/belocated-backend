@@ -11,7 +11,7 @@ const upload =  multer({storage});
 const router = express.Router();
 
 router.post("/create", protect, upload.array('images'), createAdvert)
-router.patch("/setadfree/:id", protect, toggleAdvertFreeStatus)
+router.post("/setadfree", protect, toggleAdvertFreeStatus)
 router.get("/", protect, getAdvert)
 router.get("/all", getAllAdvert)
 
