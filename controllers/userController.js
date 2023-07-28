@@ -278,7 +278,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (user.isEmailVerified === true) {
  
      //Generate token
-  const token = generateToken({id: user._id})
+  const token = generateToken(user._id)
  
   //send HTTP-Only cookie 
   //  res.cookie("token", token, 
