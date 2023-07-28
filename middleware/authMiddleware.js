@@ -8,9 +8,11 @@ export const protect = asyncHandler(async (req, res, next) => {
 
     const authTokenCookie = req.cookies.token
 
-    if (authToken) {
+
+
+    if (authToken || authTokenCookie) {
         try {
-            const decoded = jwt.verify(authTokenCookie, process.env.JWT_SECRET);
+            const decoded = jwt.verify(authTokenCookie ? authTokenCookie : authToken, process.env.JWT_SECRET);
 
             req.user = await User.findById(decoded.id).select('-password');
 
