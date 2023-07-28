@@ -284,12 +284,13 @@ export const loginUser = asyncHandler(async (req, res) => {
   const token = generateToken(user._id)
  
   //send HTTP-Only cookie 
-  //  res.cookie("token", token, {
-  //    httpOnly: true,
-  //    expires: new Date(Date.now() + 1000 * 86400), // 1 day
-  //    sameSite: "none",
-  //    secure: true
-  //  })
+   res.cookie("token", token, {
+     httpOnly: true,
+     withCredentials: true,
+     expires: new Date(Date.now() + 1000 * 86400), // 1 day
+     sameSite: "none",
+     secure: true
+   })
  
     if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})
@@ -427,15 +428,15 @@ if (users) {
 
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
-// export const logoutUser = asyncHandler(async(req, res) => {
-//     res.cookie("token", "", {
-//       httpOnly: true,
-//       expires: new Date(0),
-//       sameSite: 'none',
-//       secure: true
-//     })
-//     return res.status(200).json("Successfully Logged Out")
-// })
+export const logoutUser = asyncHandler(async(req, res) => {
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0),
+      sameSite: 'none',
+      secure: true
+    })
+    return res.status(200).json("Successfully Logged Out")
+})
 
 
 //>>>> Get Login Status

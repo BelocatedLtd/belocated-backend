@@ -42,7 +42,7 @@ app.use(morgan("common"));
 app.disable('x-powered-by');
 app.use(cookieParser());
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, 'https://res.cloudinary.com'],
+    origin: [process.env.FRONTEND_URL],
     credentials: true
 }));
 app.use(bodyParser.json({limit: '30mb', extended: true }));
@@ -56,11 +56,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 //Error middleware
 app.use(errorHandler);
-
-
-
-
-
 
 app.use("/api/user", userRoute)
 app.use("/api/adverts", advertRoute)
