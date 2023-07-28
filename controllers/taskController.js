@@ -264,7 +264,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     if (!advert) {
         res.status(400).json({message: "Cannot find the ad for this task"});
-        throw new Error("Cannot find user Wallet to update")
+        throw new Error("Cannot find the ad for this task")
     }
 
     if (advert.desiredROI === 0) {
@@ -311,6 +311,19 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(500).json({message: "Failed to subtract from free task count"})
             throw new Error("Failed to subtract from free task count")
         } 
+
+        //subtrate 1 from the desired roi
+        //Update the number of tasks completed on an advert
+        advert.desiredROI -= 1;
+        advert.tasks += 1;
+
+        //save the update on user model
+        const updatedAdvert = await advert.save(); 
+
+        if (!updatedAdvert) {
+            res.status(500).json({message: "Failed to approve task"})
+            throw new Error("Failed to approve task")
+        }
         
     }
 

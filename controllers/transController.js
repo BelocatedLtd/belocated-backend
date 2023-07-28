@@ -130,7 +130,7 @@ export const  getWallet = asyncHandler(async (req, res) => {
         throw new error("Some required fields are empty")
      }
 
-    const user = await User.findById(req.user.id)
+    const user = await User.findById(req.user._id)
     const wallet = await Wallet.findOne({userId: user._id})  
 
      // Validation
