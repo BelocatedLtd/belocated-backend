@@ -288,7 +288,7 @@ export const submitTask = asyncHandler(async (req, res) => {
         task.status =  "Approved";
 
         //save the update on task model
-        updatedTask = await task.save(); 
+        updatedTask = await task.save();  
     }
 
     
