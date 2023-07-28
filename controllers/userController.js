@@ -9,9 +9,6 @@ import sendEMail from "../utils/sendEmail.js";
 //import generateToken from "../utils/generateToken.js";
 import sendSMS from "../utils/sendSMS.js";
 import sendEmail from "../utils/termilEmailSend.js";
-//import sendOTP from "../utils/sendTermiiSMS.js";
-//import verifyOTP from "../utils/verifyTermiiOTP.js";
-import { sendVerification, verifyOTP } from "../utils/sendSMSTwilio.js";
 
 
 const generateToken = (id) => {
@@ -281,16 +278,17 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (user.isEmailVerified === true) {
  
      //Generate token
-  const token = generateToken(user._id)
+  const token = generateToken({id: user._id})
  
   //send HTTP-Only cookie 
-   res.cookie("token", token, {
+   res.cookie("token", token, 
+   {
      httpOnly: true,
      withCredentials: true,
      expires: new Date(Date.now() + 1000 * 86400), // 1 day
      sameSite: "none",
      secure: true
-   })
+   });
  
     if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})

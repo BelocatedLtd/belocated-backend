@@ -4,15 +4,15 @@ import jwt from "jsonwebtoken";
 
 export const protect = asyncHandler(async (req, res, next) => {
 
-    const authToken = req.headers.authorization?.split(' ')[1];
+    const authToken = req.cookies.token || req.headers.authorization?.split(' ')[1];
 
-    const authTokenCookie = req.cookies.token
+    if(!authToken) {
+        res.status(401).json({message: "Not Authorized, no token"});
+        throw new Error( 'Not Authorized, no token ')
+    }
 
-
-
-    if (authToken || authTokenCookie) {
         try {
-            const decoded = jwt.verify(authTokenCookie ? authTokenCookie : authToken, process.env.JWT_SECRET);
+            const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
 
             req.user = await User.findById(decoded.id).select('-password');
 
@@ -21,9 +21,5 @@ export const protect = asyncHandler(async (req, res, next) => {
             res.status(401).json({message: "Not Authorized, invalid token"});;
             throw new Error('Not authorized, invalid token')
         }
-    } else {
-        res.status(401).json({message: "Not Authorized, no token"});
-        throw new Error( 'Not Authorized, no token ')
-    }
 })
 
