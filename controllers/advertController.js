@@ -182,8 +182,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
 export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
     const { advertId } = req.body;
 
-    const advert = await Advert.findById(advertId)
-
+    const advert = await Advert.findById(req.params.id)
 
     const user = await User.findById(req.user._id)
 
@@ -198,47 +197,31 @@ export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
     }
 
     if (advert.isFree === false) {
-        const toggleAdTypeFalseToTrue = await Advert.findByIdAndUpdate(
-            { _id: advertId },
-            {
-              isFree: true,
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
-      
+        advert.isFree = true
+
+        const toggleAdTypeFalseToTrue = advert.save() 
+
         if (!toggleAdTypeFalseToTrue) {
             res.status(404).json({message: "Failed to change advert type"});
             throw new Error
         }
 
-        if (toggleAdTypeFalseToTrue) {
-            res.status(200).json(toggleAdTypeFalseToTrue)
-        }
+        res.status(200).json(toggleAdTypeFalseToTrue)
+        return
     }
 
     if (advert.isFree === true) {
-        const toggleAdTypeTrueToFalse = await Advert.findByIdAndUpdate(
-            { _id: advertId },
-            {
-              isFree: false,
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
+        advert.isFree = false
+
+        const toggleAdTypeTrueToFalse = advert.save() 
       
         if (!toggleAdTypeTrueToFalse) {
             res.status(404).json({message: "Failed to change advert type"});
             throw new Error
         }
 
-        if (toggleAdTypeTrueToFalse) {
-            res.status(200).json(toggleAdTypeTrueToFalse)
-        }
+        res.status(200).json(toggleAdTypeTrueToFalse)
+        return
     }
  });
 
