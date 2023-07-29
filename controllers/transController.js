@@ -39,6 +39,25 @@ export const  getWallet = asyncHandler(async (req, res) => {
         res.status(200).json(wallet)
   })
 
+//Get Single User Wallet
+export const  getSingleUserWallet = asyncHandler(async (req, res) => {
+    const { id } = req.params
+
+    if (req.user.accountType !== "Admin") {
+        res.status(401).json({message: "Not Authorized"});
+        throw new Error("Not Authorized")
+    }
+
+    const wallet = await Wallet.findOne({userId: id})
+
+        if(!wallet) {
+            res.status(400).json({message: "No User Wallet Found"})
+            throw new Error("No User Wallet Found")
+        }
+
+        res.status(200).json(wallet)
+  })
+
 
   //Fund User Wallet 
   export const fundUserWallet = asyncHandler(async(req, res) => {

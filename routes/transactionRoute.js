@@ -1,5 +1,5 @@
 import express from 'express'
-import { confirmWithdrawalRequest, deleteWithdrawalRequest, fundUserWallet, getTransactions, getUserTransactions, getUserWallet, getUserWithdrawals, getWallet, getWithdrawals, withdrawWallet } from '../controllers/transController.js';
+import { confirmWithdrawalRequest, deleteWithdrawalRequest, fundUserWallet, getSingleUserWallet, getTransactions, getUserTransactions, getUserWallet, getUserWithdrawals, getWallet, getWithdrawals, withdrawWallet } from '../controllers/transController.js';
 import {protect} from '../middleware/authMiddleware.js';
 
 
@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get("/wallet/user", protect, getUserWallet)
 router.get("/wallet/:userId", protect, getWallet)
+router.get("/wallet/user/:id", protect, getSingleUserWallet)
 router.patch("/fund", protect, fundUserWallet)
 router.post("/withdraw", protect, withdrawWallet)
 router.get("/withdrawals", protect, getWithdrawals)
