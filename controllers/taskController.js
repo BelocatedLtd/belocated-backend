@@ -106,13 +106,26 @@ export const submitTask = asyncHandler(async (req, res) => {
     const { taskId,  userSocialName } = req.body;
 
     const task = await Task.findById(taskId)
-    const advert = await Advert.findById(task?.advertId)
+    const advert = await Advert.findById(task.advertId)
     const user = await User.findById(req.user._id)
     const wallet = await Wallet.find({userId: req.user._id}) 
+
+    // res.status(200).json(advert);
+    // return
 
     if (!task) {
         res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")
+    }
+
+    if (!advert) {
+        res.status(400).json({message: "Cannot find the ad for this task"});
+        throw new Error("Cannot find user Wallet to update")
+    }
+
+    if (!wallet) {
+        res.status(400).json({message: "Cannot find user Wallet to update"});
+        throw new Error("Cannot find user Wallet to update")
     }
 
     if (advert.desiredROI === 0) {
@@ -123,16 +136,6 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (task.status === "Submitted") {
         res.status(400).json({message: "You have already submitted this task, you can only submit once, please wait for approval"});
         throw new Error("You have submitted your task, you can only submit once, please wait for approval")
-    }
-
-    if (!wallet) {
-        res.status(400).json({message: "Cannot find user Wallet to update"});
-        throw new Error("Cannot find user Wallet to update")
-    }
-
-    if (!advert) {
-        res.status(400).json({message: "Cannot find the ad for this task"});
-        throw new Error("Cannot find user Wallet to update")
     }
 
     //Cloudinary configuration
