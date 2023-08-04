@@ -271,8 +271,8 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     if (advert.desiredROI === 0) {
-        res.status(500).json({message: "Ad campaign is no longer active"});
-        throw new Error("Ad campaign is no longer active")
+        res.status(500).json({message: "Ad campaign is no longer running"});
+        throw new Error("Ad campaign is no longer running")
     }
 
     let updatedTask;
@@ -302,6 +302,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
 
+    // When status has been changed to approved then freetask count shou;d be subtracted by 1 and desiredROI should be subtracted by 1 and if zero, ad status should be changed to Completed
     if (updatedTask) {
     // Check if user has fulfilled the weekly free task obligation
     if (taskPerformer.freeTaskCount > 0 && status === "Approved") {
@@ -327,7 +328,18 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(500).json({message: "Failed to approve task"})
             throw new Error("Failed to approve task")
         }
-        
+
+        // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
+        if (updatedAdvert.desiredROI === 0) {
+            advert.status = "Completed"
+
+            const updatedAdvertStatus = await advert.save();
+
+            if (!updatedAdvertStatus) {
+                res.status(500).json({message: "Failed to change ad status"})
+                throw new Error("Failed to change ad status")
+            }
+        }   
     }
 
     //User' can completed hisher free task count
@@ -344,6 +356,18 @@ export const submitTask = asyncHandler(async (req, res) => {
         if (!updatedAdvert) {
             res.status(500).json({message: "Failed to approve task"})
             throw new Error("Failed to approve task")
+        }
+
+        // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
+        if (updatedAdvert.desiredROI === 0) {
+            advert.status = "Completed"
+
+            const updatedAdvertStatus = await advert.save();
+
+            if (!updatedAdvertStatus) {
+                res.status(500).json({message: "Failed to change ad status"})
+                throw new Error("Failed to change ad status")
+            }
         }
 
         
