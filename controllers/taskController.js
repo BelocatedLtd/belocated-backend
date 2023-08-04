@@ -16,6 +16,13 @@ import { v2 as cloudinary } from 'cloudinary'
 export const CreateNewTask = asyncHandler(async (req, res) => {
     const { advertId, advertiserId, taskPerformerId, title, platform, service, desiredROI, toEarn, gender, state, lga, caption, taskVerification, socialPageLink, adMedia } = req.body;
 
+    const advert = await Advert.findById(advertId)
+
+    if (!advert) {
+        res.status(404).json({message: "The advert for this task could not be found"});
+        throw new Error("The advert for this task could not be found")
+    }
+
     //Create New Task
     const task = await Task.create({
         advertId,
@@ -47,6 +54,7 @@ export const CreateNewTask = asyncHandler(async (req, res) => {
     }
 
     if (task) {
+
         res.status(201).json(task);
     } 
 
