@@ -427,12 +427,7 @@ if (users) {
 //>>>>  LOGOUT USERS 
 // http://localhost:6001/api/user/logout
 // export const logoutUser = asyncHandler(async(req, res) => {
-//     res.cookie("token", "", {
-//       httpOnly: true,
-//       expires: new Date(0),
-//       sameSite: 'none',
-//       secure: true
-//     })
+    
 //     return res.status(200).json("Successfully Logged Out")
 // })
 
@@ -440,7 +435,8 @@ if (users) {
 //>>>> Get Login Status
 export const loginStatus = asyncHandler(async(req, res) => {
 
-  const authToken = req.cookies.token;
+  const authToken = req.headers.authorization?.split(' ')[1];
+
   if (!authToken) {
     return res.json(false)
   }

@@ -14,6 +14,11 @@ export const protect = asyncHandler(async (req, res, next) => {
     try {
         const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
 
+        if(!decoded) {
+            res.status(500).json({message: "Session Expired, please login"});
+            throw new Error( 'Session Expired, please login')
+        }
+
         req.user = await User.findById(decoded.id).select('-password');
 
         next();

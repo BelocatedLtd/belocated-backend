@@ -13,6 +13,7 @@ router.post('/login', loginUser);
 router.get('/', protect, getUser);
  router.get('/all', protect, getUsers);
  router.get('/loggedin', loginStatus);
+//  router.get('/logout', logoutUser);
 
  //Patch
  router.patch('/update/', protect, updateUser)
