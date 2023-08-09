@@ -65,15 +65,15 @@ app.use("/api/activities", feedRoute)
 
 
 //Cron job schedule
-//cron.schedule('0 0 * * 0', resetFreeTasks)
+cron.schedule('0 0 * * 0', resetFreeTasks)
 
 // Schedule the task to run every Sunday at midnight
-cron.schedule('0 0 * * 0', () => {
-    const now = new Date();
-    if (now.getDay() === 0) {
-        resetFreeTasks;
-    }
-  });
+// cron.schedule('0 0 * * 0', () => {
+//     const now = new Date();
+//     if (now.getDay() === 0) {
+//         resetFreeTasks;
+//     }
+//   });
 
 // Setup Socket.io connection and listen to events
 //io.on('connection', handleConnection);

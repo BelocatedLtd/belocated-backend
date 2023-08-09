@@ -18,7 +18,7 @@ const resetFreeTasksCount = async() => {
     }
 }
 
-resetFreeTasksCount();
+// resetFreeTasksCount();
 
 export default resetFreeTasksCount
 
