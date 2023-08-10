@@ -937,7 +937,65 @@ if (!updatedUserDetails) {
 if (updatedUserDetails) {
  // const updatedUser = await User.findById(userToken.userId)
 
-    const {_id, isEmailVerified } = updatedUserDetails
+ //Send Welcome Email
+ const message = `
+ <h2>Hello, ${updatedUserDetails.username}</h2>
+ <p>We are so happy you are here because it means you believe in the brand and what it stands for.</p>
+ <p>BeLocated was created just for you - giving you an opportuinity to publicize your brand on your terms and earn on your terms.</p>
+ <p>It is definitely a win win with BeLocated.</p>
+
+ <h3>How can I get started you might be wondering?</h3>
+
+ <ul>
+ <li>1. Once you are logged in, right on your dashboard you will see the icon earn and Advertise right under your wallet and available balance.</li>
+ <li>2. Once you click earn or advertise, you will be required to verify your phone number and then fill out your profile details.</li>
+ <li>3. Clicking the earn and advertise icon again after verifying your phone number and updating your profile, you will then gain access full access to earn and to advertise.</li>
+ <li>4. When you click earn you are required to do two free task every week (the seven days of the week starts counting on a Sunday. You can see the free task countdown on your dash board) to gain access to the numerous paid task. Ensure you scroll through to scroll through all the listings until you see available tasks. Click on it to perform task. 
+ </li>
+ <li>5. You can only withdraw when you have an accumulation of 1000 naira (withdrawal as airtime) and 5000 (withdrawal as cash).</li>
+ <li></li>
+ </ul>
+
+ <h3>Advertise</h3>
+
+ <ul>
+ <li> - When you click on the advertise icon, you will have access to a list of services on the different media platforms.</li>
+ <li> - You can advertise with your pending balance or fund your wallet to advertise.</li>
+ </ul>
+
+ <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+
+ <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+
+ <label>Link to Telegram group:</label>
+ <a href="https://t.me/belocated">https://t.me/belocated<a/>
+
+ <label>WhatsApp:</label>
+ <a href="wa.me/2347031935276">wa.me/2347031935276<a/>
+
+ <label>Email:</label>
+ <p>cs@belocated.ng<p/>
+
+
+
+ <p>Best Regards</p>
+ <p>CEO BELOCATED</p>
+ `
+ const subject = 'Welcome note from the CEO'
+ const send_to = updatedUserDetails.email
+ const reply_to = "noreply@noreply.com"
+
+ 
+
+ //Finally sending email
+ const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+ if (!emailSent) {
+   res.status(500).json('Failed to send welcome email');
+   throw new Error('Failed to send welcome email')
+ }
+
+  const {_id, isEmailVerified } = updatedUserDetails
   
   res.status(200).json({ _id, isEmailVerified })
   }

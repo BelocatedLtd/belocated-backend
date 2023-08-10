@@ -392,10 +392,6 @@ export const submitTask = asyncHandler(async (req, res) => {
          throw new Error('Email sending failed')
          }
 
-         if (emailSent && emailSent.status === 200) {
-         res.status(200).json('Email Sent Successfully');
-         }
-
         // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
         if (updatedAdvert.desiredROI === 0) {
             advert.status = "Completed"
