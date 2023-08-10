@@ -7,8 +7,6 @@ import bcrypt from "bcryptjs";
 import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
 //import generateToken from "../utils/generateToken.js";
-import sendSMS from "../utils/sendSMS.js";
-import sendEmail from "../utils/termilEmailSend.js";
 
 
 const generateToken = (id) => {
@@ -784,15 +782,22 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     //Send Verification Email
     const message = `
     <h2>Hello, ${user.username}</h2>
-    <p>Please use the verification url to verify your belocated account.</p>
-    <p>The reset link is valid for 30minutes</p>
+    <p>Welcome to BeLocated!</p>
+    <p>We are excited to have you join the BeLocated family.</p>
+    <p>To get you started, you would have to verify your email by clicking the link below.</p>
+    <p>Note that the reset link is valid for 30minutes</p>
+    <p>Once you are verified you can proceed to login and access all our earning and publicity packages.</p>
+
+    <p>We are here to serve you so contact us on any of our social media pages with any question you may have</p>
+
+    <p>Your verification link is:</p>
 
     <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
 
-    <p>Regards...</p>
+    <p>Regards,</p>
     <p>Belocated Team</p>
     `
-    const subject = 'Email Verification'
+    const subject = 'Verification Email'
     const send_to = email
     const reply_to = "noreply@noreply.com"
 
