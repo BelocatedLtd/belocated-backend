@@ -4,6 +4,7 @@ import Advert from "../model/Advert.js";
 import Task from '../model/Task.js'
 import Wallet from "../model/Wallet.js";
 import { v2 as cloudinary } from 'cloudinary'
+import sendEMail from "../utils/sendEmail.js";
 
 // import cloudinary from "../utils/cloudinary.js";
 //import { fileSizeFormatter } from "../utils/fileUpload.js";
@@ -365,6 +366,35 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(500).json({message: "Failed to approve task"})
             throw new Error("Failed to approve task")
         }
+
+         //Send Free Task Completed Email
+         const message = `
+         <h2>Congratulations ${taskPerformer?.username}!</h2>
+         <p>You have successfully completed your two free task for the week</p>
+         <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
+         <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+         <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
+         <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
+         <label>Email:</label><p>cs@belocated.ng</p>
+
+         <p>Regards,</p>
+         <p>Belocated Team</p>
+         `
+         const subject = 'Free Task Completed!'
+         const send_to = taskPerformer?.email
+         const reply_to = "noreply@noreply.com"
+
+         //Finally sending email
+         const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+         if (!emailSent) {
+         res.status(500).json('Email sending failed');
+         throw new Error('Email sending failed')
+         }
+
+         if (emailSent && emailSent.status === 200) {
+         res.status(200).json('Email Sent Successfully');
+         }
 
         // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
         if (updatedAdvert.desiredROI === 0) {

@@ -874,7 +874,7 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
-    const subject = 'Verify Password Change'
+    const subject = 'Verify Sensitive Change'
     const send_to = user.email
     const reply_to = "noreply@noreply.com"
 
@@ -942,7 +942,7 @@ if (updatedUserDetails) {
   res.status(200).json({ _id, isEmailVerified })
   }
 }
-)
+) 
 
 
  //>>>> Email OTP Verification
