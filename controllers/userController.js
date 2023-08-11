@@ -952,15 +952,15 @@ if (updatedUserDetails) {
  <li>3. Clicking the earn and advertise icon again after verifying your phone number and updating your profile, you will then gain access full access to earn and to advertise.</li>
  <li>4. When you click earn you are required to do two free task every week (the seven days of the week starts counting on a Sunday. You can see the free task countdown on your dash board) to gain access to the numerous paid task. Ensure you scroll through to scroll through all the listings until you see available tasks. Click on it to perform task. 
  </li>
- <li>5. You can only withdraw when you have an accumulation of 1000 naira (withdrawal as airtime) and 5000 (withdrawal as cash).</li>
- <li></li>
+ <li>5. You can only withdraw when you have an accumulation of 1000 naira (withdrawal as airtime) and 5000 (withdrawal as cash).
+ </li>
  </ul>
 
  <h3>Advertise</h3>
 
  <ul>
- <li> - When you click on the advertise icon, you will have access to a list of services on the different media platforms.</li>
- <li> - You can advertise with your pending balance or fund your wallet to advertise.</li>
+ <li> When you click on the advertise icon, you will have access to a list of services on the different media platforms.</li>
+ <li> You can advertise with your pending balance or fund your wallet to advertise.</li>
  </ul>
 
  <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
@@ -969,9 +969,11 @@ if (updatedUserDetails) {
 
  <label>Link to Telegram group:</label>
  <a href="https://t.me/belocated">https://t.me/belocated<a/>
+ <br/>
 
  <label>WhatsApp:</label>
  <a href="wa.me/2347031935276">wa.me/2347031935276<a/>
+ <br/>
 
  <label>Email:</label>
  <p>cs@belocated.ng<p/>
