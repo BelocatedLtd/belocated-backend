@@ -33,3 +33,17 @@ export const getFeed = asyncHandler(async(req, res) => {
         res.status(200).json(activityFeed)
      }
 })
+
+export const trashFeed = asyncHandler(async(req, res) => {
+
+    const activityFeed = await Feed.deleteMany()
+
+    if(!activityFeed) {
+        res.status(400).json("failed to trash activities")
+        throw new error({message: "failed to trash activities"})
+    } 
+
+    if (activityFeed) {
+        res.status(200).json('Feed Emptied')
+     }
+})
