@@ -247,6 +247,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     const advert = await Advert.findById(task?.advertId)
     const wallet = await Wallet.find({userId: task?.taskPerformerId})
     const taskPerformer = await User.findById(task?.taskPerformerId)
+    const advertiser = await User.findById(task.advertiserId)
     const advertserWallet = await Wallet.find({userId:  task?.advertiserId})
 
     if (!task) {
@@ -272,6 +273,11 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (!advertserWallet) {
         res.status(400).json({message: "Cannot find Advertisers Wallet for payment retrieval"});
         throw new Error("Cannot find user Wallet Advertisers for payment retrieval")
+    }
+
+    if (!advertiser) {
+        res.status(400).json({message: "Cannot find Advertiser"});
+        throw new Error("Cannot find Advertiser")
     }
 
     if (!advert) {
@@ -343,6 +349,31 @@ export const submitTask = asyncHandler(async (req, res) => {
             advert.status = "Completed"
 
             const updatedAdvertStatus = await advert.save();
+
+            //Send email to advertiser when advert is completed 
+            const message = `
+            <h2>Dear ${advertiser?.username}!</h2>
+            <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
+            <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
+            <p>Thank you for your continuous patronage.</p>
+            <p>Keep winning with BeLocated.</p>
+            <br/>
+            <br/>
+   
+            <p>Regards,</p>
+            <p>Belocated Team</p>
+            `
+            const subject = 'Whoop! Whoop!! Your order has been completed'
+            const send_to = advertiser.email
+            const reply_to = "noreply@noreply.com"
+   
+            //Finally sending email
+            const emailSent = await sendEMail(subject, message, send_to, reply_to)
+   
+            if (!emailSent) {
+            res.status(500).json('Email sending failed');
+            throw new Error('Email sending failed')
+            }
 
             if (!updatedAdvertStatus) {
                 res.status(500).json({message: "Failed to change ad status"})
