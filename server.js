@@ -18,8 +18,8 @@ import feedRoute from './routes/feedRoute.js'
 import errorHandler from './middleware/errorMiddleware.js'
 import {Server} from 'socket.io'
 import cron from 'node-cron'
-import resetFreeTasks from './crons/resetFreeTasks.js'
 import { saveActivity } from './controllers/feedController.js'
+import resetFreeTasksCount from './crons/resetFreeTasks.js'
 
 
 /*  CONFIGURATIONS */
@@ -65,7 +65,7 @@ app.use("/api/activities", feedRoute)
 
 
 //Cron job schedule
-cron.schedule('0 0 * * 0', resetFreeTasks)
+cron.schedule('0 0 * * 0', resetFreeTasksCount)
 
 // Schedule the task to run every Sunday at midnight
 // cron.schedule('0 0 * * 0', () => {
