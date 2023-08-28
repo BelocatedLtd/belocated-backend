@@ -65,7 +65,10 @@ app.use("/api/activities", feedRoute)
 
 
 //Cron job schedule
-cron.schedule('0 0 * * 0', resetFreeTasksCount)
+//cron.schedule('0 0 * * 0', resetFreeTasksCount)
+cron.schedule('30 12 * * 1', resetFreeTasksCount);
+
+//cron.schedule('* * * * *', resetFreeTasksCount)
 
 // Schedule the task to run every Sunday at midnight
 // cron.schedule('0 0 * * 0', () => {
