@@ -1,4 +1,5 @@
 import User from "../model/User.js"
+import mongoose from "mongoose";
 import sendResetEmail from "./sendFreeTaskResetEmail.js";
 
 const resetFreeTasksCount = async() => {
@@ -14,10 +15,10 @@ const resetFreeTasksCount = async() => {
 
         console.log("Weekly Tasks count reset successful for all users, sending notification emails...");
 
-         const emailSendingPromise = sendResetEmail()
+        const emailSendingPromise = sendResetEmail()
 
         await emailSendingPromise;
-        console.log("Email sending completed successfully.");
+       console.log("Email sending completed successfully.");
 
     } catch (error) {
         console.error("Error resetting free tasks count:", error);
