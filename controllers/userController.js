@@ -275,8 +275,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     if (user.isEmailVerified === true) {
 
-      res.status(400).json({message: "Error trying to log into your account, please contact admin"})
-     throw new Error("Error trying to log into your account, please contact admin")
+    //   res.status(400).json({message: "Error trying to log into your account, please contact admin"})
+    //  throw new Error("Error trying to log into your account, please contact admin")
  
      //Generate token
   const token = generateToken(user._id)

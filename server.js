@@ -66,7 +66,7 @@ app.use("/api/activities", feedRoute)
 
 //Cron job schedule
 cron.schedule('0 0 * * 0', resetFreeTasksCount)
-//cron.schedule('0 8 * * 1', resetFreeTasksCount);
+//cron.schedule('* * * * *', resetFreeTasksCount);
 
 //cron.schedule('0 0 * * *', resetFreeTasksCount)
 
