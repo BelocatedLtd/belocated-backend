@@ -814,7 +814,7 @@ export const verifyEmail = asyncHandler(async(req, res) => {
       throw new Error('Email verification failed')
     }
 
-    if (emailSent && emailSent.status === 200) {
+    if (emailSent) {
       res.status(200).json('Verification Email Sent Successfully');
     }
   }
@@ -884,14 +884,14 @@ export const verifyEmailPasswordChange = asyncHandler(async(req, res) => {
     
 
     //Finally sending email
-    const emailSent = await sendEMail(subject, message, send_to, reply_to)
+   const emailSent = await sendEMail(subject, message, send_to, reply_to)
 
     if (!emailSent) {
       res.status(500).json('Password change verification failed');
       throw new Error('Password change verification failed')
     }
 
-    if (emailSent && emailSent.status === 200) {
+    if (emailSent) {
       const emailResponse = {
         userId: user._id,
         message: "Verification OTP Sent"

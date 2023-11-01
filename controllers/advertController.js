@@ -3,7 +3,7 @@ import User from "../model/User.js";
 import Wallet from "../model/Wallet.js";
 import Advert from '../model/Advert.js'
 import Transaction from "../model/Transaction.js";
-import { v2 as cloudinary } from 'cloudinary'
+import { v2 as cloudinary } from 'cloudinary' 
 
 
 //Create New Advert

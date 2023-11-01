@@ -36,6 +36,7 @@
     "smtp-connection": "^4.0.2",
     "socket.io": "^4.7.0",
     "streamifier": "^0.1.1",
-    "twilio": "^4.12.0"
+    "twilio": "^4.12.0",
+    "zeptomail": "^5.0.0"
   }
 }

@@ -119,9 +119,6 @@ export const submitTask = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id)
     const wallet = await Wallet.find({userId: req.user._id}) 
 
-    // res.status(200).json(advert);
-    // return
-
     if (!task) {
         res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")
@@ -192,12 +189,14 @@ export const submitTask = asyncHandler(async (req, res) => {
            }
     }
 
-   if (user.freeTaskCount > 0) {
+    // If Advert is a free advert
+
+   if (advert.isFree === true) {
     res.status(200).json("Task submitted successfully, wait for Admin's Approval");
    }
 
-    // Update User wallet
-    if (user.freeTaskCount === 0) {
+    // If Advert is a paid advert - Update User wallet
+    if (advert.isFree === false) {
 
         const updatedAdvertiserWallet = await Wallet.updateOne(
             { userId:  task.advertiserId},
@@ -316,126 +315,8 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Failed to approve task")
     }
 
-
-    // When status has been changed to approved then freetask count shou;d be subtracted by 1 and desiredROI should be subtracted by 1 and if zero, ad status should be changed to Completed
-    if (updatedTask) {
-    // Check if user has fulfilled the weekly free task obligation
-    if (taskPerformer.freeTaskCount > 0 && status === "Approved") {
-        taskPerformer.freeTaskCount -=  1;
-
-        //save the update on user model
-        const subtractFreeTaskCount = await taskPerformer.save(); 
-    
-        if (!subtractFreeTaskCount) {
-            res.status(500).json({message: "Failed to subtract from free task count"})
-            throw new Error("Failed to subtract from free task count")
-        } 
-
-        //subtrate 1 from the desired roi
-        //Update the number of tasks completed on an advert
-        advert.desiredROI -= 1;
-        advert.tasks += 1;
-
-        //save the update on user model
-        const updatedAdvert = await advert.save(); 
-
-        if (!updatedAdvert) {
-            res.status(500).json({message: "Failed to approve task"})
-            throw new Error("Failed to approve task")
-        }
-
-        // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
-        if (updatedAdvert.desiredROI === 0) {
-            advert.status = "Completed"
-
-            const updatedAdvertStatus = await advert.save();
-
-            //Send email to advertiser when advert is completed 
-            const message = `
-            <h2>Dear ${advertiser?.username}!</h2>
-            <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
-            <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
-            <p>Thank you for your continuous patronage.</p>
-            <p>Keep winning with BeLocated.</p>
-            <br/>
-            <br/>
-   
-            <p>Regards,</p>
-            <p>Belocated Team</p>
-            `
-            const subject = 'Whoop! Whoop!! Your order has been completed'
-            const send_to = advertiser.email
-            const reply_to = "noreply@noreply.com"
-   
-            //Finally sending email
-            const emailSent = await sendEMail(subject, message, send_to, reply_to)
-   
-            if (!emailSent) {
-            res.status(500).json('Email sending failed');
-            throw new Error('Email sending failed')
-            }
-
-            if (!updatedAdvertStatus) {
-                res.status(500).json({message: "Failed to change ad status"})
-                throw new Error("Failed to change ad status")
-            }
-        }   
-    }
-
-    //User' can completed hisher free task count
-    if (taskPerformer.freeTaskCount === 0 && status === "Approved") {
-        //Update Advert after user admin Approves Task Submittion
-        //subtrate 1 from the desired roi
-        //Update the number of tasks completed on an advert
-        advert.desiredROI -= 1;
-        advert.tasks += 1;
-
-        //save the update on user model
-        const updatedAdvert = await advert.save(); 
-
-        if (!updatedAdvert) {
-            res.status(500).json({message: "Failed to approve task"})
-            throw new Error("Failed to approve task")
-        }
-
-         //Send Free Task Completed Email
-         const message = `
-         <h2>Congratulations ${taskPerformer?.username}!</h2>
-         <p>You have successfully completed your two free task for the week</p>
-         <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
-         <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
-         <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
-         <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
-         <label>Email:</label><p>cs@belocated.ng</p>
-
-         <p>Regards,</p>
-         <p>Belocated Team</p>
-         `
-         const subject = 'Free Task Completed!'
-         const send_to = taskPerformer?.email
-         const reply_to = "noreply@noreply.com"
-
-         //Finally sending email
-         const emailSent = await sendEMail(subject, message, send_to, reply_to)
-
-         if (!emailSent) {
-         res.status(500).json('Email sending failed');
-         throw new Error('Email sending failed')
-         }
-
-        // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
-        if (updatedAdvert.desiredROI === 0) {
-            advert.status = "Completed"
-
-            const updatedAdvertStatus = await advert.save();
-
-            if (!updatedAdvertStatus) {
-                res.status(500).json({message: "Failed to change ad status"})
-                throw new Error("Failed to change ad status")
-            }
-        }
-
-        
+    // When advert is a paid advert. Payment should be approved
+    if (advert.isFree === false) {
         // Update Task performer's Wallets
         wallet.pendingBalance -= task.toEarn;
         wallet.value += task.toEarn;
@@ -451,21 +332,105 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
 
-    //Check if advertunit is zero and mark advert as completed
-    if (advert.desiredROI === 0 && status === "Approved") {
-        advert.status = "Completed"
+   // When advert is free
+    // User freetask count should be subtracted by 1 and if its zero, an email should be sent.
+    if (advert.isFree === true) {
+    // Check if user has fulfilled the weekly free task obligation
+    if (taskPerformer.freeTaskCount > 0 && status === "Approved") {
+        taskPerformer.freeTaskCount -=  1;
 
         //save the update on user model
-        const updatedAdvert = await advert.save(); 
+        const subtractFreeTaskCount = await taskPerformer.save(); 
+    
+        if (!subtractFreeTaskCount) {
+            res.status(500).json({message: "Failed to subtract from free task count"})
+            throw new Error("Failed to subtract from free task count")
+        } 
+    }
 
-        if (!updatedAdvert) {
-            res.status(500).json({message: " Advert unit completed, but advert could not be marked complete"});
-            throw new Error("Error, Advert unit exhausted, but advert could not be marked complete")
+    //User has completed the free task count for the week - Send email to the user
+    if (taskPerformer.freeTaskCount === 0 && status === "Approved") {
+        //Send Free Task Completed Email
+        const message = `
+        <h2>Congratulations ${taskPerformer?.username}!</h2>
+        <p>You have successfully completed your two free task for the week</p>
+        <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
+        <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+        <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
+        <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
+        <label>Email:</label><p>cs@belocated.ng</p>
+
+        <p>Regards,</p>
+        <p>Belocated Team</p>
+        `
+        const subject = 'Free Task Completed!'
+        const send_to = taskPerformer?.email
+        const reply_to = "noreply@noreply.com"
+
+        //Finally sending email
+        const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+        if (!emailSent) {
+        res.status(500).json('Email sending failed');
+        throw new Error('Email sending failed')
         }
     }
-}
+    }
 
-        res.status(200).json(task);
+    // Whether free task or paid task
+    // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
+    //subtrate 1 from the desired roi
+    //Update the number of tasks completed on an advert
+    advert.desiredROI -= 1;
+    advert.tasks += 1;
+
+    //save the update on user model
+    const updatedAdvert = await advert.save(); 
+
+    if (!updatedAdvert) {
+        res.status(500).json({message: "Failed to approve task"})
+        throw new Error("Failed to approve task")
+    }
+
+    // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
+    if (updatedAdvert.desiredROI === 0) {
+        advert.status = "Completed"
+
+        const updatedAdvertStatus = await advert.save();
+
+        if (!updatedAdvertStatus) {
+            res.status(500).json({message: "Failed to change ad status"})
+            throw new Error("Failed to change ad status")
+        }
+
+        //Send email to advertiser when advert is completed 
+        const message = `
+        <h2>Dear ${advertiser?.username}!</h2>
+        <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
+        <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
+        <p>Thank you for your continuous patronage.</p>
+        <p>Keep winning with BeLocated.</p>
+        <br/>
+        <br/>
+
+        <p>Regards,</p>
+        <p>Belocated Team</p>
+        `
+        const subject = 'Whoop! Whoop!! Your order has been completed'
+        const send_to = advertiser.email
+        const reply_to = "noreply@noreply.com"
+
+        //Finally sending email
+        const emailSent = await sendEMail(subject, message, send_to, reply_to)
+
+        if (!emailSent) {
+        res.status(500).json('Email sending failed');
+        throw new Error('Email sending failed')
+        }
+    }   
+    
+
+    res.status(200).json(task);
  })
 
   // Admin Reject Submitted Tasks and Pay user
@@ -536,8 +501,12 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Failed to approve task")
     }
 
+    // if (advert.isFree === true) {
+
+    // }
+
     //Rejection Successful
-    if (taskPerformer.freeTaskCount === 0) {
+    if (advert.isFree === false) {
     // Subtract Task performer's Wallets
     wallet.pendingBalance -= task.toEarn
 
