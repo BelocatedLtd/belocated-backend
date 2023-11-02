@@ -190,8 +190,20 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
     // If Advert is a free advert
-
    if (advert.isFree === true) {
+
+    // Check if user has fulfilled the weekly free task obligation
+    if (user.freeTaskCount > 0) {
+        user.freeTaskCount -=  1;
+
+        //save the update on user model
+        const subtractFreeTaskCount = await user.save(); 
+    
+        if (!subtractFreeTaskCount) {
+            res.status(500).json({message: "Failed to subtract from free task count"})
+            throw new Error("Failed to subtract from free task count")
+        } 
+
     res.status(200).json("Task submitted successfully, wait for Admin's Approval");
    }
 
@@ -229,7 +241,8 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(200).json("Task submitted successfully, wait for Admin's Approval");
         }
     }
- });
+ }
+});
 
 
  // Admin Approve Submitted Tasks and Pay user
@@ -335,47 +348,35 @@ export const submitTask = asyncHandler(async (req, res) => {
    // When advert is free
     // User freetask count should be subtracted by 1 and if its zero, an email should be sent.
     if (advert.isFree === true) {
-    // Check if user has fulfilled the weekly free task obligation
-    if (taskPerformer.freeTaskCount > 0 && status === "Approved") {
-        taskPerformer.freeTaskCount -=  1;
-
-        //save the update on user model
-        const subtractFreeTaskCount = await taskPerformer.save(); 
-    
-        if (!subtractFreeTaskCount) {
-            res.status(500).json({message: "Failed to subtract from free task count"})
-            throw new Error("Failed to subtract from free task count")
-        } 
-    }
-
     //User has completed the free task count for the week - Send email to the user
-    if (taskPerformer.freeTaskCount === 0 && status === "Approved") {
-        //Send Free Task Completed Email
-        const message = `
-        <h2>Congratulations ${taskPerformer?.username}!</h2>
-        <p>You have successfully completed your two free task for the week</p>
-        <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
-        <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
-        <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
-        <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
-        <label>Email:</label><p>cs@belocated.ng</p>
+        if (taskPerformer.freeTaskCount === 0 && status === "Approved") {
+            //Send Free Task Completed Email
+            const message = `
+            <h2>Congratulations ${taskPerformer?.username}!</h2>
+            <p>You have successfully completed your two free task for the week</p>
+            <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
+            <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+            <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
+            <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
+            <label>Email:</label><p>cs@belocated.ng</p>
 
-        <p>Regards,</p>
-        <p>Belocated Team</p>
-        `
-        const subject = 'Free Task Completed!'
-        const send_to = taskPerformer?.email
-        const reply_to = "noreply@noreply.com"
+            <p>Regards,</p>
+            <p>Belocated Team</p>
+            `
+            const subject = 'Free Task Completed!'
+            const send_to = taskPerformer?.email
+            const reply_to = "noreply@noreply.com"
 
-        //Finally sending email
-        const emailSent = await sendEMail(subject, message, send_to, reply_to)
+            //Finally sending email
+            const emailSent = await sendEMail(subject, message, send_to, reply_to)
 
-        if (!emailSent) {
-        res.status(500).json('Email sending failed');
-        throw new Error('Email sending failed')
+            if (!emailSent) {
+            res.status(500).json('Email sending failed');
+            throw new Error('Email sending failed')
+            }
         }
     }
-    }
+
 
     // Whether free task or paid task
     // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
