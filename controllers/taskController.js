@@ -206,6 +206,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     res.status(200).json("Task submitted successfully, wait for Admin's Approval");
    }
+}
 
     // If Advert is a paid advert - Update User wallet
     if (advert.isFree === false) {
@@ -241,7 +242,7 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(200).json("Task submitted successfully, wait for Admin's Approval");
         }
     }
- }
+ 
 });
 
 
@@ -502,9 +503,17 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Failed to approve task")
     }
 
-    // if (advert.isFree === true) {
-
-    // }
+    if (advert.isFree === true) {
+        taskPerformer.freeTaskCount +=  1;
+    
+            //save the update on user model
+            const addFreeTaskCount = await taskPerformer.save(); 
+        
+            if (!addFreeTaskCount) {
+                res.status(500).json({message: "Failed to return rejected free task count"})
+                throw new Error("Failed to return rejected free task count")
+            } 
+    }
 
     //Rejection Successful
     if (advert.isFree === false) {
