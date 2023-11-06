@@ -203,9 +203,9 @@ export const submitTask = asyncHandler(async (req, res) => {
             res.status(500).json({message: "Failed to subtract from free task count"})
             throw new Error("Failed to subtract from free task count")
         } 
-
-    res.status(200).json("Task submitted successfully, wait for Admin's Approval");
    }
+
+   res.status(200).json("Task submitted successfully, wait for Admin's Approval");
 }
 
     // If Advert is a paid advert - Update User wallet
