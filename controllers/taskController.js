@@ -118,7 +118,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     const advert = await Advert.findById(task.advertId)
     const user = await User.findById(req.user._id)
     const wallet = await Wallet.find({userId: req.user._id}) 
-
+ 
     if (!task) {
         res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")

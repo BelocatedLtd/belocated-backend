@@ -19,7 +19,8 @@ import errorHandler from './middleware/errorMiddleware.js'
 import {Server} from 'socket.io'
 import cron from 'node-cron'
 import { saveActivity } from './controllers/feedController.js'
-import resetFreeTasksCount from './crons/resetFreeTasks.js'
+//import resetFreeTasksCount from './crons/resetFreeTasks.js'
+import sendWeeklyEmail from './crons/resetFreeTasks.js'
 
 
 /*  CONFIGURATIONS */
@@ -65,8 +66,10 @@ app.use("/api/activities", feedRoute)
 
 
 //Cron job schedule
-cron.schedule('0 0 * * 0', resetFreeTasksCount)
-//cron.schedule('* * * * *', resetFreeTasksCount);
+cron.schedule('0 0 * * 0', sendWeeklyEmail)
+//cron.schedule('* * * * *', sendWeeklyEmail); // 1 minute cron job command
+//sendWeeklyEmail()
+
 
 //cron.schedule('0 0 * * *', resetFreeTasksCount)
 

@@ -2,7 +2,7 @@ import User from "../model/User.js"
 import sendEMail from "../utils/sendEmail.js";
 
 
-const subject = 'Gain Access To This Week\'s Paid Task On Belocated!';
+const subject = 'Your Belocated Weekly Update';
 const reply_to = "noreply@noreply.com";
 
 const sendResetEmail = async() => {
@@ -10,9 +10,14 @@ const sendResetEmail = async() => {
     
         for (const user of users) {
             const message = `
-            <p>Hello ${user.username}</p>
-            <p>It's a new week and your free task clock has reset.</p>
-            <p>Proceed to the <a href="https://belocated.ng">BeLocated platform</a> to complete your 2 free task and gain access to numerous paid tasks this week.</p>
+            <p>Hi ${user.username}</p>
+            <p>Happy new week!</p>
+            <p>We are happy you are part of our Belocated Family.</p>
+            <p>So far, you've earned N${600} doing ${30} tasks.</p>
+            <p>This week is another opportuinity to earn much more</p>
+            <p>We have over ${2000} tasks available on the platform today.</p>
+            <p>Head over to the platform <a href="https://belocated.ng">BeLocated platform</a> and start earning.</p>
+            <p>Your satisfaction is our priority!</p>
             <p>Keep winning with BeLocated</p>
             <br/>
             <br/>
