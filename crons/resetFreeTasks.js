@@ -77,6 +77,6 @@ const sendWeeklyEmail = async() => {
         }
 }
 
-sendWeeklyEmail()
+//sendWeeklyEmail()
 
 export default sendWeeklyEmail
