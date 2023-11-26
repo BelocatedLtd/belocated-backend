@@ -127,7 +127,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (!advert) {
         res.status(400).json({message: "Cannot find the ad for this task"});
         throw new Error("Cannot find the ad for this task")
-    }
+    } 
 
     if (!wallet) {
         res.status(400).json({message: "Cannot find user Wallet to update"});
