@@ -12,7 +12,7 @@ router.patch("/fund", protect, fundUserWallet)
 router.post("/withdraw", protect, withdrawWallet)
 router.get("/withdrawals", protect, getWithdrawals)
 router.get("/withdrawals/:id", protect, getUserWithdrawals)
-router.patch("/withdrawals/confirm/:withdrawalRequestId", protect, confirmWithdrawalRequest)
+router.post("/withdrawals/confirm/:withdrawalRequestId", protect, confirmWithdrawalRequest)
 router.delete("/withdrawals/delete/:withdrawalRequestId", protect, deleteWithdrawalRequest)
 
 

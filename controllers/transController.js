@@ -245,6 +245,11 @@ export const getWithdrawals = asyncHandler(async (req, res) => {
        //Confirm Withdrawal Request
 export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     const { withdrawalRequestId } = req.params
+    //const {headers} = req.body
+
+    // res.status(200).json(headers)
+    // return
+
 
     if (req.user.accountType !== "Admin") {
         res.status(401).json({ message: "Unauthorized user" })

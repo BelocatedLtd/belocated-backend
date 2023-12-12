@@ -56,7 +56,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 //Error middleware
-app.use(errorHandler);
+app.use(errorHandler); 
 
 app.use("/api/user", userRoute)
 app.use("/api/adverts", advertRoute)

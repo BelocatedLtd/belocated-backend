@@ -6,6 +6,9 @@ export const protect = asyncHandler(async (req, res, next) => {
 
     const authToken = req.headers.authorization?.split(' ')[1];
 
+    // console.log(authToken)
+    // return
+
     if(!authToken) {
         res.status(401).json({message: "Not Authorized, no token"});
         throw new Error( 'Not Authorized, no token ')

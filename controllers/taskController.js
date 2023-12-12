@@ -114,31 +114,37 @@ export const  getTasks = asyncHandler(async (req, res) => {
 export const submitTask = asyncHandler(async (req, res) => {
     const { taskId,  userSocialName } = req.body;
 
+    // Gets details about the task submitted, advert for the task, user or task performer and user wallet.
     const task = await Task.findById(taskId)
     const advert = await Advert.findById(task.advertId)
     const user = await User.findById(req.user._id)
     const wallet = await Wallet.find({userId: req.user._id}) 
  
+    // If task cannot be found
     if (!task) {
         res.status(400).json({message: "Cannot find task"});
         throw new Error("Cannot find task")
     }
 
+    // If advert cannot be found
     if (!advert) {
         res.status(400).json({message: "Cannot find the ad for this task"});
         throw new Error("Cannot find the ad for this task")
     } 
 
+    // If user wallet cannot be found
     if (!wallet) {
         res.status(400).json({message: "Cannot find user Wallet to update"});
         throw new Error("Cannot find user Wallet to update")
     }
 
+    // If ad campaign is no longer active
     if (advert.desiredROI === 0) {
         res.status(500).json({message: "Ad campaign is no longer active"});
         throw new Error("Ad campaign is no longer active")
     }
 
+    // If user has already submtted task for this advert
     if (task.status === "Submitted") {
         res.status(400).json({message: "You have already submitted this task, you can only submit once, please wait for approval"});
         throw new Error("You have submitted your task, you can only submit once, please wait for approval")
@@ -211,17 +217,19 @@ export const submitTask = asyncHandler(async (req, res) => {
     // If Advert is a paid advert - Update User wallet
     if (advert.isFree === false) {
 
-        const updatedAdvertiserWallet = await Wallet.updateOne(
-            { userId:  task.advertiserId},
-            {
-                $inc: {value: -advert.costPerTask}
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        )
+        // Removes money from the advertiser's wallet
+        // const updatedAdvertiserWallet = await Wallet.updateOne(
+        //     { userId:  task.advertiserId},
+        //     {
+        //         $inc: {value: -advert.costPerTask}
+        //     },
+        //     {
+        //         new: true,
+        //         runValidators: true
+        //     }
+        // )
 
+        // Adds money to the task performer's pending balance
         const updatedUserWallet = await Wallet.updateOne(
             { userId:  req.user._id},
             {
@@ -233,12 +241,12 @@ export const submitTask = asyncHandler(async (req, res) => {
             }
         )
 
-        if (!updatedUserWallet && !updatedAdvertiserWallet) {
-            res.status(400).json({message: "failed to update user pending balance and advertiser Wallet"});
+        if (!updatedUserWallet) {
+            res.status(400).json({message: "failed to update user pending balance"});
             throw new Error("failed to update user pending balance")
         }
     
-        if (updatedUserWallet && updatedAdvertiserWallet) {
+        if (updatedUserWallet) {
             res.status(200).json("Task submitted successfully, wait for Admin's Approval");
         }
     }
@@ -258,10 +266,10 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     const task = await Task.findById(taskId)
     const advert = await Advert.findById(task?.advertId)
-    const wallet = await Wallet.find({userId: task?.taskPerformerId})
+    const wallet = await Wallet.findOne({userId: task?.taskPerformerId})
     const taskPerformer = await User.findById(task?.taskPerformerId)
     const advertiser = await User.findById(task.advertiserId)
-    const advertserWallet = await Wallet.find({userId:  task?.advertiserId})
+    const advertserWallet = await Wallet.findOne({userId:  task?.advertiserId})
 
     if (!task) {
         res.status(400).json({message:"Cannot find task"});
@@ -435,9 +443,12 @@ export const submitTask = asyncHandler(async (req, res) => {
     res.status(200).json(task);
  })
 
+
   // Admin Reject Submitted Tasks and Pay user
-  export const rejectTask = asyncHandler(async (req, res) => {
+    export const rejectTask = asyncHandler(async (req, res) => {
     const { taskId, message } = req.body
+
+
 
     //Check if user is an admin
     if (req.user.accountType !== "Admin") {
@@ -447,9 +458,10 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     const task = await Task.findById(taskId)
     const advert = await Advert.findById(task.advertId)
-    const wallet = await Wallet.find({userId: task.taskPerformerId})
+    const wallet = await Wallet.findOne({userId: task.taskPerformerId})
     const taskPerformer = await User.findById(task.taskPerformerId)
     const advertserWallet = await Wallet.find({userId: task.advertiserId})
+
 
     if (!task) {
         res.status(400).json({message:"Cannot find task"});
@@ -515,22 +527,22 @@ export const submitTask = asyncHandler(async (req, res) => {
             } 
     }
 
-    //Rejection Successful
-    if (advert.isFree === false) {
     // Subtract Task performer's Wallets
-    wallet.pendingBalance -= task.toEarn
 
-    //save subtracted user wallet
-    const walletsubupdate = await wallet.save();
+        // Update the pendingBalance
+        wallet.pendingBalance -= task.toEarn;
+      
+         //save subtracted user wallet
+        const walletSubUpdate = await wallet.save();
 
-    if (!walletsubupdate) {
-        res.status(500).json({message:"Failed to subtract user pending balance wallet"})
-        throw new Error("Failed to update user wallet")
-    }
-    
-}  
+        if (!walletSubUpdate) {
+         res.status(500).json({message:"Failed to subtract user pending balance wallet"})
+         throw new Error("Failed to update user wallet")
+        } 
 
-        res.status(200).json(task);
+        if (walletSubUpdate) {
+            res.status(400).json(task);
+        } 
  })
 
  //>>> Delete Task
