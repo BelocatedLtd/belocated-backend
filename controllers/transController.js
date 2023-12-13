@@ -163,57 +163,64 @@ export const  getSingleUserWallet = asyncHandler(async (req, res) => {
             throw new error("User Wallet not found")
         }
 
-         try {
-            // Update User wallet
-            wallet.value -= withdrawAmount
-
-            const updatedUserWallet = wallet.save()
-
+        if (wallet.value >= withdrawAmount) {
+            try {
+                // Update User wallet
+                wallet.value -= withdrawAmount
     
-            if (!updatedUserWallet) {
-                res.status(401).json({message: "Faild to withdraw from wallet, contact Admin"}) 
-                throw new error("Faild to fund wallet, contact Admin")
-            }
-
-            let withdrawalRequest;
-
-            if (updatedUserWallet) {
-                withdrawalRequest = await Withdraw.create({
-                    userId, 
-                    withdrawAmount, 
-                    status: "Pending Approval",
-                    withdrawMethod: withdrawalMethod
-                })
-
-                if (!withdrawalRequest) {
-                    res.status(500).json({message: "Error creating withdrawal request"});
-                    throw new Error("Error creating withdrawal request")
+                const updatedUserWallet = wallet.save()
+    
+        
+                if (!updatedUserWallet) {
+                    res.status(401).json({message: "Faild to withdraw from wallet, contact Admin"}) 
+                    throw new error("Faild to fund wallet, contact Admin")
                 }
-
-
-                   //Create New Transaction
-                const transaction = await Transaction.create({
-                    userId: userId,
-                    email: user?.email, 
-                    date: Date.now(), 
-                    chargedAmount: withdrawAmount, 
-                    trxId: `wd-${userId}`,
-                    paymentRef: withdrawalRequest._id,
-                    trxType: `Withdraw by - ${withdrawalMethod}`,
-                    status: "Pending Approval"
-                });
-
-                if (!transaction) {
-                    res.status(500).json({message: "Error creating transaction"});
-                    throw new Error("Error creating transaction")
+    
+                let withdrawalRequest;
+    
+                if (updatedUserWallet) {
+                    withdrawalRequest = await Withdraw.create({
+                        userId, 
+                        withdrawAmount, 
+                        status: "Pending Approval",
+                        withdrawMethod: withdrawalMethod
+                    })
+    
+                    if (!withdrawalRequest) {
+                        res.status(500).json({message: "Error creating withdrawal request"});
+                        throw new Error("Error creating withdrawal request")
+                    }
+    
+    
+                       //Create New Transaction
+                    const transaction = await Transaction.create({
+                        userId: userId,
+                        email: user?.email, 
+                        date: Date.now(), 
+                        chargedAmount: withdrawAmount, 
+                        trxId: `wd-${userId}`,
+                        paymentRef: withdrawalRequest._id,
+                        trxType: `Withdraw by - ${withdrawalMethod}`,
+                        status: "Pending Approval"
+                    });
+    
+                    if (!transaction) {
+                        res.status(500).json({message: "Error creating transaction"});
+                        throw new Error("Error creating transaction")
+                    }
                 }
-            }
+    
+                res.status(200).json(wallet)  
+                
+             } catch (error) {
+                res.status(500).json({error: error.message});
+             }
+        } else {
+            res.status(500).json({message: "Insufficient Balance"})
+            throw new error("Insufficient Balance")
+        }
 
-            res.status(200).json(wallet)  
-            
-         } catch (error) {
-            res.status(500).json({error: error.message});
-         }
+         
             
 
   })
@@ -245,11 +252,6 @@ export const getWithdrawals = asyncHandler(async (req, res) => {
        //Confirm Withdrawal Request
 export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     const { withdrawalRequestId } = req.params
-    //const {headers} = req.body
-
-    // res.status(200).json(headers)
-    // return
-
 
     if (req.user.accountType !== "Admin") {
         res.status(401).json({ message: "Unauthorized user" })
@@ -257,7 +259,7 @@ export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     }
 
     const wdRequest = await Withdraw.findById(withdrawalRequestId)
-    const wdTrx = await Transaction.find({paymentRef: withdrawalRequestId})
+    const wdTrx = await Transaction.findOne({paymentRef: withdrawalRequestId})
 
     if (!wdRequest) {
         res.status(400).json({message:"Cannot find withdrawal request"});
@@ -324,6 +326,11 @@ export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
 
     const wdRequest = await Withdraw.findById(withdrawalRequestId)
 
+    if (wdRequest.status == "Approved") {
+        res.status(400).json({message:"Withdrawal request has already been approved"});
+        throw new Error("Withdrawal request has already been approved")
+    }
+
     if (!wdRequest) {
         res.status(400).json({message:"Withdrawal request does not exist or already deleted"});
         throw new Error("Withdrawal request does not exist or already deleted")
@@ -345,9 +352,17 @@ export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
             }
         )
 
-        if (!updatedTrx) {
-            res.status(500).json({message: "Error trying to update trx status"})
-            throw new Error("Error trying to update trx status")
+        // Put back the user's money back to their wallet
+        const updateUserWallet = await Wallet.updateOne(
+            {userId: wdRequest.userId},
+            {
+                $inc: {value: +wdRequest.withdrawAmount}
+            },
+        )
+
+        if (!updatedTrx || !updateUserWallet) {
+            res.status(500).json({message: "Error trying to update trx status and user wallet"})
+            throw new Error("Error trying to update trx status and user wallet")
         }
     }  
 
