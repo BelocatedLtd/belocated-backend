@@ -68,7 +68,7 @@ app.use("/api/activities", feedRoute)
 //Cron job schedule
 cron.schedule('0 0 * * 0', sendWeeklyEmail)
 //cron.schedule('* * * * *', sendWeeklyEmail); // 1 minute cron job command
-//sendWeeklyEmail()
+//sendWeeklyEmail() 
 
 
 //cron.schedule('0 0 * * *', resetFreeTasksCount)

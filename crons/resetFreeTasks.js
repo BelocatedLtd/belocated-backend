@@ -49,14 +49,16 @@ const sendWeeklyEmail = async() => {
     
     
         for (const user of users) { 
-            //const user = await User.findById("64a6040ddefff9ff30d8d652");
-            const userEarned = wallets?.find(wallet => wallet?.userId == user?._id)
-            const userTaskCount = tasks?.filter(task => task?.taskPerformerId === user?._id )?.length
+
+            try {
+            //const user = await User.findById("64c05449dbf0c02a5691427e");
+            const userEarned = wallets?.find(wallet => wallet?.userId == user?._id)?.totalEarning
+            const userTaskCount = tasks?.filter(task => task?.taskPerformerId == user?._id )
 
             const message = `
             <p>Hi ${user.username}</p> 
             <p>We are happy you are part of our Belocated Family.</p>
-            <p>So far, you've earned  ₦${userEarned?.totalEarning} doing ${userTaskCount} tasks.</p>
+            <p>So far, you've earned  ₦${userEarned} doing ${userTaskCount?.length} tasks.</p>
             <p>This week is another opportuinity to earn much more</p>
             <p>We have over ${runningAds?.length} tasks available on the platform today.</p>
             <p>Head over to the platform <a href="https://belocated.ng">BeLocated platform</a> and start earning.</p>
@@ -69,15 +71,17 @@ const sendWeeklyEmail = async() => {
             <p>Belocated Team</p>
             `
 
-            try {
+            
                  // Send the email
-                await sendEMail(subject, message, user.email, reply_to)
+                await sendEMail(subject, message, user?.email, reply_to)
 
                 // Delay for 1 minute
                 await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
 
+                //console.log(message)
+
             } catch (error) {
-                console.error(`Error sending email to ${user.email}:`, error);
+                console.error(`Error sending email to ${user?.email}:`, error);
             }
        }
 }
