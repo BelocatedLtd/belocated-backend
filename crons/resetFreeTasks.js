@@ -52,11 +52,12 @@ const sendWeeklyEmail = async() => {
 
             try {
             //const user = await User.findById("64c05449dbf0c02a5691427e");
+            //const user = users.find(u => u._id == "64c05449dbf0c02a5691427e")
             const userEarned = wallets?.find(wallet => wallet?.userId == user?._id)?.totalEarning
             const userTaskCount = tasks?.filter(task => task?.taskPerformerId == user?._id )
 
             const message = `
-            <p>Hi ${user.username}</p> 
+            <p>Hi ${user?.username}</p> 
             <p>We are happy you are part of our Belocated Family.</p>
             <p>So far, you've earned  ₦${userEarned} doing ${userTaskCount?.length} tasks.</p>
             <p>This week is another opportuinity to earn much more</p>
@@ -71,9 +72,8 @@ const sendWeeklyEmail = async() => {
             <p>Belocated Team</p>
             `
 
-            
                  // Send the email
-                await sendEMail(subject, message, user?.email, reply_to)
+                await sendEMail(subject, message, user.email, reply_to)
 
                 // Delay for 1 minute
                 await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
@@ -81,7 +81,7 @@ const sendWeeklyEmail = async() => {
                 //console.log(message)
 
             } catch (error) {
-                console.error(`Error sending email to ${user?.email}:`, error);
+                console.error(`Error sending email`, error);
             }
        }
 }
