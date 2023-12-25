@@ -5,7 +5,7 @@ import Task from "../model/Task.js";
 import Advert from "../model/Advert.js";
 
 const url = "api.zeptomail.com/";
-const token = "Zoho-enczapikey wSsVR61w+UKmDfx/zzX7Ib1skVpUU1ikRxh9iwHwvyStH/uQpcczkELJVA6kG6MYRGU4R2EUpbMtmEpVg2YKiYkozw1SXiiF9mqRe1U4J3x17qnvhDzNX2xVlBGBJYgMww5tnWdkFMoq+g==";
+const token = process.env.ZEPTO_TOKEN;
 
 let client = new SendMailClient({url, token});
 
