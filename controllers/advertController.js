@@ -48,7 +48,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
         try {
            
             for (const file of req.files) {
-                const result = await cloudinary.uploader.upload(file.path, { folder: 'Advert Media Contents' });
+                const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto', folder: 'Advert Media Contents' });
         
                     uploadedImages.push({
                         secure_url: result.secure_url,
