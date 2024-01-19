@@ -64,7 +64,7 @@ for (const user of users) {
 
         
         // Delay for 1 minute
-        await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
+        //await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
 
 }
 
