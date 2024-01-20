@@ -10,6 +10,8 @@ const storage = multer.diskStorage({
     }
  });
 
+ 
+
  //Speify file format that can b saved
  function fileFilter(req, file, cb) {
     if (
@@ -25,7 +27,14 @@ const storage = multer.diskStorage({
 
  }
 
- export const upload = multer({storage, fileFilter})
+ // Increase the file size limit to 25MB (adjust as needed)
+export const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 100 * 1024 * 1024 } // Adjust the size limit as needed
+  });
+
+ //export const upload = multer({storage, fileFilter})
 
 
 
