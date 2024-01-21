@@ -60,7 +60,7 @@ for (const user of users) {
             ],
             "subject": "Your Belocated Weekly Update",
             "htmlbody": message,
-        }).then((resp) => console.log(`Email successfully sent to ${user.email}`)).catch((error) => console.log(`Error sending email to ${user.email}`));
+        }).then((resp) => console.log(resp)).catch((error) => console.log(error));
 
         
         // Delay for 1 minute
