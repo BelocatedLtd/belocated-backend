@@ -116,21 +116,21 @@ export const registerUser = asyncHandler(async (req, res) => {
  //>>>> Register User For Ref
 // http://localhost:6001/api/user/refregister
 export const refRegisterUser = asyncHandler(async (req, res) => {
-  const { username, email, password, referrerId } = req.body
+  const { username, email, password, refusername } = req.body
 
   //User input validation
-  if ( !username || !email || !password || !referrerId ) {
+  if ( !username || !email || !password || !refusername ) {
    res.status(400).json({message: "Please fill in all required fields"})
    throw new Error("Please fill in all required fields")
   } 
 
-  if ( !referrerId ) {
+  if ( !refusername ) {
     res.status(400).json({message: "No referrer data recorded"})
     throw new Error("No referrer data recorded")
    } 
 
    //Check if the referrer still exist
-   const userRef = await User.findById(referrerId)
+   const userRef = await User.findOne({username: refusername})
 
    if (!userRef) {
     res.status(400).json({message: "Referrer does not exist"})
@@ -174,7 +174,7 @@ export const refRegisterUser = asyncHandler(async (req, res) => {
    religion: '',
    gender: '',
    accountType: 'User',
-   referrersId: referrerId,
+   referrersId: refusername,
    isEmailVerified: false,
    isPhoneVerified: false,
    taskCompleted: 0,

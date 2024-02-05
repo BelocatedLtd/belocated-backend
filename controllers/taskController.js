@@ -217,18 +217,6 @@ export const submitTask = asyncHandler(async (req, res) => {
     // If Advert is a paid advert - Update User wallet
     if (advert.isFree === false) {
 
-        // Removes money from the advertiser's wallet
-        // const updatedAdvertiserWallet = await Wallet.updateOne(
-        //     { userId:  task.advertiserId},
-        //     {
-        //         $inc: {value: -advert.costPerTask}
-        //     },
-        //     {
-        //         new: true,
-        //         runValidators: true
-        //     }
-        // )
-
         // Adds money to the task performer's pending balance
         const updatedUserWallet = await Wallet.updateOne(
             { userId:  req.user._id},
@@ -246,9 +234,40 @@ export const submitTask = asyncHandler(async (req, res) => {
             throw new Error("failed to update user pending balance")
         }
     
-        if (updatedUserWallet) {
-            res.status(200).json("Task submitted successfully, wait for Admin's Approval");
+        // if (updatedUserWallet) {
+        //     res.status(200).json("Task submitted successfully, wait for Admin's Approval");
+        // }
+    }
+
+    // Whether free task or paid task
+    // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
+    //subtrate 1 from the desired roi
+    //Update the number of tasks completed on an advert
+    advert.desiredROI -= 1;
+    advert.tasks += 1;
+
+    //save the update on user model
+    const updatedAdvert = await advert.save(); 
+
+    if (!updatedAdvert) {
+        res.status(500).json({message: "Failed to submit task"})
+        throw new Error("Failed to submit task")
+    }
+
+    if (updatedAdvert) {
+
+        if (updatedAdvert.desiredROI === 0) {
+            advert.status = "Completed"
+    
+            const updatedAdvertStatus = await advert.save();
+
+            if (!updatedAdvertStatus) {
+                res.status(500).json({message: "Failed to change ad status"})
+                throw new Error("Failed to change ad status")
+            }
         }
+        
+        res.status(200).json("Task submitted successfully, wait for Admin's Approval");
     }
  
 });
@@ -387,67 +406,66 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
 
 
-    // Whether free task or paid task
-    // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
-    //subtrate 1 from the desired roi
-    //Update the number of tasks completed on an advert
-    advert.desiredROI -= 1;
-    advert.tasks += 1;
+    // // Whether free task or paid task
+    // // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
+    // //subtrate 1 from the desired roi
+    // //Update the number of tasks completed on an advert
+    // advert.desiredROI -= 1;
+    // advert.tasks += 1;
 
-    //save the update on user model
-    const updatedAdvert = await advert.save(); 
+    // //save the update on user model
+    // const updatedAdvert = await advert.save(); 
 
-    if (!updatedAdvert) {
-        res.status(500).json({message: "Failed to approve task"})
-        throw new Error("Failed to approve task")
-    }
+    // if (!updatedAdvert) {
+    //     res.status(500).json({message: "Failed to approve task"})
+    //     throw new Error("Failed to approve task")
+    // }
 
     // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
-    if (updatedAdvert.desiredROI === 0) {
-        advert.status = "Completed"
+    // if (updatedAdvert.desiredROI === 0) {
+    //     advert.status = "Completed"
 
-        const updatedAdvertStatus = await advert.save();
+    //     const updatedAdvertStatus = await advert.save();
 
-        if (!updatedAdvertStatus) {
-            res.status(500).json({message: "Failed to change ad status"})
-            throw new Error("Failed to change ad status")
-        }
+    //     if (!updatedAdvertStatus) {
+    //         res.status(500).json({message: "Failed to change ad status"})
+    //         throw new Error("Failed to change ad status")
+    //     }
 
-        //Send email to advertiser when advert is completed 
-        const message = `
-        <h2>Dear ${advertiser?.username}!</h2>
-        <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
-        <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
-        <p>Thank you for your continuous patronage.</p>
-        <p>Keep winning with BeLocated.</p>
-        <br/>
-        <br/>
+    //     //Send email to advertiser when advert is completed 
+    //     const message = `
+    //     <h2>Dear ${advertiser?.username}!</h2>
+    //     <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
+    //     <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
+    //     <p>Thank you for your continuous patronage.</p>
+    //     <p>Keep winning with BeLocated.</p>
+    //     <br/>
+    //     <br/>
 
-        <p>Regards,</p>
-        <p>Belocated Team</p>
-        `
-        const subject = 'Whoop! Whoop!! Your order has been completed'
-        const send_to = advertiser.email
-        const reply_to = "noreply@noreply.com"
+    //     <p>Regards,</p>
+    //     <p>Belocated Team</p>
+    //     `
+    //     const subject = 'Whoop! Whoop!! Your order has been completed'
+    //     const send_to = advertiser.email
+    //     const reply_to = "noreply@noreply.com"
 
-        //Finally sending email
-        const emailSent = await sendEMail(subject, message, send_to, reply_to)
+    //     //Finally sending email
+    //     const emailSent = await sendEMail(subject, message, send_to, reply_to)
 
-        if (!emailSent) {
-        res.status(500).json('Email sending failed');
-        throw new Error('Email sending failed')
-        }
-    }   
+    //     if (!emailSent) {
+    //     res.status(500).json('Email sending failed');
+    //     throw new Error('Email sending failed')
+    //     }
+    // }   
     
 
-    res.status(200).json(task);
+    res.status(200).json(updatedTask);
  })
 
 
   // Admin Reject Submitted Tasks and Pay user
     export const rejectTask = asyncHandler(async (req, res) => {
     const { taskId, message } = req.body
-
 
 
     //Check if user is an admin
@@ -529,20 +547,35 @@ export const submitTask = asyncHandler(async (req, res) => {
 
     // Subtract Task performer's Wallets
 
-        // Update the pendingBalance
-        wallet.pendingBalance -= task.toEarn;
-      
-         //save subtracted user wallet
-        const walletSubUpdate = await wallet.save();
+    // Update the pendingBalance
+    wallet.pendingBalance -= task.toEarn;
+    
+        //save subtracted user wallet
+    const walletSubUpdate = await wallet.save();
 
-        if (!walletSubUpdate) {
-         res.status(500).json({message:"Failed to subtract user pending balance wallet"})
-         throw new Error("Failed to update user wallet")
-        } 
+    if (!walletSubUpdate) {
+        res.status(500).json({message:"Failed to subtract user pending balance wallet"})
+        throw new Error("Failed to update user wallet")
+    } 
 
-        if (walletSubUpdate) {
-            res.status(400).json(task);
-        } 
+    
+    // Whether free task or paid task
+    // desiredROI for the advert should be added back by 1, ad status should be changed to Running
+    //Add 1 back to the desired roi
+    //Subtract the number of tasks completed on an advert
+    advert.desiredROI += 1;
+    advert.tasks -= 1;
+    advert.status = "Running"
+
+    //save the update on user model
+    const updatedAdvert = await advert.save(); 
+
+    if (!updatedAdvert) {
+        res.status(500).json({message: "Failed to reject task"})
+        throw new Error("Failed to failed task")
+    }
+
+    res.status(400).json(task);
  })
 
  //>>> Delete Task
