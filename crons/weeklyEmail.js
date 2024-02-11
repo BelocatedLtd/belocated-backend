@@ -53,14 +53,14 @@ for (const user of users) {
                 {
                 "email_address": 
                     {
-                        "address": user.email,
-                        "name": user.username
+                        "address": user?.email,
+                        "name": user?.username
                     }
                 }
             ],
             "subject": "Your Belocated Weekly Update",
             "htmlbody": message,
-        }).then((resp) => console.log(resp)).catch((error) => console.log(error));
+        }).then((res) => console.log("Message delivered Successfully")).catch((error) => console.log("There was an error"));
 
         
         // Delay for 1 minute
