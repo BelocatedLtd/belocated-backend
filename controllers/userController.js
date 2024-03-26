@@ -6,7 +6,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto'
 import sendEMail from "../utils/sendEmail.js";
-//import generateToken from "../utils/generateToken.js";
+import RefChallenge from "../model/RefChallenge.js";
+import sendEmail from "../utils/sendEmailApi.js";
 
 
 const generateToken = (id) => {
@@ -63,6 +64,7 @@ export const registerUser = asyncHandler(async (req, res) => {
      religion: '',
      gender: '',
      accountType: 'User',
+     accountStatus: 'Active',
      referrersId: "",
      isEmailVerified: false,
      isPhoneVerified: false,
@@ -71,7 +73,10 @@ export const registerUser = asyncHandler(async (req, res) => {
      adsCreated: 0,
      freeTaskCount: 2,
      referCount: 0,
-     referrals: []
+     referrals: [],
+     referralChallengePts: 0,
+     referralBonusPts: 0,
+    referralChallengeReferredUsers: []
     });
 
     if (!user) {
@@ -85,6 +90,7 @@ export const registerUser = asyncHandler(async (req, res) => {
         wallet = await Wallet.create({
         userId: user._id,
         value: 0,
+        refBonWallet,
         totalEarning: 0,
         pendingBalance: 0,
         amountSpent: 0
@@ -113,7 +119,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
  });
 
- //>>>> Register User For Ref
+ //>>>> Register User For Ref Bonus
 // http://localhost:6001/api/user/refregister
 export const refRegisterUser = asyncHandler(async (req, res) => {
   const { username, email, password, refusername } = req.body
@@ -174,6 +180,7 @@ export const refRegisterUser = asyncHandler(async (req, res) => {
    religion: '',
    gender: '',
    accountType: 'User',
+   accountStatus: 'Active',
    referrersId: refusername,
    isEmailVerified: false,
    isPhoneVerified: false,
@@ -182,7 +189,10 @@ export const refRegisterUser = asyncHandler(async (req, res) => {
    adsCreated: 0,
    freeTaskCount: 2,
    referCount: 0,
-   referrals: []
+   referrals: [],
+   referralChallengePts: 0,
+   referralBonusPts: 0,
+   referralChallengeReferredUsers: []
   });
 
   if (!user) {
@@ -196,6 +206,7 @@ export const refRegisterUser = asyncHandler(async (req, res) => {
       wallet = await Wallet.create({
       userId: user._id,
       value: 0,
+      refBonWallet: 0,
       totalEarning: 0,
       pendingBalance: 0,
       amountSpent: 0
@@ -219,6 +230,127 @@ if (!referrer) {
 }
 
 if (user && wallet && referrer) {
+  const {_id, username, email, referrersId, isEmailVerified } = user
+    const userData = {
+      _id, username, email, referrersId, isEmailVerified
+    }
+
+  res.status(200).json(userData);
+}
+
+if (!user && !wallet) {
+  res.status(500).json('Registeration failed');
+  throw new Error("Registeration failed")
+}
+
+});
+
+
+ //>>>> Register User For Ref Challenge
+// http://localhost:6001/api/user/refChalregister
+export const refCahlRegisterUser = asyncHandler(async (req, res) => {
+  const { username, email, password, refusername } = req.body
+
+  // res.status(200).json(req.body)
+  // return
+
+  //User input validation
+  if ( !username || !email || !password || !refusername ) {
+   res.status(400).json({message: "Please fill in all required fields"})
+   throw new Error("Please fill in all required fields")
+  } 
+
+  if ( !refusername ) {
+    res.status(400).json({message: "No referrer data recorded"})
+    throw new Error("No referrer data recorded")
+   } 
+
+   //Check if the referrer still exist
+   const userRef = await User.findOne({username: refusername})
+
+   if (!userRef) {
+    res.status(400).json({message: "Referrer does not exist"})
+    throw new Error("Referrer does not exist")
+   }
+
+  //checking for password lenght
+  if (password.length < 6) {
+   res.status(400).json({message: "Password must be upto 6 characters"})
+   throw new Error("Password must be upto 6 characters")
+  }
+
+  //check if user email already exist
+  //username
+  const usernameExists = await User.findOne({username: username} || {email: email})
+  
+  if (usernameExists) {
+   res.status(400).json({message: "Username has already been registered by another user"})
+   throw new Error("Username has already been registered by another user")
+  }
+
+  //email exist
+  const emailExists = await User.findOne({email: email})
+  
+  if (emailExists) {
+  return res.status(200).json({message: "Email has already been registered, please login"})
+  }
+
+  //Create new user
+  const user = await User.create({
+   fullname: '',
+   username,
+   password,
+   email,
+   phone: null,
+   bankName: '',
+   bankAccountNumber: '',
+   accountHolderName: '',
+   location: '',
+   community: '',
+   religion: '',
+   gender: '',
+   accountType: 'User',
+   accountStatus: 'Active',
+   referrersId: '',
+   refChallengeReferrersId: refusername,
+   isEmailVerified: false,
+   isPhoneVerified: false,
+   taskCompleted: 0,
+   taskOngoing: 0,
+   adsCreated: 0,
+   freeTaskCount: 2,
+   referCount: 0,
+   referrals: [],
+   referralChallengePts: 0,
+   referralBonusPts: 0,
+   referralChallengeReferredUsers: []
+  });
+
+  if (!user) {
+    res.status(400).json({message: "Failed to register User"})
+   throw new Error("Failed to register User")
+  }
+
+   //Create new wallet for User
+  let wallet;
+  if (user) {
+      wallet = await Wallet.create({
+      userId: user._id,
+      value: 0,
+      refBonWallet: 0,
+      totalEarning: 0,
+      pendingBalance: 0,
+      amountSpent: 0
+      });
+  }
+
+  if (!wallet) {
+    res.status(400).json({message: "Failed to Create Wallet for Registered User, Please contact admin"})
+   throw new Error("Failed to Create Wallet for Registered User, Please contact admin")
+  }
+
+
+if (user && wallet) {
   const {_id, username, email, referrersId, isEmailVerified } = user
     const userData = {
       _id, username, email, referrersId, isEmailVerified
@@ -293,32 +425,34 @@ export const loginUser = asyncHandler(async (req, res) => {
  
     if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})
-     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
-      bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
+     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts } = user
      res.status(200).json({
-        id: _id, 
-        fullname, 
-        username, 
-        email, 
-        phone, 
-        location, 
-        community, 
-        religion, 
-        gender,
-        accountType,
-        bankName,
-        bankAccountNumber,
-        accountHolderName,
-        isEmailVerified, 
-        isPhoneVerified,
-        taskCompleted,
-        taskOngoing,
-        adsCreated,
-        freeTaskCount,
-        walletId,
-        referrals,
-        referrersId,
-        token
+      id: _id, 
+      fullname,  
+      username, 
+      email, 
+      phone, 
+      location, 
+      community, 
+      religion, 
+      gender,
+      accountType,
+      bankName,
+      bankAccountNumber,
+      accountHolderName,
+      isEmailVerified, 
+      isPhoneVerified,
+      taskCompleted,
+      taskOngoing,
+      adsCreated,
+      freeTaskCount,
+      referrals,
+      referrersId,
+      refChallengeReferrersId,
+      referralChallengeReferredUsers, 
+      referralChallengePts,
+      referralBonusPts,
+      token
      })
     } else {
      res.status(400).json({message: "Invalid user email or Password"})
@@ -343,10 +477,10 @@ export const  getUser = async(req, res) => {
       const token = generateToken(user._id)
        
        if (user) {
-        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId } = user
+        const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts } = user
         res.status(200).json({
           id: _id, 
-          fullname, 
+          fullname,  
           username, 
           email, 
           phone, 
@@ -355,6 +489,7 @@ export const  getUser = async(req, res) => {
           religion, 
           gender,
           accountType,
+          accountStatus,
           bankName,
           bankAccountNumber,
           accountHolderName,
@@ -366,6 +501,10 @@ export const  getUser = async(req, res) => {
           freeTaskCount,
           referrals,
           referrersId,
+          refChallengeReferrersId,
+          referralChallengeReferredUsers, 
+          referralChallengePts,
+          referralBonusPts,
           token
 
       })
@@ -386,32 +525,7 @@ export const  getUsers = asyncHandler(async(req, res) => {
 
   if (req.user.accountType === "Admin") {
 
-    const users = await User.find(
-      {}, 
-      {
-          _id: 1,
-          fullname: 1, 
-          lastname: 1, 
-          username: 1,
-          email: 1,
-          phone: 1,
-          location: 1, 
-          community: 1, 
-          religion: 1, 
-          gender: 1,
-          accountType: 1,
-          bankName: 1,
-          bankAccountNumber: 1,
-          accountHolderName: 1,
-          isEmailVerified: 1, 
-          isPhoneVerified: 1,
-          taskCompleted: 1,
-          taskOngoing: 1,
-          adsCreated: 1,
-          freeTaskCount: 1,
-          referrals: 1,
-          referrersId: 1,
-      })
+    const users = await User.find({}, { password: 0 });
 
   if (!users) {
       res.status(400)
@@ -490,14 +604,8 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
 
   if (updatedUserDetails) {
-    const {fullname, username, email, phone, location, community, religion, gender, accountType, bankName,
-      bankAccountNumber,
-      accountHolderName, isEmailVerified, 
-      isPhoneVerified,
-      taskCompleted,
-      taskOngoing,
-      adsCreated,
-      freeTaskCount } = updatedUserDetails
+    const {fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId,refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts, } = updatedUserDetails
+
     res.status(200).json({
         fullname, 
         username, 
@@ -508,6 +616,7 @@ export const updateUser = asyncHandler(async (req, res) => {
         religion, 
         gender,
         accountType,
+        accountStatus,
         bankName,
         bankAccountNumber,
         accountHolderName,
@@ -516,7 +625,14 @@ export const updateUser = asyncHandler(async (req, res) => {
         taskCompleted,
         taskOngoing,
         adsCreated,
-        freeTaskCount
+        freeTaskCount,
+        referrals,
+        referrersId,
+        refChallengeReferrersId,
+        referralChallengeReferredUsers, 
+        referralChallengePts,
+        referralBonusPts,
+
 
     })
    } else {
@@ -807,14 +923,15 @@ export const verifyEmail = asyncHandler(async(req, res) => {
     
 
     //Finally sending email
-    const emailSent = await sendEMail(subject, message, send_to, reply_to)
+    //const emailSent = await sendEMail(subject, message, send_to, reply_to) 
+    const response = await sendEmail(subject, message, send_to, user.username)
 
-    if (!emailSent) {
+    if (!response) {
       res.status(500).json('Email verification failed');
       throw new Error('Email verification failed')
     }
 
-    if (emailSent) {
+    if (response) {
       res.status(200).json('Verification Email Sent Successfully');
     }
   }
@@ -938,7 +1055,129 @@ if (!updatedUserDetails) {
 }
 
 if (updatedUserDetails) {
- // const updatedUser = await User.findById(userToken.userId)
+  // const updatedUser = await User.findById(userToken.userId)
+
+   // Ref Bonus Update Stats
+ if (updatedUserDetails?.referrersId) {
+  //Getting referrer details from DB
+
+  // console.log(updatedUserDetails.referrersId)
+  // return
+
+  const userRef = await User.findOne({username: updatedUserDetails?.referrersId})
+  const userRefWallet = await Wallet.findOne({userId: userRef._id})
+
+  if (!userRef) {
+   res.status(400).json({message: "Referrer does not exist"})
+   throw new Error("Referrer does not exist")
+  }
+
+  if (!userRefWallet) {
+   res.status(400).json({message: "Referrer wallet does not exist"})
+   throw new Error("Referrer wallet does not exist")
+  }
+
+    // Update referCount for userRef
+    userRef.referralBonusPts += 1
+    const updatedUserRefCount = await userRef.save();
+
+    //Pay Referrer his referral bonus
+
+    userRefWallet.refBonWallet += 50
+    const referrer = await userRefWallet.save(); 
+
+    if (!referrer || !updatedUserRefCount) {
+    res.status(500).json({message: "Internal error with referral system from the server"})
+    throw new Error("Internal error with referral system from the server")
+    }
+
+     //Send Welcome Email
+ const message = `
+ <h2>Hello, ${userRef.username}</h2>
+ <p>We are so happy to inform you that you've recieved 1 Point for referring a user to the Belocated platform.</p>
+ <p>When your accumulated points get to the required threshold, they can be converted to money and added to your regular wallet for withdrawal via bank transfer or airtime, or you can use the funds to run a promotion on Belocated</p>
+
+ <p>The threshold for referral bonus point conversion is 50 Points</p>
+
+ <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+
+ <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
+
+ <label>Link to Telegram group:</label>
+ <a href="https://t.me/belocated">https://t.me/belocated<a/>
+ <br/>
+
+ <label>WhatsApp:</label>
+ <a href="wa.me/2347031935276">wa.me/2347031935276<a/>
+ <br/>
+
+ <label>Email:</label>
+ <p>cs@belocated.ng<p/>
+
+ <p>Best Regards</p>
+ <p>CEO BELOCATED</p>
+ `
+ const subject = 'Congratulations, you Just Earned a Referral Point!'
+ const send_to = userRef.email
+ const reply_to = "noreply@noreply.com"
+
+ 
+
+ //Finally sending email
+ const emailSent = await sendEmail(subject, message, send_to, userRef.username)
+
+ if (!emailSent) {
+   res.status(500).json('Failed to send referral bonus email');
+   throw new Error('Failed to send referral bonus email')
+ }
+ }
+
+ // Ref Challenge Update Stats
+ if (updatedUserDetails?.refChallengeReferrersId) {
+  //Getting referrer details from DB
+  const userRef = await User.findOne({username: updatedUserDetails?.refChallengeReferrersId})
+
+  if (!userRef) {
+   res.status(400).json({message: "Referrer does not exist"})
+   throw new Error("Referrer does not exist")
+  }
+
+  // If referrer does exist
+  // Get all the referral challenges
+  const pastChallenges = await RefChallenge.find()
+
+  if (!pastChallenges) {
+   console.log("No challenges found")
+   // Send message to admin reporting that a user referred someone in the challenge when there's no challenge ongoing.
+   }
+
+   //Check if there's an onging referrer challenge
+   //Update the referral challenge stats
+    const hasOngoingChallenge = pastChallenges.find(pc => pc.status === "Ongoing");
+
+    if (!hasOngoingChallenge) {
+    console.log("There's no ongoing challenge")
+    // Send email to admin notifying admin that there's no ongoing challenge and a user referred someone.
+    }
+
+    //If there's an ongoing challenge
+
+    //Update the userRef referred User's array According to the ref challenge
+    //If this field is not existing mongodb need to create it for that user.
+    userRef.referralChallengeReferredUsers.push(updatedUserDetails._id);
+    userRef.referralChallengePts += 1
+    const referrer = await userRef.save(); 
+
+    // Update the challenge
+    hasOngoingChallenge.totalRefUsers += 1;
+    hasOngoingChallenge.referralChallengeContestants.push(userRef._id);
+    const updatedRefChallenge = await hasOngoingChallenge.save(); 
+
+    if (!updatedRefChallenge || !referrer) {
+    res.status(500).json({message: "Internal error with referral system from the server"})
+    throw new Error("Internal error with referral system from the server")
+    }
+ }
 
  //Send Welcome Email
  const message = `
@@ -986,14 +1225,14 @@ if (updatedUserDetails) {
  <p>Best Regards</p>
  <p>CEO BELOCATED</p>
  `
- const subject = 'Welcome note from the CEO'
+ const subject = 'Welcome Note from the CEO'
  const send_to = updatedUserDetails.email
  const reply_to = "noreply@noreply.com"
 
  
 
  //Finally sending email
- const emailSent = await sendEMail(subject, message, send_to, reply_to)
+ const emailSent = await sendEmail(subject, message, send_to, updatedUserDetails.username)
 
  if (!emailSent) {
    res.status(500).json('Failed to send welcome email');
@@ -1035,7 +1274,7 @@ if (userOTP) {
 )
 
 
- //>>> Phone Verification
+ //>>> Manage User
 //  export const verifyUserPhone = asyncHandler( async(req, res) => {
 //   const {phone} = req.body
 
@@ -1176,8 +1415,10 @@ if (userOTP) {
 
 
 //>>> Delete User
-export const deleteUser = asyncHandler(async(req, res) => {
-  const {userId} = req.params
+export const manageUser = asyncHandler(async(req, res) => {
+  const {userId, status} = req.body
+
+  console.log(status)
 
   if (req.user.accountType !== "Admin") {
     res.status(401);
@@ -1185,19 +1426,40 @@ export const deleteUser = asyncHandler(async(req, res) => {
   }
 
   const user = await User.findById({_id: userId })
+
   
   if(!user) {
-      res.status(400).json("User does not exist or already deleted")
+      res.status(400).json("User does not exist")
   } 
 
-  const delUser = await User.findByIdAndDelete(userId)
+  if (status == "Delete") {
+    const delUser = await User.findByIdAndDelete(userId)
 
-  if (!delUser) {
-    res.status(500);
-    throw new Error({message: "Error Deleting User"})
+    if (!delUser) {
+      res.status(500);
+      throw new Error({message: "Error deleting User"})
+    }
+
+    res.status(200).json("User Deleted successfully")
   }
 
-  res.status(200).json("User Deleted successfully")
+      user.accountStatus = status
+      const updatedStatus = await user.save()
+
+      console.log(updatedStatus)
+
+      if (!updatedStatus) {
+        res.status(500);
+        throw new Error({message: "Error managing this User"})
+      }
+  
+      res.status(200).json("User management successful")
+
+  
+
+  
+
+  
 })
 
 

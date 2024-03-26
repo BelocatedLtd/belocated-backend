@@ -13,6 +13,7 @@ import cookieParser from 'cookie-parser'
 import userRoute from './routes/userRoute.js'
 import advertRoute from './routes/advertRoute.js'
 import taskRoute from './routes/taskRoute.js'
+import refRoute from './routes/refRoute.js'
 import transactionRoute from './routes/transactionRoute.js'
 import feedRoute from './routes/feedRoute.js'
 import errorHandler from './middleware/errorMiddleware.js'
@@ -20,8 +21,7 @@ import {Server} from 'socket.io'
 import cron from 'node-cron'
 import { saveActivity } from './controllers/feedController.js'
 import sendWeeklyEmail from './crons/weeklyEmail.js'
-//import resetFreeTasksCount from './crons/resetFreeTasks.js'
-//import sendWeeklyEmail from './crons/resetFreeTasks.js'
+import {startRefChallenge, endRefChallenge } from './crons/refChallCron.js'
 
 
 /*  CONFIGURATIONS */
@@ -64,28 +64,23 @@ app.use("/api/adverts", advertRoute)
 app.use("/api/tasks", taskRoute)
 app.use("/api/transactions", transactionRoute)
 app.use("/api/activities", feedRoute)
+app.use("/api/ref", refRoute)
 
 
-//Cron job schedule
-//cron.schedule('20 13 * * *', sendWeeklyEmail)
+//Cron job schedule for weekly email
 cron.schedule('0 17 * * 0', sendWeeklyEmail)
-//cron.schedule('0 8 * * 1', sendWeeklyWelcomeEmail)
-//cron.schedule('* * * * *', sendWeeklyEmail); // 1 minute cron job command
 //sendWeeklyEmail() 
 
+//Cron job schedule to start referral Challenge
+cron.schedule('0 0 * * 1', startRefChallenge) // Ref challenge kicks off every 12am monday morning
+//cron.schedule('* * * * *', startRefChallenge) // Ref challenge starts  1min test
+//startRefChallenge() 
 
-//cron.schedule('0 0 * * *', resetFreeTasksCount)
+//Cron job schedule to end referral Challenge
+cron.schedule('0 19 * * 0', endRefChallenge) // Ref challenge ends 7pm on sunday evening
+//cron.schedule('* * * * *', endRefChallenge) // Ref challenge ends  1min test
+//endRefChallenge()
 
-// Schedule the task to run every Sunday at midnight
-// cron.schedule('0 0 * * 0', () => {
-//     const now = new Date();
-//     if (now.getDay() === 0) {
-//         resetFreeTasks;
-//     }
-//   });
-
-// Setup Socket.io connection and listen to events
-//io.on('connection', handleConnection);
 
 io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`)

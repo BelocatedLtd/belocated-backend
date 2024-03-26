@@ -69,6 +69,14 @@ const advertSchema = mongoose.Schema({
         type: Boolean, 
         default: false
     },
+    tasksModerator: {
+        type: String,
+    },
+    taskPerformers: [
+        {
+            type: String,
+        }
+    ],
    
 }, {
     timestamps: true

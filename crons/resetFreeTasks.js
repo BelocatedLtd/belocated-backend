@@ -4,36 +4,6 @@ import sendEMail from "../utils/sendEmail.js";
 import Wallet from "../model/Wallet.js";
 import Task from "../model/Task.js";
 import Advert from "../model/Advert.js";
-// import sendResetEmail from "./sendFreeTaskResetEmail.js";
-
-// const resetFreeTasksCount = async() => {
-
-
-
-//     try {
-//         const users = await User.find();
-
-//         // for (const user of users) {
-//         //     user.freeTaskCount = 2;
-//         //     await user.validate();
-//         //     await user.save();
-//         // }
-
-//         //console.log("Weekly Tasks count reset successful for all users, sending notification emails...");
-
-//         const emailSendingPromise = sendResetEmail()
-
-//         await emailSendingPromise;
-//        console.log("Email sending completed successfully.");
-
-//     } catch (error) {
-//         console.error("Error resetting free tasks count:", error);
-//     }
-// }
-
-//  //resetFreeTasksCount();
-
-// export default resetFreeTasksCount
 
 
 const subject = 'Your Belocated Weekly Update';

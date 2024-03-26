@@ -11,6 +11,11 @@ const walletSchema = mongoose.Schema({
         required: true,
         default: 0
     },
+    refBonWallet: {
+        type: Number,
+        required: true,
+        default: 0
+    },
     totalEarning: {
         type: Number,
         required: true,

@@ -17,6 +17,13 @@ export const createAdvert = asyncHandler(async (req, res) => {
             throw new Error("Please fill in all fields")
          }
 
+         const admins = await User.find({ accountType: "Admin" });
+
+         if (!admins) {
+            res.status(500).json({message: 'No admin found'});
+            throw new Error("No admin found")
+         }
+
          try {
             // Getting user wallet
             const wallet = await Wallet.findOne({userId: req.user._id})
@@ -32,36 +39,42 @@ export const createAdvert = asyncHandler(async (req, res) => {
             }
 
              //Cloudinary configuration
-// Return "https" URLs by setting secure: true
-    cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+            // Return "https" URLs by setting secure: true
+                cloudinary.config({
+                    cloud_name: process.env.CLOUDINARY_NAME,
+                    api_key: process.env.CLOUDINARY_API_KEY,
+                    api_secret: process.env.CLOUDINARY_API_SECRET,
+                });
 
    
-    //Upload screenshots to databse
-    let uploadedImages = [];
+                //Upload screenshots to databse
+                let uploadedImages = [];
 
-    if(req.files) {
-       
-        try {
-           
-            for (const file of req.files) {
-                const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto', folder: 'Advert Media Contents' });
-        
-                    uploadedImages.push({
-                        secure_url: result.secure_url,
-                        public_id: result.public_id
-                    });
+                if(req.files) {
+                
+                    try {
+                    
+                        for (const file of req.files) {
+                            const result = await cloudinary.uploader.upload(file.path, { resource_type: 'auto', folder: 'Advert Media Contents' });
+                    
+                                uploadedImages.push({
+                                    secure_url: result.secure_url,
+                                    public_id: result.public_id
+                                });
+                            }
+                            } catch (error) {
+                                console.error(error);
+                                res.status(500).json({message: "Error uploading images"})
+                            }
                 }
-                } catch (error) {
-                    console.error(error);
-                    res.status(500).json({message: "Error uploading images"})
-                }
-    }
 
+    // Randomly pick an admin to moderate the tasks to be submitted for this advert.
 
+    // Generate a random index within the range of the admins array length
+    const randomIndex = Math.floor(Math.random() * admins.length);
+
+    // Retrieve the admin object at the randomly generated index
+    const selectedAdmin = admins[randomIndex];
 
             //After image has being uploaded to cloudinary - Now create advert
             
@@ -81,6 +94,8 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 mediaURL: uploadedImages,
                 adAmount,
                 socialPageLink,
+                tasksModerator: selectedAdmin.username,
+                taskPerformers: [],
                 tasks: 0,
                 isFree: false,
                 status: "Pending Payment", //Pending Payment, Running, Allocating, Allocated, Completed

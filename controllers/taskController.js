@@ -325,6 +325,13 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error("Cannot find the ad for this task")
     }
 
+    // Check if admin is the moderator asigned to the advert for this task
+    //Check if user is an admin
+    // if (advert.tasksModerator && req.user._id !== advert.tasksModerator) {
+    //     res.status(400).json({message: "You are not assigned to moderate this task"});
+    //     throw new Error("You are not assigned to moderate this task")
+    // }
+
     if (advert.desiredROI === 0) {
         res.status(500).json({message: "Ad campaign is no longer running"});
         throw new Error("Ad campaign is no longer running")
@@ -335,7 +342,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (status === "Partial Approval") {
          //Update task status after user submit screenshot
         task.status =  status;
-        task.message = message
+        task.message = message 
 
         //save the update on task model
         updatedTask = await task.save(); 
@@ -404,59 +411,11 @@ export const submitTask = asyncHandler(async (req, res) => {
             }
         }
     }
-
-
-    // // Whether free task or paid task
-    // // desiredROI for the advert should be subtracted by 1 and if zero, ad status should be changed to Completed
-    // //subtrate 1 from the desired roi
-    // //Update the number of tasks completed on an advert
-    // advert.desiredROI -= 1;
-    // advert.tasks += 1;
-
-    // //save the update on user model
-    // const updatedAdvert = await advert.save(); 
-
-    // if (!updatedAdvert) {
-    //     res.status(500).json({message: "Failed to approve task"})
-    //     throw new Error("Failed to approve task")
-    // }
-
-    // Check if ad unit/desired ad ROI is 0 and change ad status to Completed
-    // if (updatedAdvert.desiredROI === 0) {
-    //     advert.status = "Completed"
-
-    //     const updatedAdvertStatus = await advert.save();
-
-    //     if (!updatedAdvertStatus) {
-    //         res.status(500).json({message: "Failed to change ad status"})
-    //         throw new Error("Failed to change ad status")
-    //     }
-
-    //     //Send email to advertiser when advert is completed 
-    //     const message = `
-    //     <h2>Dear ${advertiser?.username}!</h2>
-    //     <p>We would like to notify you that your ${task.platform} advert campaign has been completed.</p>
-    //     <p>You can confirm your order completion under "My Campaign" which is on your dashboard</p>
-    //     <p>Thank you for your continuous patronage.</p>
-    //     <p>Keep winning with BeLocated.</p>
-    //     <br/>
-    //     <br/>
-
-    //     <p>Regards,</p>
-    //     <p>Belocated Team</p>
-    //     `
-    //     const subject = 'Whoop! Whoop!! Your order has been completed'
-    //     const send_to = advertiser.email
-    //     const reply_to = "noreply@noreply.com"
-
-    //     //Finally sending email
-    //     const emailSent = await sendEMail(subject, message, send_to, reply_to)
-
-    //     if (!emailSent) {
-    //     res.status(500).json('Email sending failed');
-    //     throw new Error('Email sending failed')
-    //     }
-    // }   
+    
+    //Update the list of taskperformers.
+    advert.taskPerformers.push(taskPerformer.username);
+    
+    await advert.save();  
     
 
     res.status(200).json(updatedTask);
@@ -514,6 +473,13 @@ export const submitTask = asyncHandler(async (req, res) => {
     if (!advert) {
         res.status(400).json({message: "Cannot find the ad for this task"});
         throw new Error("Cannot find user Wallet to update")
+    }
+
+    // Check if admin is the moderator asigned to the advert for this task
+    //Check if user is an admin
+    if (advert.tasksModerator && req.user._id !== advert.tasksModerator) {
+        res.status(400).json({message: "You are not assigned to moderate this task"});
+        throw new Error("You are not assigned to moderate this task")
     }
 
     if (advert.desiredROI === 0) {

@@ -111,43 +111,6 @@ for (const user of users) {
     <p>Regards,</p>
     <p>Belocated Team</p>
     `
-
-         // Send the email
-        //  client.sendMail({
-        //     "from": 
-        //     {
-        //         "address": "noreply@belocated.ng",
-        //         "name": "Belocated"
-        //     },
-        //     "to": 
-        //     [
-        //         {
-        //         "email_address": 
-        //             {
-        //                 "address": user?.email,
-        //                 "name": user?.username
-        //             }
-        //         }
-        //     ],
-        //     "subject": "Your Belocated Weekly Update",
-        //     "htmlbody": message,
-        // }).then((res) => console.log(`Message delivered Successfully ${user.email}`)).catch((error) => console.log(`There was an error ${user.email}`));
-
-    //     const message = `
-    // <p>Hi ${user?.username}</p> 
-    // <p>We are happy you are part of our Belocated Family.</p>
-    // <p>So far, you've earned  ₦${user.userEarned} doing ${user.userTaskCount} tasks.</p>
-    // <p>This week is another opportuinity to earn much more</p>
-    // <p>We have over ${user.runningAds} tasks available on the platform today.</p>
-    // <p>Head over to the platform <a href="https://belocated.ng">BeLocated platform</a> and start earning.</p>
-    // <p>Your satisfaction is our priority!</p>
-    // <p>Keep winning with BeLocated</p>
-    // <br/>
-    // <br/>
-
-    // <p>Regards,</p>
-    // <p>Belocated Team</p>
-   // `
         
         try {
             // Send the email

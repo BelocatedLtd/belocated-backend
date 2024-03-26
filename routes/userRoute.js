@@ -1,5 +1,5 @@
 import express from 'express'
-import { registerUser, loginUser, getUser, getUsers, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, deleteUser, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails, refRegisterUser } from "../controllers/userController.js";
+import { registerUser, loginUser, getUser, getUsers, loginStatus, updateUser, forgotPassword, verifyEmail, verifyUser, updateUserAccountDetails, changePassword, verifyEmailPasswordChange, confirmEmailOTP, verifyOldPassword, updateUserBankDetails, refRegisterUser, refCahlRegisterUser, manageUser } from "../controllers/userController.js";
 import {protect} from '../middleware/authMiddleware.js';
 
 
@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post("/register", registerUser)
 router.post("/refregister", refRegisterUser)
+router.post("/refchalregister", refCahlRegisterUser)
 router.post('/login', loginUser);
 
 // Get Routes
@@ -31,6 +32,6 @@ router.patch("/emailverify/:token", verifyUser) //Send phone verification OTP
 //router.patch("/confirmphone", protect, confirmUserPhone) // Confirm Phone verification OTP 
 router.patch("/confirmemailOTP/:OTP", confirmEmailOTP) // Confirm Phone verification OTP
 
-router.delete("/delete/:userId", protect, deleteUser)
+router.post("/manage/:userId", protect, manageUser)
 
 export default router;

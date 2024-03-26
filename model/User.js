@@ -48,6 +48,9 @@ const userSchema = mongoose.Schema({
     referrersId: {
         type: String,
     },
+    refChallengeReferrersId: {
+        type: String,
+    },
     adsCreated: {
         type: Number,
         default: 0
@@ -65,6 +68,11 @@ const userSchema = mongoose.Schema({
         required: true,
         default: 'User'
     },
+    accountStatus: {
+        type: String,
+        required: true,
+        default: 'Active' // Banned, Suspended
+    },
     isEmailVerified: {
         type: Boolean,
         required: true,
@@ -80,7 +88,21 @@ const userSchema = mongoose.Schema({
         required: true,
         default: 2
     },
+    referralChallengePts: {
+        type: Number,
+        default: 0
+    },
+    referralBonusPts: {
+        type: Number,
+        default: 0
+    },
     referrals: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    ],
+    referralChallengeReferredUsers: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
