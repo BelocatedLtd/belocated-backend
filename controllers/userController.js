@@ -518,25 +518,20 @@ export const  getUser = async(req, res) => {
 // http://localhost:6001/api/user/all
 export const  getUsers = asyncHandler(async(req, res) => {
 
-  if (req.user.accountType !== "Admin") {
-    res.status(403)
-    throw new Error("User not authorized")
-  }
 
-  if (req.user.accountType === "Admin") {
-
-    const users = await User.find({}, { password: 0 });
+  const users = await User.find({}, { password: 0 });
 
   if (!users) {
-      res.status(400)
-      throw new Error("No User found in the database")
+    res.status(400)
+    throw new Error("No User found in the database")
   }
+
 
 if (users) {
     res.status(200).json(users)
    }
 
-}
+
 })
 
 //>>>>  LOGOUT USERS 
@@ -1120,8 +1115,6 @@ if (updatedUserDetails) {
  const subject = 'Congratulations, you Just Earned a Referral Point!'
  const send_to = userRef.email
  const reply_to = "noreply@noreply.com"
-
- 
 
  //Finally sending email
  const emailSent = await sendEmail(subject, message, send_to, userRef.username)

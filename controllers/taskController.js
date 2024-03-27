@@ -87,12 +87,12 @@ export const  getTask = asyncHandler(async (req, res) => {
 export const  getTasks = asyncHandler(async (req, res) => {
     const { _id } = req.user
 
-    if (req.user.accountType !== "Admin") {
-        res.status(401).json({message:"Not Authorized"})
-        throw new Error("Not authorized")
-    }
+    // if (req.user.accountType !== "Admin") {
+    //     res.status(401).json({message:"Not Authorized"})
+    //     throw new Error("Not authorized")
+    // }
 
-    if (req.user.accountType === "Admin") {
+ //   if (req.user.accountType === "Admin") {
         let tasks;
 
         tasks = await Task.find().sort("-createdAt")
@@ -105,7 +105,7 @@ export const  getTasks = asyncHandler(async (req, res) => {
         if (tasks) {
             res.status(200).json(tasks)
          }
-    }
+    //}
   })
 
 
@@ -413,7 +413,7 @@ export const submitTask = asyncHandler(async (req, res) => {
     }
     
     //Update the list of taskperformers.
-    advert.taskPerformers.push(taskPerformer.username);
+    advert.taskPerformers.push(taskPerformer._id);
     
     await advert.save();  
     
