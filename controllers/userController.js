@@ -395,6 +395,12 @@ export const loginUser = asyncHandler(async (req, res) => {
       throw new Error("Incorrect Password")
     }
 
+    //if user doesnt exist
+    if (user.accountStatus === "Banned") {
+      res.status(400).json({message: "User account Banned, send an email to appeal@belocated.ng to appeal"})
+      throw new Error("User account Banned, send an email to appeal@belocated.ng to appeal")
+     }
+
     //Check if user email is verified
     if (user.isEmailVerified === false) {
       const {username, email, isEmailVerified } = user
@@ -425,34 +431,35 @@ export const loginUser = asyncHandler(async (req, res) => {
  
     if (user && passwordIsCorrect && token) {
       const walletId = await Wallet.find({userId: user._id})
-     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts } = user
+     const {_id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName,bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts } = user
      res.status(200).json({
       id: _id, 
-      fullname,  
-      username, 
-      email, 
-      phone, 
-      location, 
-      community, 
-      religion, 
-      gender,
-      accountType,
-      bankName,
-      bankAccountNumber,
-      accountHolderName,
-      isEmailVerified, 
-      isPhoneVerified,
-      taskCompleted,
-      taskOngoing,
-      adsCreated,
-      freeTaskCount,
-      referrals,
-      referrersId,
-      refChallengeReferrersId,
-      referralChallengeReferredUsers, 
-      referralChallengePts,
-      referralBonusPts,
-      token
+          fullname,  
+          username, 
+          email, 
+          phone, 
+          location, 
+          community, 
+          religion, 
+          gender,
+          accountType,
+          accountStatus,
+          bankName,
+          bankAccountNumber,
+          accountHolderName,
+          isEmailVerified, 
+          isPhoneVerified,
+          taskCompleted,
+          taskOngoing,
+          adsCreated,
+          freeTaskCount,
+          referrals,
+          referrersId,
+          refChallengeReferrersId,
+          referralChallengeReferredUsers, 
+          referralChallengePts,
+          referralBonusPts,
+          token
      })
     } else {
      res.status(400).json({message: "Invalid user email or Password"})
