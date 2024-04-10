@@ -24,7 +24,7 @@ export const  getUserWallet = asyncHandler(async (req, res) => {
 export const  getWallet = asyncHandler(async (req, res) => {
     const { userId } = req.params
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({message: "Not Authorized"});
         throw new Error("Not Authorized")
     }
@@ -43,7 +43,7 @@ export const  getWallet = asyncHandler(async (req, res) => {
 export const  getSingleUserWallet = asyncHandler(async (req, res) => {
     const { id } = req.params
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({message: "Not Authorized"});
         throw new Error("Not Authorized")
     }
@@ -228,7 +228,7 @@ export const  getSingleUserWallet = asyncHandler(async (req, res) => {
      //Get all user Withdrawals
 export const getWithdrawals = asyncHandler(async (req, res) => {
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({ message: "Unauthorized user" })
         throw new error("Unauthorized user")
     }
@@ -253,7 +253,7 @@ export const getWithdrawals = asyncHandler(async (req, res) => {
 export const confirmWithdrawalRequest = asyncHandler(async (req, res) => {
     const { withdrawalRequestId } = req.params
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({ message: "Unauthorized user" })
         throw new error("Unauthorized user")
     }
@@ -319,7 +319,7 @@ export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
     // const wdRequest = await Withdraw.findById(withdrawalRequestId)
     const wdTrx = await Transaction.find({paymentRef: withdrawalRequestId})
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({ message: "Unauthorized user" })
         throw new error("Unauthorized user")
     }
@@ -412,7 +412,7 @@ export const  getUserTransactions = asyncHandler(async (req, res) => {
 // http://localhost:6001/api/transactions/all
 export const  getTransactions = asyncHandler(async(req, res) => {
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(400).json({message: "Not authorized"});
         throw new Error("Not authorized") 
     }

@@ -29,12 +29,12 @@ import RefChallenge from "../model/RefChallenge.js";
 export const  getAllRefChallenges = asyncHandler(async (req, res) => {
     const { _id } = req.user
 
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" || req.user.accountType !== "Super Admin") {
         res.status(401).json({message:"Not Authorized"})
         throw new Error("Not authorized")
     }
 
-    if (req.user.accountType === "Admin") {
+    if (req.user.accountType === "Admin" || req.user.accountType === "Super Admin") {
         let challenges;
 
         challenges = await RefChallenge.find().sort("-createdAt")

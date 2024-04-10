@@ -411,7 +411,7 @@ export const loginUser = asyncHandler(async (req, res) => {
      return
     }
 
-    if (user.isEmailVerified === true) {
+    if (user.isEmailVerified === true) { 
 
     //   res.status(400).json({message: "Error trying to log into your account, please contact admin"})
     //  throw new Error("Error trying to log into your account, please contact admin")
@@ -1420,7 +1420,7 @@ export const manageUser = asyncHandler(async(req, res) => {
 
   console.log(status)
 
-  if (req.user.accountType !== "Admin") {
+  if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
     res.status(401);
     throw new Error({message: "User not authorized to perform this action"})
   }

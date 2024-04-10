@@ -66,7 +66,7 @@ const userSchema = mongoose.Schema({
     accountType: {
         type: String,
         required: true,
-        default: 'User'
+        default: 'User' // Admin, Super Admin
     },
     accountStatus: {
         type: String,

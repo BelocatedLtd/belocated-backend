@@ -277,16 +277,20 @@ export const submitTask = asyncHandler(async (req, res) => {
  export const approveTask = asyncHandler(async (req, res) => {
     const { taskId, status, message } = req.body
 
+    const task = await Task.findById(taskId)
+
+    const userIdString = req.user._id.toString();
+
     //Check if user is an admin
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin" && userIdString !== task.advertiserId) {
         res.status(400).json({message: "User Not Authorized"});
         throw new Error("User Not Authorized")
     }
 
-    const task = await Task.findById(taskId)
+    //const task = await Task.findById(taskId)
     const advert = await Advert.findById(task?.advertId)
-    const wallet = await Wallet.findOne({userId: task?.taskPerformerId})
     const taskPerformer = await User.findById(task?.taskPerformerId)
+    const wallet = await Wallet.findOne({userId: task?.taskPerformerId})
     const advertiser = await User.findById(task.advertiserId)
     const advertserWallet = await Wallet.findOne({userId:  task?.advertiserId})
 
@@ -336,6 +340,7 @@ export const submitTask = asyncHandler(async (req, res) => {
         res.status(500).json({message: "Ad campaign is no longer running"});
         throw new Error("Ad campaign is no longer running")
     }
+
 
     let updatedTask;
 
@@ -428,7 +433,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
 
     //Check if user is an admin
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(400).json({message: "User Not Authorized"});
         throw new Error("User Not Authorized")
     }
@@ -548,7 +553,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 export const deleteTask = asyncHandler(async(req, res) => {
     const {taskId} = req.params
   
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
       res.status(401).json({message: "User not authorized to perform this action"});
       throw new Error("User not authorized to perform this action")
     }

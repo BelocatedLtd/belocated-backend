@@ -41,9 +41,9 @@ const advertSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    caption: {
-        type: String,
-    },
+    caption: [
+        { type: String }
+    ],
     adAmount: {
         type: Number,
         required: true,
@@ -78,7 +78,6 @@ const advertSchema = mongoose.Schema({
             ref: 'User'
         }
     ],
-   
 }, {
     timestamps: true
 })

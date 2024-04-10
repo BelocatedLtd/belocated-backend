@@ -201,7 +201,7 @@ export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
 
     const user = await User.findById(req.user._id)
 
-    if(user.accountType !== "Admin") {
+    if(req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
         res.status(401).json({message: "Unauthorized User"})
         throw new Error("Unauthorized User")
     }
@@ -285,7 +285,7 @@ export const  getAllAdvert = asyncHandler(async (req, res) => {
 export const deleteAdvert = asyncHandler(async(req, res) => {
     const {advertId} = req.params
   
-    if (req.user.accountType !== "Admin") {
+    if (req.user.accountType !== "Admin" && req.user.accountType !== "Super Admin") {
       res.status(401).json({message: "User not authorized to perform this action"});
       throw new Error("User not authorized to perform this action")
     }

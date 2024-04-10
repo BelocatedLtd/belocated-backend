@@ -45,8 +45,8 @@ const TaskSchema = mongoose.Schema({
         type: String, 
         required: true,
     },
-    caption: {
-        type: String, 
+    caption: { 
+        type: String 
     },
     taskVerification: {
         type: String, 
