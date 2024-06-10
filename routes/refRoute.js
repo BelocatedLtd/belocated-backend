@@ -1,16 +1,20 @@
 import express from 'express'
-import { convertRefBonusPts, getAllRefChallenges, getAllUserReferrals, getOngoingRefChallenge } from '../controllers/refController.js';
-import {protect} from '../middleware/authMiddleware.js';
+import {
+	convertRefBonusPts,
+	getAllRefChallenges,
+	getAllUserReferrals,
+	getOngoingRefChallenge,
+	getReferralDashboardData,
+} from '../controllers/refController.js'
+import { protect } from '../middleware/authMiddleware.js'
 
+const router = express.Router()
 
-const router = express.Router();
+router.get('/challenge', getOngoingRefChallenge)
+router.get('/challenge/all', protect, getAllRefChallenges)
+router.get('/byUser', protect, getAllUserReferrals)
+router.get('/dashboard', protect, getReferralDashboardData)
 
+router.post('/bonus/convert', protect, convertRefBonusPts)
 
-router.get("/challenge", getOngoingRefChallenge) // Get ongoing ref challenge from db
-router.get("/challenge/all", protect, getAllRefChallenges) // Get ongoing ref challenge from db
-router.get('/byUser', protect, getAllUserReferrals) // Get ongoing ref challenge from db
-
-router.post("/bonus/convert", protect, convertRefBonusPts)
-
-
-export default router;
+export default router

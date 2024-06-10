@@ -113,3 +113,24 @@ export const getAllUserReferrals = asyncHandler(async (req, res) => {
 
 	res.status(200).json(referrals)
 })
+
+export const getReferralDashboardData = asyncHandler(async (req, res) => {
+	const userId = req.user._id
+
+	const user = await User.findById(userId)
+	const referrals = await Referral.find({ referrerId: userId })
+
+	if (!user) {
+		res.status(404).json({ message: 'Referrer not found' })
+		return
+	}
+
+	const refDashboardData = {
+		totalPoints: user.referralPoints,
+		referredUsers: referrals.length,
+		totalEarning: 0,
+		challengesWon: 0,
+	}
+
+	res.status(200).json(refDashboardData)
+})
