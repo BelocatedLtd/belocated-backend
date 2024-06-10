@@ -8,6 +8,9 @@ import crypto from 'crypto'
 import sendEMail from '../utils/sendEmail.js'
 import RefChallenge from '../model/RefChallenge.js'
 import sendEmail from '../utils/sendEmailApi.js'
+import Referral from '../model/Referral.js'
+import Advert from '../model/Advert.js'
+import Task from '../model/Task.js'
 
 const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' })
@@ -16,44 +19,25 @@ const generateToken = (id) => {
 //>>>> Register User
 // http://localhost:6001/api/user/register
 export const registerUser = asyncHandler(async (req, res) => {
-	const { username, email, password } = req.body
+	const { username, email, password, referralToken, referralUsername } =
+		req.body
 
-	//User input validation
 	if (!username || !email || !password) {
 		res.status(400).json({ message: 'Please fill in all required fields' })
-		throw new Error({ message: 'Please fill in all required fields' })
+		throw new Error('Please fill in all required fields')
 	}
 
-	//checking for password lenght
-	if (password.length < 6) {
-		res.status(400).json({ message: 'Password must be upto 6 characters' })
-		throw new Error({ message: 'Password must be upto 6 characters' })
-	}
-
-	//check if user email already exist
-	//username
-	const usernameExists = await User.findOne(
-		{ username: username } || { email: email },
-	)
-
-	if (usernameExists) {
+	const emailExists = await User.findOne({ email: email })
+	if (emailExists) {
 		res
 			.status(400)
-			.json({ message: 'Username has already been registered by another user' })
-		throw new Error('Username has already been registered by another user')
-	}
-
-	//email
-	const emailExists = await User.findOne({ email: email })
-
-	if (emailExists) {
-		return res
-			.status(200)
 			.json({ message: 'Email has already been registered, please login' })
+		return
 	}
 
-	//Create new user
-	const user = await User.create({
+	let user
+
+	user = await User.create({
 		fullname: '',
 		username,
 		password,
@@ -79,6 +63,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 		referrals: [],
 		referralChallengePts: 0,
 		referralBonusPts: 0,
+		referralPoints: 0,
 		referralChallengeReferredUsers: [],
 	})
 
@@ -87,18 +72,13 @@ export const registerUser = asyncHandler(async (req, res) => {
 		throw new Error('Failed to register User')
 	}
 
-	//Create new wallet for User
-	let wallet
-	if (user) {
-		wallet = await Wallet.create({
-			userId: user._id,
-			value: 0,
-			// refBonWallet,
-			totalEarning: 0,
-			pendingBalance: 0,
-			amountSpent: 0,
-		})
-	}
+	const wallet = await Wallet.create({
+		userId: user._id,
+		value: 0,
+		totalEarning: 0,
+		pendingBalance: 0,
+		amountSpent: 0,
+	})
 
 	if (!wallet) {
 		res.status(400).json({
@@ -110,22 +90,46 @@ export const registerUser = asyncHandler(async (req, res) => {
 		)
 	}
 
-	if (user && wallet) {
-		const { _id, username, email, isEmailVerified } = user
-		const userData = {
-			_id,
-			username,
-			email,
-			isEmailVerified,
+	const {
+		_id,
+		username: registeredUsername,
+		email: registeredEmail,
+		isEmailVerified,
+	} = user
+	const userData = {
+		_id,
+		username: registeredUsername,
+		email: registeredEmail,
+		isEmailVerified,
+	}
+
+	let referral = await Referral.findOne({ referredEmail: email })
+
+	if (referralToken) {
+		const token = await Token.findOne({ referralToken: referralToken })
+		if (token && !token.isExpired()) {
+			const referrerId = token.userId
+			const referrer = await User.findById(referrerId)
+			if (referrer && referral) {
+				// Update the existing referral record
+				referral.referredUserId = _id
+				referral.referredName = username
+				referral.status = 'Pending'
+				await referral.save()
+			}
 		}
-
-		res.status(200).json(userData)
+	} else if (referralUsername) {
+		const referredUser = await User.findOne({ username: referralUsername })
+		if (referredUser && referral) {
+			// Update the existing referral record
+			referral.referredUserId = _id
+			referral.referredName = username
+			referral.status = 'Pending'
+			await referral.save()
+		}
 	}
 
-	if (!user && !wallet) {
-		res.status(500).json({ message: 'Registeration failed' })
-		throw new Error('Registeration failed')
-	}
+	res.status(200).json(userData)
 })
 
 //>>>> Register User For Ref Bonus
@@ -653,7 +657,7 @@ export const loginStatus = asyncHandler(async (req, res) => {
 
 //>>>> Update User details
 export const updateUser = asyncHandler(async (req, res) => {
-	const { userId, fullname, location, community, gender, religion } = req.body
+	const { userId, fullname, phone, state, lga, gender, religion } = req.body
 
 	// if (userId !== req.user.id) {
 	//   res.status.(400).json({message: "There's a problem with the validation for this user"})
@@ -665,14 +669,13 @@ export const updateUser = asyncHandler(async (req, res) => {
 	if (!user) {
 		res.status(404).json('User not found in DB')
 	}
-
 	const updatedUserDetails = await User.findByIdAndUpdate(
 		{ _id: req.user.id },
 		{
 			fullname: fullname || req.user.fullname,
-			location: location || req.user.location,
-			location: location || req.user.location,
-			community: community || req.user.community,
+			phone: phone || req.user.phone,
+			location: state || req.user.state,
+			community: lga || req.user.lga,
 			gender: gender || req.user.gender,
 			religion: religion || req.user.religion,
 		},
@@ -816,8 +819,19 @@ export const updateUserAccountDetails = asyncHandler(async (req, res) => {
 //Update Bank Account Details
 export const updateUserBankDetails = asyncHandler(async (req, res) => {
 	const { userId, bankName, accountHolderName, bankAccountNumber } = req.body
+	console.log(
+		'🚀 ~ updateUserBankDetails ~ userId, bankName, accountHolderName, bankAccountNumber:',
+		{
+			userId,
+			bankName,
+			accountHolderName,
+			bankAccountNumber,
+			user: req.user,
+		},
+	)
 
 	const user = await User.findById(req.user._id)
+	console.log('🚀 ~ updateUserBankDetails ~ user:', user)
 
 	// Check if new bankAccountName && Account Number has already being registered by another user
 	if (bankAccountNumber && bankAccountNumber !== user.bankAccountNumber) {
@@ -1562,4 +1576,124 @@ export const manageUser = asyncHandler(async (req, res) => {
 	}
 
 	res.status(200).json('User management successful')
+})
+
+export const sendReferralEmail = asyncHandler(async (req, res) => {
+	const { email } = req.body
+	console.log('🚀 ~ sendReferralEmail ~ email:', email)
+
+	const referrerId = req.user._id
+
+	// Find the referrer
+	const referrer = await User.findById(referrerId)
+	if (!referrer) {
+		res.status(404).json('Referrer not found')
+		throw new Error('Referrer not found')
+	}
+
+	// Generate a referral token
+	let referralToken = crypto.randomBytes(32).toString('hex') + referrer._id
+	const hashedToken = crypto
+		.createHash('sha256')
+		.update(referralToken)
+		.digest('hex')
+
+	// Save the token in the database
+	const saveTokenToDB = await new Token({
+		userId: referrer._id,
+		token: '',
+		emailVerificationToken: '',
+		referralToken: hashedToken,
+		createdAt: Date.now(),
+		expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // One week
+	}).save()
+
+	if (!saveTokenToDB) {
+		res.status(500)
+		throw new Error('Internal server error')
+	}
+
+	// Construct the referral link
+	const frontendUrl = process.env.FRONTEND_URL
+	const referralLink = `${frontendUrl}/?referralToken=${referralToken}`
+
+	// Construct the email content
+	const message = `
+        <h2>Hello,</h2>
+        <p>${referrer.username} has invited you to join BeLocated!</p>
+        <p>To get started, please click the link below to register:</p>
+        <a href=${referralLink} clicktracking=off>${referralLink}</a>
+        <p>This link is valid for one week.</p>
+        <p>Regards,</p>
+        <p>BeLocated Team</p>
+    `
+	const subject = 'Join BeLocated - Referral Invitation'
+	const send_to = email
+	const reply_to = 'noreply@noreply.com'
+
+	// Send the referral email
+	const response = await sendEmail(subject, message, send_to, reply_to)
+
+	if (!response) {
+		res.status(500).json('Failed to send referral email')
+		throw new Error('Failed to send referral email')
+	}
+
+	if (referrer) {
+		const referral = new Referral({
+			referrerId: referrerId,
+			referredUserId: null,
+			referredEmail: email,
+			pointsEarned: 0,
+			status: 'Sent',
+		})
+		await referral.save()
+	}
+
+	res.status(200).json('Referral email sent successfully')
+})
+
+export const getDashboardData = asyncHandler(async (req, res) => {
+	const userId = req.user._id
+
+	const user = await User.findById(userId)
+	const wallet = await Wallet.findOne({ userId: userId })
+
+	const adverts = await Advert.find({ userId }).sort('-createdAt')
+
+	const tasks = await Task.find({
+		taskPerformerId: userId,
+		status: 'Completed',
+	}).sort('-createdAt')
+
+	if (!user || !wallet) {
+		res.status(404).json({ message: 'User not found' })
+		return
+	}
+
+	const totalEarnings = wallet.totalEarning
+	const myBalance = wallet.value
+	const advertsCreated = adverts.length
+	const tasksCompleted = tasks.length
+
+	const dashboardData = {
+		totalEarnings: {
+			value: totalEarnings,
+			// growth: growthRate,
+		},
+		myBalance: {
+			value: myBalance,
+			// growth: growthRate,
+		},
+		advertsCreated: {
+			value: advertsCreated,
+			// growth: growthRate,
+		},
+		tasksCompleted: {
+			value: tasksCompleted,
+			// growth: growthRate,
+		},
+	}
+
+	res.status(200).json(dashboardData)
 })
