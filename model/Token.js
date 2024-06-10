@@ -28,5 +28,9 @@ const tokenSchema = mongoose.Schema({
 	},
 })
 
+tokenSchema.methods.isExpired = function () {
+	return Date.now() > this.expiresAt
+}
+
 const Token = mongoose.model('Token', tokenSchema)
 export default Token

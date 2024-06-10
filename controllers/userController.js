@@ -22,6 +22,12 @@ export const registerUser = asyncHandler(async (req, res) => {
 	const { username, email, password, referralToken, referralUsername } =
 		req.body
 
+	console.log(
+		'🚀 ~ registerUser ~ referralToken, referralUsername:',
+		referralToken,
+		referralUsername,
+	)
+
 	if (!username || !email || !password) {
 		res.status(400).json({ message: 'Please fill in all required fields' })
 		throw new Error('Please fill in all required fields')
@@ -103,30 +109,49 @@ export const registerUser = asyncHandler(async (req, res) => {
 		isEmailVerified,
 	}
 
-	let referral = await Referral.findOne({ referredEmail: email })
+	const hashedToken = crypto
+		.createHash('sha256')
+		.update(referralToken)
+		.digest('hex')
+
+	console.log('🚀 ~ registerUser ~ hashedToken:', hashedToken)
 
 	if (referralToken) {
-		const token = await Token.findOne({ referralToken: referralToken })
+		const token = await Token.findOne({ referralToken: hashedToken })
+		console.log('🚀 ~ registerUser ~ token:', token)
 		if (token && !token.isExpired()) {
 			const referrerId = token.userId
 			const referrer = await User.findById(referrerId)
-			if (referrer && referral) {
-				// Update the existing referral record
-				referral.referredUserId = _id
-				referral.referredName = username
-				referral.status = 'Pending'
-				await referral.save()
-			}
+			const referral = await Referral.findOneAndUpdate(
+				{ referredEmail: email },
+				{
+					referredUserId: _id,
+					referredName: username,
+					status: 'Pending',
+				},
+				{
+					new: true,
+					runValidators: true,
+				},
+			)
+
+			console.log('🚀 ~ registerUser ~ referrer:', { referrer, referral })
 		}
 	} else if (referralUsername) {
 		const referredUser = await User.findOne({ username: referralUsername })
-		if (referredUser && referral) {
-			// Update the existing referral record
-			referral.referredUserId = _id
-			referral.referredName = username
-			referral.status = 'Pending'
-			await referral.save()
-		}
+		const referral = await Referral.findOneAndUpdate(
+			{ referredEmail: email },
+			{
+				referredUserId: _id,
+				referredName: username,
+				status: 'Pending',
+			},
+			{
+				new: true,
+				runValidators: true,
+			},
+		)
+		console.log('🚀 ~ registerUser ~ referrer:', { referrer, referral })
 	}
 
 	res.status(200).json(userData)
@@ -580,6 +605,7 @@ export const getUser = async (req, res) => {
 				referralChallengeReferredUsers,
 				referralChallengePts,
 				referralBonusPts,
+				isKycDone,
 			} = user
 			res.status(200).json({
 				id: _id,
@@ -609,6 +635,7 @@ export const getUser = async (req, res) => {
 				referralChallengePts,
 				referralBonusPts,
 				token,
+				isKycDone,
 			})
 		}
 	} catch (error) {
@@ -842,6 +869,15 @@ export const updateUserBankDetails = asyncHandler(async (req, res) => {
 		}
 	}
 
+	const isKycDone = !!(
+		user.fullname &&
+		user.phone &&
+		user.location &&
+		user.community &&
+		user.gender &&
+		user.religion
+	)
+
 	//Update User Account Details
 	const updatedUser = await User.findByIdAndUpdate(
 		{ _id: userId },
@@ -849,12 +885,14 @@ export const updateUserBankDetails = asyncHandler(async (req, res) => {
 			bankName: bankName || req.user.bankName,
 			accountHolderName: accountHolderName || req.user.accountHolderName,
 			bankAccountNumber: bankAccountNumber || req.user.bankAccountNumber,
+			isKycDone: isKycDone,
 		},
 		{
 			new: true,
 			runValidators: true,
 		},
 	)
+	console.log('🚀 ~ updateUserBankDetails ~ updatedUser:', updatedUser)
 
 	if (!updatedUser) {
 		res
@@ -864,6 +902,23 @@ export const updateUserBankDetails = asyncHandler(async (req, res) => {
 	}
 
 	if (updateUser) {
+		if (updatedUser.isKycDone) {
+			const referral = await Referral.findOne({ referredUserId: userId })
+
+			if (referral && referral.status !== 'completed') {
+				referral.status = 'Completed'
+				referral.pointsEarned += 10
+				await referral.save()
+
+				const referrer = await User.findById(referral.referrerId)
+				console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer)
+				if (referrer) {
+					referrer.referralPoints += 10
+					await referrer.save()
+				}
+			}
+		}
+
 		const { password, ...userData } = updatedUser.toObject()
 
 		res.status(200).json(userData)
@@ -1607,6 +1662,7 @@ export const sendReferralEmail = asyncHandler(async (req, res) => {
 		createdAt: Date.now(),
 		expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // One week
 	}).save()
+	console.log('🚀 ~ sendReferralEmail ~ saveTokenToDB:', saveTokenToDB)
 
 	if (!saveTokenToDB) {
 		res.status(500)
