@@ -527,6 +527,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 				referralChallengeReferredUsers,
 				referralChallengePts,
 				referralBonusPts,
+				isKycDone,
 			} = user
 			res.status(200).json({
 				id: _id,
@@ -555,6 +556,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 				referralChallengeReferredUsers,
 				referralChallengePts,
 				referralBonusPts,
+				isKycDone,
 				token,
 			})
 		} else {
