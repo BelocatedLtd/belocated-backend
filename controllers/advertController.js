@@ -4,6 +4,7 @@ import Wallet from '../model/Wallet.js'
 import Advert from '../model/Advert.js'
 import Transaction from '../model/Transaction.js'
 import { v2 as cloudinary } from 'cloudinary'
+import Task from '../model/Task.js'
 
 //Create New Advert
 // http://localhost:6001/api/advert/create
@@ -354,11 +355,20 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 			throw new Error('No adverts found')
 		}
 
+		const userTasks = await Task.find({ taskPerformerId: _id }).select(
+			'advertId',
+		)
+		const userTaskAdvertIds = userTasks.map((task) => task.advertId.toString())
+
 		const filteredAdverts = adverts.filter((advert) => {
 			const locationMatch = advert.state === location || advert.state === 'All'
 			const communityMatch = advert.lga === community || advert.lga === 'All'
 			const genderMatch = advert.gender === gender || advert.gender === 'All'
-			return locationMatch && communityMatch && genderMatch
+			const notAlreadyTasked = !userTaskAdvertIds.includes(
+				advert._id.toString(),
+			)
+
+			return locationMatch && communityMatch && genderMatch && notAlreadyTasked
 		})
 
 		res.status(200).json(filteredAdverts)
