@@ -1,16 +1,16 @@
-import asyncHandler from 'express-async-handler'
-import User from '../model/User.js'
-import Token from '../model/Token.js'
-import Wallet from '../model/Wallet.js'
-import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import sendEMail from '../utils/sendEmail.js'
-import RefChallenge from '../model/RefChallenge.js'
-import sendEmail from '../utils/sendEmailApi.js'
-import Referral from '../model/Referral.js'
+import asyncHandler from 'express-async-handler'
+import jwt from 'jsonwebtoken'
 import Advert from '../model/Advert.js'
+import RefChallenge from '../model/RefChallenge.js'
+import Referral from '../model/Referral.js'
 import Task from '../model/Task.js'
+import Token from '../model/Token.js'
+import User from '../model/User.js'
+import Wallet from '../model/Wallet.js'
+import sendEMail from '../utils/sendEmail.js'
+import sendEmail from '../utils/sendEmailApi.js'
 
 const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' })
@@ -687,9 +687,12 @@ export const loginStatus = asyncHandler(async (req, res) => {
 //>>>> Update User details
 export const updateUser = asyncHandler(async (req, res) => {
 	const { userId, fullname, phone, state, lga, gender, religion } = req.body
+	console.log('🚀 ~ updateUser ~ userId:', userId)
 
-	// if (userId !== req.user.id) {
-	//   res.status.(400).json({message: "There's a problem with the validation for this user"})
+	// if (userId !== req.user._id) {
+	// 	return res
+	// 		.status(400)
+	// 		.json({ message: "There's a problem with the validation for this user" })
 	// }
 
 	const user = await User.findById(req.user._id)
@@ -721,6 +724,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 
 	if (updatedUserDetails) {
 		const {
+			_id,
 			fullname,
 			username,
 			email,
@@ -749,6 +753,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 		} = updatedUserDetails
 
 		res.status(200).json({
+			id: _id,
 			fullname,
 			username,
 			email,
@@ -923,7 +928,7 @@ export const updateUserBankDetails = asyncHandler(async (req, res) => {
 
 		const { password, ...userData } = updatedUser.toObject()
 
-		res.status(200).json(userData)
+		res.status(200).json({ ...userData, id: userData._id })
 	}
 	//}
 })
