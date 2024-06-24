@@ -1,10 +1,10 @@
+import { v2 as cloudinary } from 'cloudinary'
 import asyncHandler from 'express-async-handler'
+import Advert from '../model/Advert.js'
+import Task from '../model/Task.js'
+import Transaction from '../model/Transaction.js'
 import User from '../model/User.js'
 import Wallet from '../model/Wallet.js'
-import Advert from '../model/Advert.js'
-import Transaction from '../model/Transaction.js'
-import { v2 as cloudinary } from 'cloudinary'
-import Task from '../model/Task.js'
 
 //Create New Advert
 // http://localhost:6001/api/advert/create
@@ -125,7 +125,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
 			taskPerformers: [],
 			tasks: 0,
 			isFree: false,
-			status: 'Pending Payment', //Pending Payment, Running, Allocating, Allocated, Completed
+			status: 'Pending Payment',
 		})
 
 		if (!advert) {
@@ -217,6 +217,133 @@ export const createAdvert = asyncHandler(async (req, res) => {
 				}
 			}
 		}
+	} catch (error) {
+		res.status(500).json({ error: error.message })
+	}
+})
+
+export const initializeAdvert = asyncHandler(async (req, res) => {
+	try {
+		const {
+			userId,
+			platform,
+			service,
+			adTitle,
+			desiredROI,
+			costPerTask,
+			earnPerTask,
+			gender,
+			state,
+			lga,
+			caption,
+			adAmount,
+			socialPageLink,
+			paymentRef,
+		} = req.body
+		// Validation
+		if (
+			!platform ||
+			!service ||
+			!adTitle ||
+			!desiredROI ||
+			!costPerTask ||
+			!earnPerTask ||
+			!gender ||
+			!state ||
+			!lga ||
+			!adAmount ||
+			!paymentRef
+		) {
+			res
+				.status(400)
+				.json({ message: 'Please fill in all the required fields' })
+			throw new Error('Please fill in all fields')
+		}
+
+		const existingAdvert = await Advert.findOne({ paymentRef })
+		if (existingAdvert) {
+			res.status(400).json({
+				message: 'An advert with this payment reference already exists!',
+			})
+			return
+		}
+
+		const admins = await User.find({ accountType: 'Admin' })
+
+		if (!admins) {
+			res.status(500).json({ message: 'No admin found' })
+			throw new Error('No admin found')
+		}
+
+		// Randomly pick an admin to moderate the tasks to be submitted for this advert.
+		const randomIndex = Math.floor(Math.random() * admins.length)
+		const selectedAdmin = admins[randomIndex]
+		console.log('🚀 ~ initializeAdvert ~ selectedAdmin:', selectedAdmin)
+
+		//Cloudinary configuration
+		cloudinary.config({
+			cloud_name: process.env.CLOUDINARY_NAME,
+			api_key: process.env.CLOUDINARY_API_KEY,
+			api_secret: process.env.CLOUDINARY_API_SECRET,
+		})
+
+		//Upload screenshots to databse
+		let uploadedImages = []
+		if (req.files.length > 0) {
+			console.log('🚀 ~ initializeAdvert ~ file:')
+
+			try {
+				for (const file of req.files) {
+					const result = await cloudinary.uploader.upload(file.path, {
+						resource_type: 'auto',
+						folder: 'Advert Media Contents',
+					})
+
+					uploadedImages.push({
+						secure_url: result.secure_url,
+						public_id: result.public_id,
+					})
+				}
+			} catch (error) {
+				console.error(error)
+				res.status(500).json({ message: 'Error uploading images' })
+				throw new Error('Error uploading images')
+			}
+		}
+
+		// Create New Advert
+		const advert = await Advert.create({
+			userId,
+			platform,
+			service,
+			adTitle,
+			desiredROI,
+			costPerTask,
+			earnPerTask,
+			gender,
+			state,
+			lga,
+			caption,
+			mediaURL: uploadedImages,
+			adAmount,
+			socialPageLink,
+			tasksModerator: selectedAdmin.username,
+			taskPerformers: [],
+			tasks: 0,
+			isFree: false,
+			status: 'Pending Payment',
+			paymentRef,
+		})
+		console.log('🚀 ~ initializeAdvert ~ advert:', advert)
+
+		if (!advert) {
+			res
+				.status(400)
+				.json({ message: `Advert wasn't created, please try again` })
+			throw new Error("Advert wasn't created, please try again")
+		}
+
+		res.status(200).json(advert)
 	} catch (error) {
 		res.status(500).json({ error: error.message })
 	}

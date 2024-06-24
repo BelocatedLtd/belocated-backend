@@ -5,6 +5,7 @@ import {
 	getAdvert,
 	getAllAdvert,
 	getQualifiedAdverts,
+	initializeAdvert,
 	toggleAdvertFreeStatus,
 } from '../controllers/advertController.js'
 import { protect } from '../middleware/authMiddleware.js'
@@ -17,6 +18,7 @@ const upload = multer({ storage })
 const router = express.Router()
 
 router.post('/create', protect, upload.array('images'), createAdvert)
+router.post('/initialize', protect, upload.array('images'), initializeAdvert)
 router.post('/setadfree/:id', protect, toggleAdvertFreeStatus)
 router.get('/', protect, getAdvert)
 router.get('/all', getAllAdvert)
