@@ -473,33 +473,79 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 	const { platformName } = req.params
 
 	try {
+		// Fetch all adverts for the specified platform, sorted by creation date in descending order
 		const adverts = await Advert.find({ platform: platformName }).sort(
 			'-createdAt',
 		)
 
-		if (!adverts) {
-			res.status(400).json({ message: 'No adverts found' })
-			throw new Error('No adverts found')
+		if (!adverts.length) {
+			return res.status(400).json({ message: 'No adverts found' })
 		}
 
+		// Retrieve tasks associated with the user
 		const userTasks = await Task.find({ taskPerformerId: _id }).select(
 			'advertId',
 		)
+		console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length)
 		const userTaskAdvertIds = userTasks.map((task) => task.advertId.toString())
 
-		const filteredAdverts = adverts.filter((advert) => {
-			const locationMatch = advert.state === location || advert.state === 'All'
-			const communityMatch = advert.lga === community || advert.lga === 'All'
-			const genderMatch = advert.gender === gender || advert.gender === 'All'
-			const notAlreadyTasked = !userTaskAdvertIds.includes(
-				advert._id.toString(),
-			)
+		// Group adverts by service type
+		const advertsByServiceType = adverts.reduce((acc, advert) => {
+			const serviceType = advert.service || 'Undefined' // Handle undefined serviceType
+			if (!acc[serviceType]) {
+				acc[serviceType] = { adverts: [], count: 0 }
+			}
+			acc[serviceType].adverts.push(advert)
+			acc[serviceType].count++
+			return acc
+		}, {})
 
-			return locationMatch && communityMatch && genderMatch && notAlreadyTasked
-		})
+		// Filter and select one advert per service type
+		const selectedAdverts = []
+		for (const serviceType in advertsByServiceType) {
+			const { adverts: serviceAdverts } = advertsByServiceType[serviceType]
+			console.log('🚀 ~ getQualifiedAdverts ~ serviceAdverts:', serviceAdverts)
+			const filteredAdverts = serviceAdverts.filter((advert) => {
+				const locationMatch =
+					advert.state === location || advert.state === 'All'
+				const communityMatch = advert.lga === community || advert.lga === 'All'
+				const genderMatch = advert.gender === gender || advert.gender === 'All'
+				const notAlreadyTasked = !userTaskAdvertIds.includes(
+					advert._id.toString(),
+				)
 
-		res.status(200).json(filteredAdverts)
+				return (
+					locationMatch && communityMatch && genderMatch && notAlreadyTasked
+				)
+			})
+
+			if (filteredAdverts.length > 0) {
+				const filteredAdvert = filteredAdverts[0]
+				selectedAdverts.push({
+					...filteredAdvert._doc,
+					availableTasks: filteredAdverts.length, // Count only the filtered adverts
+				})
+			}
+		}
+
+		// Respond with the selected adverts including the task counts
+		return res.status(200).json(selectedAdverts)
 	} catch (error) {
-		res.status(500).json({ error: error.message })
+		// Handle any errors that occur during the process
+		return res.status(500).json({ error: error.message })
+	}
+})
+
+// get advert by id
+export const getAdvertById = asyncHandler(async (req, res) => {
+	const { id } = req.params
+	try {
+		const advert = await Advert.findById({ _id: id })
+		if (!advert) {
+			return res.status(400).json({ message: 'Advert not found' })
+		}
+		return res.status(200).json(advert)
+	} catch (error) {
+		return res.status(500).json({ error: error.message })
 	}
 })

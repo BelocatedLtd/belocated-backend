@@ -1,15 +1,16 @@
 import express from 'express'
+import multer from 'multer'
 import {
 	createAdvert,
 	deleteAdvert,
 	getAdvert,
+	getAdvertById,
 	getAllAdvert,
 	getQualifiedAdverts,
 	initializeAdvert,
 	toggleAdvertFreeStatus,
 } from '../controllers/advertController.js'
 import { protect } from '../middleware/authMiddleware.js'
-import multer from 'multer'
 
 //Multer storage configuration
 const storage = multer.diskStorage({})
@@ -26,5 +27,7 @@ router.get('/all', getAllAdvert)
 router.get('/qualified/:platformName', protect, getQualifiedAdverts)
 
 router.delete('/delete/:advertId', protect, deleteAdvert)
+
+router.get('/:id', protect, getAdvertById)
 
 export default router
