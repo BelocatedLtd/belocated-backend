@@ -109,14 +109,12 @@ export const registerUser = asyncHandler(async (req, res) => {
 		isEmailVerified,
 	}
 
-	const hashedToken = crypto
-		.createHash('sha256')
-		.update(referralToken)
-		.digest('hex')
-
-	console.log('🚀 ~ registerUser ~ hashedToken:', hashedToken)
-
 	if (referralToken) {
+		const hashedToken = crypto
+			.createHash('sha256')
+			.update(referralToken)
+			.digest('hex')
+
 		const token = await Token.findOne({ referralToken: hashedToken })
 		console.log('🚀 ~ registerUser ~ token:', token)
 		if (token && !token.isExpired()) {
