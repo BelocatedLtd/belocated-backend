@@ -141,8 +141,16 @@ export const fundUserWallet = asyncHandler(async (req, res) => {
 })
 
 export const initializeTransaction = asyncHandler(async (req, res) => {
-	const { userId, email, amount, paymentRef, date, advertId, paymentMethod } =
-		req.body
+	const {
+		userId,
+		email,
+		amount,
+		paymentRef,
+		date,
+		advertId,
+		paymentMethod,
+		paymentType,
+	} = req.body
 
 	// Validation
 	if (!userId || !email || !amount || !paymentMethod) {
@@ -167,9 +175,9 @@ export const initializeTransaction = asyncHandler(async (req, res) => {
 			paymentMethod,
 			paymentRef,
 			date,
-			trxType: 'advert',
+			trxType: paymentType,
 			status: 'Pending',
-			trxId: `ad_p${advertId}`,
+			trxId: advertId ? `ad_p${advertId}` : `ad_p${paymentRef}`,
 		})
 
 		if (transaction) {
@@ -352,49 +360,49 @@ export const handleFlutterwaveWebhook = asyncHandler(async (req, res) => {
 	const payload = req.body
 	console.log('🚀 ~ handleFlutterwaveWebhook ~ payload:', payload)
 
-	// const event = req.body
+	const { txRef, amount, customer, status } = payload
 
-	// // Verify the event (you should use Flutterwave's verification method)
-	// // For example, check the event's signature
+	try {
+		// Find the transaction
+		const transaction = await Transaction.findOne({ paymentRef: txRef })
 
-	// if (event.event === 'charge.completed') {
-	// 	const { tx_ref, amount, customer, status } = event.data
+		if (!transaction) {
+			res.status(404)
+			throw new Error('Transaction not found')
+		}
 
-	// 	try {
-	// 		// Find the transaction
-	// 		const transaction = await Transaction.findOne({ paymentRef: tx_ref })
+		// Update the transaction status
+		transaction.status = status
+		await transaction.save()
 
-	// 		if (!transaction) {
-	// 			res.status(404).json({ message: 'Transaction not found' })
-	// 			throw new Error('Transaction not found')
-	// 		}
+		// Fund the user wallet if transaction is successful
+		if (status === 'successful') {
+			const wallet = await Wallet.findOne({ userId: transaction.userId })
+			console.log('🚀 ~ handleFlutterwaveWebhook ~ wallet:', wallet)
 
-	// 		// Update the transaction status
-	// 		transaction.status = status
-	// 		await transaction.save()
+			if (!wallet) {
+				res.status(400)
+				throw new Error('Wallet not found')
+			}
 
-	// 		// Fund the user wallet if transaction is successful
-	// 		if (status === 'successful') {
-	// 			const wallet = await Wallet.findOne({ userId: transaction.userId })
+			wallet.value += amount
+			await wallet.save()
 
-	// 			if (!wallet) {
-	// 				res.status(400).json({ message: 'Wallet not found' })
-	// 				throw new Error('Wallet not found')
-	// 			}
+			// update transaction status
+			transaction.status = 'Successful'
+			await transaction.save()
 
-	// 			wallet.value += amount
-	// 			await wallet.save()
-
-	// 			res.status(200).json({ message: 'Wallet funded successfully', wallet })
-	// 		} else {
-	// 			res.status(400).json({ message: 'Transaction not successful' })
-	// 		}
-	// 	} catch (error) {
-	// 		res.status(500).json({ error: error.message })
-	// 	}
-	// } else {
-	// 	res.status(400).json({ message: 'Event not handled' })
-	// }
+			res.status(200)
+		} else {
+			// update transaction status
+			transaction.status = status
+			await transaction.save()
+			res.status(400)
+		}
+	} catch (error) {
+		console.log('🚀 ~ handleFlutterwaveWebhook ~ error:', error)
+		res.status(500).json({ error: error.message })
+	}
 })
 
 //Get all user Withdrawals

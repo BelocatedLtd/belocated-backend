@@ -1,9 +1,9 @@
+import { v2 as cloudinary } from 'cloudinary'
 import asyncHandler from 'express-async-handler'
-import User from '../model/User.js'
 import Advert from '../model/Advert.js'
 import Task from '../model/Task.js'
+import User from '../model/User.js'
 import Wallet from '../model/Wallet.js'
-import { v2 as cloudinary } from 'cloudinary'
 import sendEMail from '../utils/sendEmail.js'
 
 // import cloudinary from "../utils/cloudinary.js";
@@ -126,6 +126,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 
 	// Gets details about the task submitted, advert for the task, user or task performer and user wallet.
 	const task = await Task.findById(taskId)
+	console.log('🚀 ~ submitTask ~ task:', task)
 	const advert = await Advert.findById(task.advertId)
 	const user = await User.findById(req.user._id)
 	const wallet = await Wallet.find({ userId: req.user._id })
@@ -181,6 +182,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 			const uploadedImages = []
 
 			for (const file of req.files) {
+				console.log('🚀 ~ submitTask ~ file:', file)
 				const result = await cloudinary.uploader.upload(file.path, {
 					folder: 'Task Submit Screenshots',
 				})
@@ -205,7 +207,7 @@ export const submitTask = asyncHandler(async (req, res) => {
 			)
 		} catch (error) {
 			console.error(error)
-			res.status(500).json({ message: 'Error uploading images' })
+			res.status(500).json({ message: error.message })
 		}
 	}
 
