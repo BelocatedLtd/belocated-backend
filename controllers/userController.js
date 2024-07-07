@@ -1206,8 +1206,11 @@ export const verifyUser = asyncHandler(async (req, res) => {
 	})
 
 	if (!userToken) {
-		res.status(404)
-		throw new Error('Invalid or Expired Token, request for another token')
+		res.status(409).json({
+			message:
+				'Invalid or Expired Token. The account is possibly already verified.',
+		})
+		return
 	}
 
 	// find user
