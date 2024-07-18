@@ -68,10 +68,6 @@ const advertSchema = mongoose.Schema(
 			type: Boolean,
 			default: false,
 		},
-		paymentRef: {
-			type: String,
-			required: true,
-		},
 		tasksModerator: {
 			type: String,
 		},

@@ -9,6 +9,8 @@ import Wallet from '../model/Wallet.js'
 //Create New Advert
 // http://localhost:6001/api/advert/create
 export const createAdvert = asyncHandler(async (req, res) => {
+	console.log('🚀 ~ createAdvert ~ createAdvert:', createAdvert)
+
 	const {
 		userId,
 		platform,
@@ -23,6 +25,8 @@ export const createAdvert = asyncHandler(async (req, res) => {
 		caption,
 		adAmount,
 		socialPageLink,
+		paymentMethod,
+		paymentRef,
 	} = req.body
 
 	// Validation
@@ -36,7 +40,9 @@ export const createAdvert = asyncHandler(async (req, res) => {
 		!gender ||
 		!state ||
 		!lga ||
-		!adAmount
+		!adAmount ||
+		!paymentMethod ||
+		!paymentRef
 	) {
 		res.status(400).json({ message: 'Please fill in all the required fields' })
 		throw new Error('Please fill in all fields')
@@ -201,9 +207,10 @@ export const createAdvert = asyncHandler(async (req, res) => {
 						date: Date.now(),
 						chargedAmount: adAmount,
 						trxId: `ad_p${advert._id}`,
-						paymentRef: Date.now(),
+						paymentRef,
 						trxType: 'Ad Payment',
 						status: 'Approved Successful',
+						paymentMethod,
 					})
 
 					if (!transaction) {
@@ -223,6 +230,8 @@ export const createAdvert = asyncHandler(async (req, res) => {
 })
 
 export const initializeAdvert = asyncHandler(async (req, res) => {
+	console.log('🚀 ~ initializeAdvert ~ initializeAdvert:', initializeAdvert)
+
 	try {
 		const {
 			userId,
