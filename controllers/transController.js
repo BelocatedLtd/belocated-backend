@@ -247,16 +247,6 @@ export const handlePaystackWebhook = asyncHandler(async (req, res) => {
 				advert.status = 'Running'
 				await advert.save()
 
-				// const wallet = await Wallet.findOne({ userId: transaction.userId })
-
-				// if (!wallet) {
-				// 	res.status(400).json({ message: 'Wallet not found' })
-				// 	throw new Error('Wallet not found')
-				// }
-
-				// wallet.value += amount
-				// await wallet.save()
-
 				res.status(200)
 			} else {
 				res.status(400).json({ message: 'Transaction not successful' })
@@ -266,6 +256,59 @@ export const handlePaystackWebhook = asyncHandler(async (req, res) => {
 		}
 	} else {
 		res.status(400).json({ message: 'Event not handled' })
+	}
+})
+
+export const handleFlutterwaveWebhook = asyncHandler(async (req, res) => {
+	const secretHash = process.env.FLW_SECRET_HASH
+	const signature = req.headers['verif-hash']
+	if (!signature || signature !== secretHash) {
+		// This request isn't from Flutterwave; discard
+		res.status(401).end()
+	}
+	const payload = req.body
+	console.log('🚀 ~ handleFlutterwaveWebhook ~ payload:', payload)
+
+	const { txRef, amount, customer, status } = payload
+
+	try {
+		// Find the transaction
+		const transaction = await Transaction.findOne({ paymentRef: txRef })
+		console.log('🚀 ~ handleFlutterwaveWebhook ~ transaction:', transaction)
+
+		if (!transaction) {
+			res.status(404)
+			throw new Error('Transaction not found')
+		}
+
+		// Update the transaction status
+		transaction.status = status
+		await transaction.save()
+
+		const advertId = transaction.trxId.split('ad_p')[1]
+
+		if (!advertId) {
+			res.status(400).json({ message: 'Invalid transaction ID format' })
+			throw new Error('Invalid transaction ID format')
+		}
+
+		const advert = await Advert.findById(advertId)
+
+		if (!advert) {
+			res.status(404).json({ message: 'Advert not found' })
+			throw new Error('Advert not found')
+		}
+
+		if (status === 'successful') {
+			advert.status = 'Running'
+			await advert.save()
+			res.status(200)
+		} else {
+			res.status(400).json({ message: 'Transaction not successful' })
+		}
+	} catch (error) {
+		console.log('🚀 ~ handleFlutterwaveWebhook ~ error:', error)
+		res.status(500).json({ error: error.message })
 	}
 })
 
@@ -347,61 +390,6 @@ export const withdrawWallet = asyncHandler(async (req, res) => {
 	} else {
 		res.status(500).json({ message: 'Insufficient Balance' })
 		throw new error('Insufficient Balance')
-	}
-})
-
-export const handleFlutterwaveWebhook = asyncHandler(async (req, res) => {
-	const secretHash = process.env.FLW_SECRET_HASH
-	const signature = req.headers['verif-hash']
-	if (!signature || signature !== secretHash) {
-		// This request isn't from Flutterwave; discard
-		res.status(401).end()
-	}
-	const payload = req.body
-	console.log('🚀 ~ handleFlutterwaveWebhook ~ payload:', payload)
-
-	const { txRef, amount, customer, status } = payload
-
-	try {
-		// Find the transaction
-		const transaction = await Transaction.findOne({ paymentRef: txRef })
-
-		if (!transaction) {
-			res.status(404)
-			throw new Error('Transaction not found')
-		}
-
-		// Update the transaction status
-		transaction.status = status
-		await transaction.save()
-
-		// Fund the user wallet if transaction is successful
-		if (status === 'successful') {
-			const wallet = await Wallet.findOne({ userId: transaction.userId })
-			console.log('🚀 ~ handleFlutterwaveWebhook ~ wallet:', wallet)
-
-			if (!wallet) {
-				res.status(400)
-				throw new Error('Wallet not found')
-			}
-
-			wallet.value += amount
-			await wallet.save()
-
-			// update transaction status
-			transaction.status = 'Successful'
-			await transaction.save()
-
-			res.status(200)
-		} else {
-			// update transaction status
-			transaction.status = status
-			await transaction.save()
-			res.status(400)
-		}
-	} catch (error) {
-		console.log('🚀 ~ handleFlutterwaveWebhook ~ error:', error)
-		res.status(500).json({ error: error.message })
 	}
 })
 
