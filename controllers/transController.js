@@ -126,7 +126,7 @@ export const fundUserWallet = asyncHandler(async (req, res) => {
 				chargedAmount,
 				trxId,
 				paymentRef,
-				trxType: 'wallet funding',
+				trxType: 'wallet_funding',
 				status,
 			})
 
@@ -285,26 +285,43 @@ export const handleFlutterwaveWebhook = asyncHandler(async (req, res) => {
 		transaction.status = status
 		await transaction.save()
 
-		const advertId = transaction.trxId.split('ad_p')[1]
+		if (transaction.trxType === 'wallet_funding') {
+			if (status === 'successful') {
+				const wallet = await Wallet.findOne({ userId: customer.id })
+				if (!wallet) {
+					return res.status(404).json({ message: 'Wallet not found' })
+				}
 
-		if (!advertId) {
-			res.status(400).json({ message: 'Invalid transaction ID format' })
-			throw new Error('Invalid transaction ID format')
-		}
+				wallet.value += amount
+				wallet.totalEarning += amount
+				await wallet.save()
 
-		const advert = await Advert.findById(advertId)
+				return res.status(200).json({ message: 'Wallet funded successfully' })
+			} else {
+				return res.status(400).json({ message: 'Transaction not successful' })
+			}
+		} else if (transaction.trxType === 'advert_payment') {
+			const advertId = transaction.trxId.split('ad_p')[1]
 
-		if (!advert) {
-			res.status(404).json({ message: 'Advert not found' })
-			throw new Error('Advert not found')
-		}
+			if (!advertId) {
+				res.status(400).json({ message: 'Invalid transaction ID format' })
+				throw new Error('Invalid transaction ID format')
+			}
 
-		if (status === 'successful') {
-			advert.status = 'Running'
-			await advert.save()
-			res.status(200)
-		} else {
-			res.status(400).json({ message: 'Transaction not successful' })
+			const advert = await Advert.findById(advertId)
+
+			if (!advert) {
+				res.status(404).json({ message: 'Advert not found' })
+				throw new Error('Advert not found')
+			}
+
+			if (status === 'successful') {
+				advert.status = 'Running'
+				await advert.save()
+				res.status(200)
+			} else {
+				res.status(400).json({ message: 'Transaction not successful' })
+			}
 		}
 	} catch (error) {
 		console.log('🚀 ~ handleFlutterwaveWebhook ~ error:', error)

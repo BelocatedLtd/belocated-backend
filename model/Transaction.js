@@ -36,6 +36,7 @@ const transactionSchema = mongoose.Schema(
 		trxType: {
 			type: String,
 			required: true,
+			enum: ['wallet_funding', 'advert_payment'],
 		},
 	},
 	{
