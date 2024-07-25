@@ -288,6 +288,7 @@ export const handleFlutterwaveWebhook = asyncHandler(async (req, res) => {
 		if (transaction.trxType === 'wallet_funding') {
 			if (status === 'successful') {
 				const wallet = await Wallet.findOne({ userId: customer.id })
+				console.log('🚀 ~ handleFlutterwaveWebhook ~ wallet:', wallet)
 				if (!wallet) {
 					return res.status(404).json({ message: 'Wallet not found' })
 				}
