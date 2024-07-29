@@ -434,6 +434,13 @@ export const getAdvert = asyncHandler(async (req, res) => {
 export const getAllAdvert = asyncHandler(async (req, res) => {
 	try {
 		const advert = await Advert.find().sort('-createdAt')
+
+		const iGdverts = await Advert.find({
+			platform: 'instagram',
+			status: 'Running',
+		}).sort('-createdAt')
+		console.log('🚀 ~ getAllAdvert ~ iGdverts:', iGdverts.length)
+
 		if (!advert) {
 			res.status(400).json({ message: 'No advert found in the database' })
 		} else {
@@ -483,9 +490,12 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 
 	try {
 		// Fetch all adverts for the specified platform, sorted by creation date in descending order
-		const adverts = await Advert.find({ platform: platformName }).sort(
-			'-createdAt',
-		)
+		const adverts = await Advert.find({
+			platform: platformName,
+			status: 'Running',
+		}).sort('-createdAt')
+
+		console.log('🚀 ~ getQualifiedAdverts ~ adverts:', adverts.length)
 
 		if (!adverts.length) {
 			return res.status(400).json({ message: 'No adverts found' })
@@ -512,8 +522,8 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 		// Filter and select one advert per service type
 		const selectedAdverts = []
 		for (const serviceType in advertsByServiceType) {
+			console.log('🚀 ~ advertsByServiceType ~ serviceType:', serviceType)
 			const { adverts: serviceAdverts } = advertsByServiceType[serviceType]
-			console.log('🚀 ~ getQualifiedAdverts ~ serviceAdverts:', serviceAdverts)
 			const filteredAdverts = serviceAdverts.filter((advert) => {
 				const locationMatch =
 					advert.state === location || advert.state === 'All'
@@ -527,6 +537,10 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 					locationMatch && communityMatch && genderMatch && notAlreadyTasked
 				)
 			})
+			console.log(
+				'🚀 ~ filteredAdverts ~ filteredAdverts:',
+				filteredAdverts.length,
+			)
 
 			if (filteredAdverts.length > 0) {
 				const filteredAdvert = filteredAdverts[0]
