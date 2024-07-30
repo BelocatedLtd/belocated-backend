@@ -879,8 +879,7 @@ export const updateUserBankDetails = asyncHandler(async (req, res) => {
 		user.phone &&
 		user.location &&
 		user.community &&
-		user.gender &&
-		user.religion
+		user.gender
 	)
 
 	//Update User Account Details
