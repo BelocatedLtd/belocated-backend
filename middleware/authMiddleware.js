@@ -1,6 +1,6 @@
 import asyncHandler from 'express-async-handler'
-import User from '../model/User.js'
 import jwt from 'jsonwebtoken'
+import User from '../model/User.js'
 
 export const protect = asyncHandler(async (req, res, next) => {
 	const authToken = req.headers.authorization?.split(' ')[1]
@@ -18,7 +18,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 		const decoded = jwt.verify(authToken, process.env.JWT_SECRET)
 
 		if (!decoded) {
-			res.status(500).json({ message: 'Session Expired, please login' })
+			res.status(401).json({ message: 'Session Expired, please login' })
 			throw new Error('Session Expired, please login')
 		}
 

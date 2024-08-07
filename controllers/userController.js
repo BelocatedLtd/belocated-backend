@@ -1115,8 +1115,10 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 //>>>> Send and resend Password Verification Email
 export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
 	const { email } = req.params
+	console.log('🚀 ~ verifyEmailPasswordChange ~ email:', email.toLowerCase())
 
-	const user = await User.findOne({ email })
+	const user = await User.findOne({ email: email.toLowerCase() })
+	console.log('🚀 ~ verifyEmailPasswordChange ~ user:', user)
 
 	if (!user) {
 		res.status(404).json('No user found')
