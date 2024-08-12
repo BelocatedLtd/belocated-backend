@@ -1,11 +1,9 @@
 import mongoose from 'mongoose'
+const Schema = mongoose.Schema
 
 const TaskSchema = mongoose.Schema(
 	{
-		advertId: {
-			type: String,
-			required: true,
-		},
+		advertId: { type: Schema.Types.ObjectId, ref: 'Advert' },
 		advertiserId: {
 			type: String,
 			required: true,

@@ -95,6 +95,35 @@ export const getTask = asyncHandler(async (req, res) => {
 	}
 })
 
+export const getTaskById = asyncHandler(async (req, res) => {
+	const { id } = req.params
+	console.log('🚀 ~ getTaskById ~ taskId:', id)
+	try {
+		const task = await Task.findById({ _id: id }).populate('advertId')
+
+		const taskWithRenamedAdvert = {
+			...task.toObject(),
+			advert: task.advertId,
+		}
+
+		// Remove the original advert field if necessary
+		delete taskWithRenamedAdvert.advertId
+
+		res.status(200).json(taskWithRenamedAdvert)
+
+		if (!tasks) {
+			res.status(400).json({ message: 'Cannot find task' })
+			throw new Error('Cannot find task')
+		}
+
+		if (tasks) {
+			res.status(200).json(tasks)
+		}
+	} catch (error) {
+		res.status(500).json({ error: error.message })
+	}
+})
+
 //Get user Tasks
 // http://localhost:6001/api/tasks
 export const getTasks = asyncHandler(async (req, res) => {
