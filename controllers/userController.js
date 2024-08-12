@@ -963,8 +963,8 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
 
 //>>>> Change user old password
 export const changePassword = asyncHandler(async (req, res) => {
-	const { userId, newPassword, oldPassword } = req.body
-
+	const { newPassword, oldPassword } = req.body
+	const userId = req.user._id
 	const user = await User.findById(userId)
 
 	//Check if user exist

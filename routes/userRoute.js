@@ -1,25 +1,25 @@
 import express from 'express'
 import {
-	registerUser,
-	loginUser,
+	changePassword,
+	confirmEmailOTP,
+	forgotPassword,
+	getDashboardData,
 	getUser,
 	getUsers,
 	loginStatus,
-	updateUser,
-	forgotPassword,
-	verifyEmail,
-	verifyUser,
-	updateUserAccountDetails,
-	changePassword,
-	verifyEmailPasswordChange,
-	confirmEmailOTP,
-	verifyOldPassword,
-	updateUserBankDetails,
-	refRegisterUser,
-	refCahlRegisterUser,
+	loginUser,
 	manageUser,
+	refCahlRegisterUser,
+	refRegisterUser,
+	registerUser,
 	sendReferralEmail,
-	getDashboardData,
+	updateUser,
+	updateUserAccountDetails,
+	updateUserBankDetails,
+	verifyEmail,
+	verifyEmailPasswordChange,
+	verifyOldPassword,
+	verifyUser,
 } from '../controllers/userController.js'
 import { protect } from '../middleware/authMiddleware.js'
 
@@ -44,7 +44,7 @@ router.patch('/update/bankaccountdetails', protect, updateUserBankDetails)
 
 router.post('/verifyoldpassword', protect, verifyOldPassword)
 router.post('/send-referral-email', protect, sendReferralEmail)
-router.post('/changePassword', changePassword)
+router.post('/changePassword', protect, changePassword)
 router.post('/forgotpassword', forgotPassword)
 
 //router.post("/verifyphone", protect, verifyUserPhone) //Send phone verification token
