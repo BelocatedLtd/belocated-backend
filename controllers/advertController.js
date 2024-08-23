@@ -433,19 +433,39 @@ export const getAdvert = asyncHandler(async (req, res) => {
 // http://localhost:6001/api/advert/all
 export const getAllAdvert = asyncHandler(async (req, res) => {
 	try {
-		const advert = await Advert.find().sort('-createdAt')
+		// Get page and limit from query parameters or set default values
+		const page = parseInt(req.query.page) || 1
+		const limit = parseInt(req.query.limit) || 10
 
-		const iGdverts = await Advert.find({
-			platform: 'instagram',
-			status: 'Running',
-		}).sort('-createdAt')
-		console.log('🚀 ~ getAllAdvert ~ iGdverts:', iGdverts.length)
+		const startIndex = (page - 1) * limit
 
-		if (!advert) {
-			res.status(400).json({ message: 'No advert found in the database' })
-		} else {
-			res.status(200).json(advert)
+		const totalAdverts = await Advert.countDocuments()
+
+		// Fetch the adverts for the current page
+		const adverts = await Advert.find()
+			.sort('-createdAt')
+			.skip(startIndex)
+			.limit(limit)
+			.populate('userId', 'fullname email')
+
+		const totalPages = Math.ceil(totalAdverts / limit)
+
+		// If no adverts found, return a 400 status
+		if (!adverts || adverts.length === 0) {
+			return res
+				.status(400)
+				.json({ message: 'No advert found in the database' })
 		}
+
+		// Return the paginated results with additional pagination info
+		res.status(200).json({
+			adverts,
+			page,
+			totalPages,
+			totalAdverts,
+			hasNextPage: page < totalPages,
+			hasPreviousPage: page > 1,
+		})
 	} catch (error) {
 		res.status(500).json({ error: error.message })
 	}
@@ -563,7 +583,7 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
 export const getAdvertById = asyncHandler(async (req, res) => {
 	const { id } = req.params
 	try {
-		const advert = await Advert.findById({ _id: id })
+		const advert = await Advert.findById({ _id: id }).populate('userId')
 		if (!advert) {
 			return res.status(400).json({ message: 'Advert not found' })
 		}
