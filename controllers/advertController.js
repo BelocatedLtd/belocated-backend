@@ -429,42 +429,55 @@ export const getAdvert = asyncHandler(async (req, res) => {
 	}
 })
 
-//Get All Advert
+// Get All Advert
 // http://localhost:6001/api/advert/all
 export const getAllAdvert = asyncHandler(async (req, res) => {
 	try {
-		// Get page and limit from query parameters or set default values
-		const page = parseInt(req.query.page) || 1
-		const limit = parseInt(req.query.limit) || 10
+		// Get page and limit from query parameters
+		const page = parseInt(req.query.page)
+		const limit = parseInt(req.query.limit)
 
-		const startIndex = (page - 1) * limit
+		let adverts
 
-		const totalAdverts = await Advert.countDocuments()
+		if (!page && !limit) {
+			adverts = await Advert.find()
+				.sort('-createdAt')
+				.populate('userId', 'fullname email')
+		} else {
+			const currentPage = page || 1
+			const currentLimit = limit || 10
 
-		// Fetch the adverts for the current page
-		const adverts = await Advert.find()
-			.sort('-createdAt')
-			.skip(startIndex)
-			.limit(limit)
-			.populate('userId', 'fullname email')
+			const startIndex = (currentPage - 1) * currentLimit
 
-		const totalPages = Math.ceil(totalAdverts / limit)
+			const totalAdverts = await Advert.countDocuments()
 
-		// If no adverts found, return a 400 status
+			adverts = await Advert.find()
+				.sort('-createdAt')
+				.skip(startIndex)
+				.limit(currentLimit)
+				.populate('userId', 'fullname email')
+
+			const totalPages = Math.ceil(totalAdverts / currentLimit)
+
+			return res.status(200).json({
+				adverts,
+				page: currentPage,
+				totalPages,
+				totalAdverts,
+				hasNextPage: currentPage < totalPages,
+				hasPreviousPage: currentPage > 1,
+			})
+		}
+
 		if (!adverts || adverts.length === 0) {
 			return res
 				.status(400)
 				.json({ message: 'No advert found in the database' })
 		}
 
-		// Return the paginated results with additional pagination info
 		res.status(200).json({
 			adverts,
-			page,
-			totalPages,
-			totalAdverts,
-			hasNextPage: page < totalPages,
-			hasPreviousPage: page > 1,
+			totalAdverts: adverts.length, // or total number of adverts if paginated
 		})
 	} catch (error) {
 		res.status(500).json({ error: error.message })

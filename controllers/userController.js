@@ -1114,52 +1114,61 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 
 //>>>> Send and resend Password Verification Email
 export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
-	const { email } = req.params
-	console.log('🚀 ~ verifyEmailPasswordChange ~ email:', email.toLowerCase())
+	try {
+		const { email } = req.params
+		console.log('🚀 ~ verifyEmailPasswordChange ~ email:', email.toLowerCase())
 
-	const user = await User.findOne({ email: email.toLowerCase() })
-	console.log('🚀 ~ verifyEmailPasswordChange ~ user:', user)
+		const user = await User.findOne({ email: email.toLowerCase() })
+		console.log('🚀 ~ verifyEmailPasswordChange ~ user:', user)
 
-	if (!user) {
-		res.status(404).json('No user found')
-		throw new Error('No user found')
-	}
-
-	if (user) {
-		//Delete token if it exists in the DB
-		let token = await Token.findOne({ userId: user._id })
-
-		if (token) {
-			await token.deleteOne()
+		if (!user) {
+			res.status(404).json('No user found')
+			throw new Error('No user found')
 		}
 
-		// generate new verification token
-		let verificationToken = crypto.randomBytes(3).toString('hex').toUpperCase()
+		if (user) {
+			//Delete token if it exists in the DB
+			let token = await Token.findOne({ userId: user._id })
 
-		//Hask token before saving to DB
-		const hashedToken = crypto
-			.createHash('sha256')
-			.update(verificationToken)
-			.digest('hex')
+			if (token) {
+				await token.deleteOne()
+			}
 
-		//Save Token to DB
-		const saveTokenToDB = await new Token({
-			userId: user._id,
-			token: '',
-			emailVerificationToken: '',
-			phoneVerificationOTP: hashedToken,
-			createdAt: Date.now(),
-			expiresAt: Date.now() + 30 * (60 * 1000), // Thirty minutes
-		}).save()
+			// generate new verification token
+			let verificationToken = crypto
+				.randomBytes(3)
+				.toString('hex')
+				.toUpperCase()
+			console.log(
+				'🚀 ~ verifyEmailPasswordChange ~ verificationToken:',
+				verificationToken,
+			)
 
-		if (!saveTokenToDB) {
-			res.status(500)
-			throw new Error('Internal server Error')
-		}
+			//Hask token before saving to DB
+			const hashedToken = crypto
+				.createHash('sha256')
+				.update(verificationToken)
+				.digest('hex')
+			console.log('🚀 ~ verifyEmailPasswordChange ~ hashedToken:', hashedToken)
 
-		if (saveTokenToDB) {
-			//Send Verification Email
-			const message = `
+			//Save Token to DB
+			const saveTokenToDB = await new Token({
+				userId: user._id,
+				token: '',
+				emailVerificationToken: '',
+				phoneVerificationOTP: hashedToken,
+				createdAt: Date.now(),
+				expiresAt: Date.now() + 30 * (60 * 1000), // Thirty minutes
+			}).save()
+
+			if (!saveTokenToDB) {
+				res.status(500)
+				throw new Error('Internal server Error')
+			}
+
+			if (saveTokenToDB) {
+				//Send Verification Email
+				const message = `
     <h2>Hello, ${user.username}</h2>
     <p>A request for a sensitive change was made on your Belocated account. 
     To make sure you initiated this action, here is your verification code.</p>
@@ -1170,26 +1179,29 @@ export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
-			const subject = 'Verify Sensitive Change'
-			const send_to = user.email
-			const reply_to = 'noreply@noreply.com'
+				const subject = 'Verify Sensitive Change'
+				const send_to = user.email
+				const reply_to = 'noreply@noreply.com'
 
-			//Finally sending email
-			const emailSent = await sendEMail(subject, message, send_to, reply_to)
+				//Finally sending email
+				const emailSent = await sendEMail(subject, message, send_to, reply_to)
 
-			if (!emailSent) {
-				res.status(500).json('Password change verification failed')
-				throw new Error('Password change verification failed')
-			}
-
-			if (emailSent) {
-				const emailResponse = {
-					userId: user._id,
-					message: 'Verification OTP Sent',
+				if (!emailSent) {
+					res.status(500).json('Password change verification failed')
+					throw new Error('Password change verification failed')
 				}
-				res.status(200).json(emailResponse)
+
+				if (emailSent) {
+					const emailResponse = {
+						userId: user._id,
+						message: 'Verification OTP Sent',
+					}
+					res.status(200).json(emailResponse)
+				}
 			}
 		}
+	} catch (error) {
+		console.log('🚀 ~ verifyEmailPasswordChange ~ error:', error)
 	}
 })
 
