@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"module": "commonjs",
+		"target": "es2019",
+		"skipLibCheck": true,
+		"rootDir": "./",
+		"outDir": "./build",
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"strict": true,
+		"typeRoots": ["./@types", "./node_modules/@types"],
+		"resolveJsonModule": true,
+		"lib": ["es2021", "dom"],
+		"forceConsistentCasingInFileNames": true,
+		"moduleResolution": "node"
+	},
+	"include": ["**/*"],
+	"exclude": ["node_modules", "build"]
+}

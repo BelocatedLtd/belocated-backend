@@ -1,0 +1,19 @@
+{
+  "development": {
+    "username": "root",
+    "password": "",
+    "database": "urban",
+    "host": "localhost",
+    "port": "3306",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
+    "dialect": "mysql",
+    "seederStorage": "json",
+    "seederStoragePath": "sequelizeData.json",
+    "seederStorageTableName": "sequelizeData"
+  }
+}
