@@ -7,6 +7,7 @@ import {
 	getAdvertById,
 	getAllAdvert,
 	getQualifiedAdverts,
+	getTotalTasksByAllPlatforms,
 	initializeAdvert,
 	toggleAdvertFreeStatus,
 } from '../controllers/advertController'
@@ -25,6 +26,7 @@ router.get('/', protect, getAdvert)
 router.get('/all', getAllAdvert)
 
 router.get('/qualified/:platformName', protect, getQualifiedAdverts)
+router.get('/qualified', protect, getTotalTasksByAllPlatforms)
 
 router.delete('/delete/:advertId', protect, deleteAdvert)
 

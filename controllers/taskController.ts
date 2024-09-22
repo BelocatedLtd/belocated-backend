@@ -83,20 +83,33 @@ export const CreateNewTask = asyncHandler(
 //Get user Task
 // http://localhost:6001/api/tasks/task
 export const getTask = asyncHandler(async (req: Request, res: Response) => {
-	//const { taskId } = req.body
 	try {
-		const tasks = await Task.find({ taskPerformerId: req.user._id })
+		const { page = 1, limit = 10 } = req.query
 
-		if (!tasks) {
+		const tasks = await Task.find({
+			taskPerformerId: req.user._id,
+		})
+			.skip((Number(page) - 1) * Number(limit))
+			.limit(Number(limit))
+
+		const totalTasks = await Task.countDocuments({
+			taskPerformerId: req.user._id,
+		})
+		const totalPages = Math.ceil(totalTasks / Number(limit))
+
+		if (!tasks || tasks.length === 0) {
 			res.status(400).json({ message: 'Cannot find task' })
-			throw new Error('Cannot find task')
+			return
 		}
 
-		if (tasks) {
-			res.status(200).json(tasks)
-		}
+		res.status(200).json({
+			tasks,
+			totalTasks,
+			totalPages,
+			currentPage: Number(page),
+		})
 	} catch (error) {
-		res.status(500).json({ error: error })
+		res.status(500).json({ error })
 	}
 })
 

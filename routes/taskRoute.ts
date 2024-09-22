@@ -1,8 +1,8 @@
 import express from 'express'
 import multer from 'multer'
 import {
-	CreateNewTask,
 	approveTask,
+	CreateNewTask,
 	deleteTask,
 	getTask,
 	getTaskById,
@@ -12,7 +12,9 @@ import {
 } from '../controllers/taskController'
 //import { upload } from '../utils/fileUpload.js'
 //const upload = multer({ dest: 'uploads/' });
+import { celebrate } from 'celebrate'
 import { protect } from '../middleware/authMiddleware'
+import { paginateSchema } from '../validate'
 
 const router = express.Router()
 
@@ -25,7 +27,15 @@ router.post('/submit', protect, upload.array('images'), submitTask) // User subm
 router.post('/approve', protect, approveTask) //Admin approves task and user gets paid
 router.post('/reject', protect, rejectTask) //Admin rejects task
 router.get('/', protect, getTasks) // Get all tasks from db
-router.get('/task', protect, getTask) // Gets a specific user tasks
+// pagination
+router.get(
+	'/task',
+	protect,
+	celebrate({
+		query: paginateSchema,
+	}),
+	getTask,
+) // Gets a specific user tasks
 router.get('/:id', protect, getTaskById) // Get all tasks from db
 
 router.delete('/delete/:taskId', protect, deleteTask)

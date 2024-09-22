@@ -2,6 +2,7 @@ import bodyParser from 'body-parser'
 import express, { Application, Request, Response } from 'express'
 import mongoose from 'mongoose'
 
+import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -14,7 +15,7 @@ import { Server } from 'socket.io'
 import { saveActivity } from './controllers/feedController'
 import { endRefChallenge, startRefChallenge } from './crons/refChallCron'
 import sendWeeklyEmail from './crons/weeklyEmail'
-import errorHandler from './middleware/errorMiddleware'
+import errorhandler from './middleware/errorMiddleware'
 import adminRoute from './routes/adminRoute'
 import advertRoute from './routes/advertRoute'
 import feedRoute from './routes/feedRoute'
@@ -50,13 +51,15 @@ app.use(
 )
 
 app.use(bodyParser.json({ limit: '30mb' }))
+
 app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }))
+
 app.use(helmet())
 app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }))
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 //Error middleware
-app.use(errorHandler)
+app.use(errorhandler)
 
 app.use('/api/user', userRoute)
 app.use('/api/adverts', advertRoute)
@@ -65,6 +68,7 @@ app.use('/api/transactions', transactionRoute)
 app.use('/api/activities', feedRoute)
 app.use('/api/ref', refRoute)
 app.use('/api/admin', adminRoute)
+app.use(errors())
 
 //Cron job schedule for weekly email
 cron.schedule('0 17 * * 0', sendWeeklyEmail)

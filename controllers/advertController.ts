@@ -12,8 +12,6 @@ import Wallet from '../model/Wallet'
 // http://localhost:6001/api/advert/create
 export const createAdvert = asyncHandler(
 	async (req: Request, res: Response) => {
-		console.log('🚀 ~ createAdvert ~ createAdvert:', createAdvert)
-
 		const {
 			userId,
 			platform,
@@ -576,7 +574,6 @@ export const getQualifiedAdverts = asyncHandler(
 			// Filter and select one advert per service type
 			const selectedAdverts = []
 			for (const serviceType in advertsByServiceType) {
-				console.log('🚀 ~ advertsByServiceType ~ serviceType:', serviceType)
 				const { adverts: serviceAdverts } = advertsByServiceType[serviceType]
 				const filteredAdverts = serviceAdverts.filter((advert) => {
 					const locationMatch =
@@ -593,10 +590,6 @@ export const getQualifiedAdverts = asyncHandler(
 						locationMatch && communityMatch && genderMatch && notAlreadyTasked
 					)
 				})
-				console.log(
-					'🚀 ~ filteredAdverts ~ filteredAdverts:',
-					filteredAdverts.length,
-				)
 
 				if (filteredAdverts.length > 0) {
 					const filteredAdvert = filteredAdverts[0]
@@ -611,6 +604,65 @@ export const getQualifiedAdverts = asyncHandler(
 			res.status(200).json(selectedAdverts)
 		} catch (error) {
 			// Handle any errors that occur during the process
+			res.status(500).json({ error })
+		}
+	},
+)
+
+export const getTotalTasksByAllPlatforms = asyncHandler(
+	async (req: Request, res: Response) => {
+		const { _id, location, community, gender } = req.user
+
+		try {
+			// Fetch all running adverts
+			const adverts = await Advert.find({ status: 'Running' }).sort(
+				'-createdAt',
+			)
+
+			if (!adverts.length) {
+				throw new Error('No adverts found')
+			}
+
+			// Retrieve tasks associated with the user
+			const userTasks = await Task.find({ taskPerformerId: _id }).select(
+				'advertId',
+			)
+			const userTaskAdvertIds = userTasks.map(
+				(task) => task.advertId?.toString() || '',
+			)
+
+			// Object to store total tasks by platform
+			const platformTaskCounts: Record<string, { totalTasks: number }> = {}
+
+			// Process each advert
+			adverts.forEach((advert) => {
+				const platformName = advert.platform // Get the platform name
+
+				// Check eligibility
+				const locationMatch =
+					advert.state === location || advert.state === 'All'
+				const communityMatch = advert.lga === community || advert.lga === 'All'
+				const genderMatch = advert.gender === gender || advert.gender === 'All'
+				const notAlreadyTasked = !userTaskAdvertIds.includes(
+					advert._id.toString(),
+				)
+
+				if (
+					locationMatch &&
+					communityMatch &&
+					genderMatch &&
+					notAlreadyTasked
+				) {
+					if (!platformTaskCounts[platformName]) {
+						platformTaskCounts[platformName] = { totalTasks: 0 }
+					}
+					platformTaskCounts[platformName].totalTasks++ // Increment the count for the platform
+				}
+			})
+
+			// Respond with the total task counts for each platform
+			res.status(200).json(platformTaskCounts)
+		} catch (error) {
 			res.status(500).json({ error })
 		}
 	},

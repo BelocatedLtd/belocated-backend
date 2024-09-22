@@ -12,18 +12,19 @@ export const protect = asyncHandler(
 		// return
 
 		if (!authToken) {
-			res.status(401).json({ message: 'Not Authorized, no token' })
 			throw new Error('Not Authorized, no token ')
 		}
 
 		try {
+			console.log('🚀 ~ process.env.JWT_SECRET:', process.env.JWT_SECRET)
+
 			const decoded: any = jwt.verify(
 				authToken,
 				process.env.JWT_SECRET as string,
 			)
+			console.log('🚀 ~ decoded:', decoded)
 
 			if (!decoded) {
-				res.status(401).json({ message: 'Session Expired, please login' })
 				throw new Error('Session Expired, please login')
 			}
 
@@ -31,8 +32,7 @@ export const protect = asyncHandler(
 
 			next()
 		} catch (error) {
-			res.status(401).json({ message: 'Not Authorized, invalid token' })
-			throw new Error('Not authorized, invalid token')
+			res.status(401).json({ message: error })
 		}
 	},
 )
