@@ -614,56 +614,50 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 		const { _id, location, community, gender } = req.user
 
 		try {
-			// Fetch all running adverts
-			const adverts = await Advert.find({ status: 'Running' }).sort(
-				'-createdAt',
-			)
+			const eligibleAdverts = await Advert.find({
+				status: 'Running',
+				$and: [
+					{
+						$or: [{ state: location }, { state: 'All' }],
+					},
+					{
+						$or: [{ lga: community }, { lga: 'All' }],
+					},
+					{
+						$or: [{ gender: gender }, { gender: 'All' }],
+					},
+				],
+			}).sort('-createdAt')
 
-			if (!adverts.length) {
-				throw new Error('No adverts found')
+			if (!eligibleAdverts.length) {
+				res.status(200).json(null)
+				return
 			}
 
-			// Retrieve tasks associated with the user
 			const userTasks = await Task.find({ taskPerformerId: _id }).select(
 				'advertId',
 			)
-			const userTaskAdvertIds = userTasks.map(
-				(task) => task.advertId?.toString() || '',
+			const userTaskAdvertIds = new Set(
+				userTasks.map((task) => task.advertId?.toString() || ''),
 			)
 
-			// Object to store total tasks by platform
 			const platformTaskCounts: Record<string, { totalTasks: number }> = {}
 
-			// Process each advert
-			adverts.forEach((advert) => {
-				const platformName = advert.platform // Get the platform name
+			eligibleAdverts.forEach((advert) => {
+				if (!userTaskAdvertIds.has(advert._id.toString())) {
+					const platformName = advert.platform
 
-				// Check eligibility
-				const locationMatch =
-					advert.state === location || advert.state === 'All'
-				const communityMatch = advert.lga === community || advert.lga === 'All'
-				const genderMatch = advert.gender === gender || advert.gender === 'All'
-				const notAlreadyTasked = !userTaskAdvertIds.includes(
-					advert._id.toString(),
-				)
-
-				if (
-					locationMatch &&
-					communityMatch &&
-					genderMatch &&
-					notAlreadyTasked
-				) {
 					if (!platformTaskCounts[platformName]) {
 						platformTaskCounts[platformName] = { totalTasks: 0 }
 					}
-					platformTaskCounts[platformName].totalTasks++ // Increment the count for the platform
+
+					platformTaskCounts[platformName].totalTasks++
 				}
 			})
 
-			// Respond with the total task counts for each platform
 			res.status(200).json(platformTaskCounts)
 		} catch (error) {
-			res.status(500).json({ error })
+			res.status(500).json({ error: error || 'Internal Server Error' })
 		}
 	},
 )

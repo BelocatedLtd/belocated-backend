@@ -175,21 +175,18 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 		const task = await Task.findById(taskId)
 
 		if (!task) {
-			res.status(400).json({ message: 'Cannot find task' })
 			throw new Error('Cannot find task')
 		}
 
 		const advert = await Advert.findById(task.advertId)
 
 		if (!advert) {
-			res.status(400).json({ message: 'Cannot find advert' })
 			throw new Error('Cannot find advert')
 		}
 
 		const user = await User.findById(req.user._id)
 
 		if (!user) {
-			res.status(400).json({ message: 'Cannot find user' })
 			throw new Error('Cannot find user')
 		}
 
@@ -197,34 +194,26 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 
 		// If task cannot be found
 		if (!task) {
-			res.status(400).json({ message: 'Cannot find task' })
 			throw new Error('Cannot find task')
 		}
 
 		// If advert cannot be found
 		if (!advert) {
-			res.status(400).json({ message: 'Cannot find the ad for this task' })
 			throw new Error('Cannot find the ad for this task')
 		}
 
 		// If user wallet cannot be found
 		if (!wallet) {
-			res.status(400).json({ message: 'Cannot find user Wallet to update' })
 			throw new Error('Cannot find user Wallet to update')
 		}
 
 		// If ad campaign is no longer active
 		if (advert.desiredROI === 0) {
-			res.status(500).json({ message: 'Ad campaign is no longer active' })
 			throw new Error('Ad campaign is no longer active')
 		}
 
 		// If user has already submtted task for this advert
 		if (task.status === 'Submitted') {
-			res.status(400).json({
-				message:
-					'You have already submitted this task, you can only submit once, please wait for approval',
-			})
 			throw new Error(
 				'You have submitted your task, you can only submit once, please wait for approval',
 			)
@@ -281,9 +270,6 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 				const subtractFreeTaskCount = await user.save()
 
 				if (!subtractFreeTaskCount) {
-					res
-						.status(500)
-						.json({ message: 'Failed to subtract from free task count' })
 					throw new Error('Failed to subtract from free task count')
 				}
 			}
@@ -308,9 +294,6 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 			)
 
 			if (!updatedUserWallet) {
-				res
-					.status(400)
-					.json({ message: 'failed to update user pending balance' })
 				throw new Error('failed to update user pending balance')
 			}
 
@@ -326,11 +309,11 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 		advert.desiredROI -= 1
 		advert.tasks += 1
 
+
 		//save the update on user model
 		const updatedAdvert = await advert.save()
 
 		if (!updatedAdvert) {
-			res.status(500).json({ message: 'Failed to submit task' })
 			throw new Error('Failed to submit task')
 		}
 
@@ -341,14 +324,11 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 				const updatedAdvertStatus = await advert.save()
 
 				if (!updatedAdvertStatus) {
-					res.status(500).json({ message: 'Failed to change ad status' })
 					throw new Error('Failed to change ad status')
 				}
 			}
 
-			res
-				.status(200)
-				.json("Task submitted successfully, wait for Admin's Approval")
+			throw new Error("Task submitted successfully, wait for Admin's Approval")
 		}
 	} catch (error) {
 		res.status(500).json({ error: error })
@@ -362,7 +342,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 	const task = await Task.findById(taskId)
 
 	if (!task) {
-		res.status(400).json({ message: 'Cannot find task' })
 		throw new Error('Cannot find task')
 	}
 
@@ -374,7 +353,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 		req.user.accountType !== 'Super Admin' &&
 		userIdString !== task.advertiserId
 	) {
-		res.status(400).json({ message: 'User Not Authorized' })
 		throw new Error('User Not Authorized')
 	}
 
@@ -386,44 +364,32 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 	const advertserWallet = await Wallet.findOne({ userId: task?.advertiserId })
 
 	if (!task) {
-		res.status(400).json({ message: 'Cannot find task' })
 		throw new Error('Cannot find task')
 	}
 
 	if (task.status === 'Approved') {
-		res.status(400).json({
-			message:
-				'This task has already being approved, you can only be paid once for an approved Task, please perform another task',
-		})
 		throw new Error(
 			'This task has already being approved, you can only be paid once for an approved Task, please perform another task',
 		)
 	}
 
 	if (!wallet) {
-		res.status(400).json({ message: 'Cannot find user Wallet for payment' })
 		throw new Error('Cannot find user Wallet for payment')
 	}
 
 	if (!taskPerformer) {
-		res.status(400).json({ message: 'Cannot find task performer details' })
 		throw new Error('Cannot find task performer details')
 	}
 
 	if (!advertserWallet) {
-		res
-			.status(400)
-			.json({ message: 'Cannot find Advertisers Wallet for payment retrieval' })
 		throw new Error('Cannot find user Wallet Advertisers for payment retrieval')
 	}
 
 	if (!advertiser) {
-		res.status(400).json({ message: 'Cannot find Advertiser' })
 		throw new Error('Cannot find Advertiser')
 	}
 
 	if (!advert) {
-		res.status(400).json({ message: 'Cannot find the ad for this task' })
 		throw new Error('Cannot find the ad for this task')
 	}
 
@@ -435,7 +401,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 	// }
 
 	if (advert.desiredROI === 0) {
-		res.status(500).json({ message: 'Ad campaign is no longer running' })
 		throw new Error('Ad campaign is no longer running')
 	}
 
@@ -459,7 +424,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	if (!updatedTask) {
-		res.status(500).json({ message: 'Error trying to update task status' })
 		throw new Error('Failed to approve task')
 	}
 
@@ -474,7 +438,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 		const updatedTaskPerformerWallet = await wallet.save()
 
 		if (!updatedTaskPerformerWallet) {
-			res.status(500).json({ message: 'Failed to update user wallet' })
 			throw new Error('Failed to update user wallet')
 		}
 	}
@@ -528,14 +491,12 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 		req.user.accountType !== 'Admin' &&
 		req.user.accountType !== 'Super Admin'
 	) {
-		res.status(400).json({ message: 'User Not Authorized' })
 		throw new Error('User Not Authorized')
 	}
 
 	const task = await Task.findById(taskId)
 
 	if (!task) {
-		res.status(400).json({ message: 'Cannot find task' })
 		throw new Error('Cannot find task')
 	}
 
@@ -545,63 +506,44 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const advertserWallet = await Wallet.find({ userId: task.advertiserId })
 
 	if (!task) {
-		res.status(400).json({ message: 'Cannot find task' })
 		throw new Error('Cannot find task')
 	}
 
 	if (task.status === 'Rejected') {
-		res.status(400).json({
-			message:
-				'This task has already being rejected, read the admins message and follow the instructions',
-		})
 		throw new Error(
 			'This task has already being rejected, read the admins message and follow the instructions',
 		)
 	}
 
 	if (task.status === 'Approved') {
-		res.status(400).json({
-			message:
-				'This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin',
-		})
 		throw new Error(
 			'This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin',
 		)
 	}
 
 	if (!wallet) {
-		res.status(400).json({ message: 'Cannot find user Wallet' })
 		throw new Error('Cannot find user Wallet')
 	}
 
 	if (!taskPerformer) {
-		res.status(400).json({ message: 'Cannot find task performer details' })
 		throw new Error('Cannot find task performer details')
 	}
 
 	if (!advertserWallet) {
-		res
-			.status(400)
-			.json({ message: 'Cannot find Advertisers Wallet for payment retrieval' })
 		throw new Error('Cannot find user Wallet Advertisers for payment retrieval')
 	}
 
 	if (!advert) {
-		res.status(400).json({ message: 'Cannot find the ad for this task' })
 		throw new Error('Cannot find user Wallet to update')
 	}
 
 	// Check if admin is the moderator asigned to the advert for this task
 	//Check if user is an admin
 	if (advert.tasksModerator && req.user._id !== advert.tasksModerator) {
-		res
-			.status(400)
-			.json({ message: 'You are not assigned to moderate this task' })
 		throw new Error('You are not assigned to moderate this task')
 	}
 
 	if (advert.desiredROI === 0) {
-		res.status(500).json({ message: 'Ad campaign is no longer active' })
 		throw new Error('Ad campaign is no longer active')
 	}
 
@@ -613,7 +555,6 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedTask = await task.save()
 
 	if (!updatedTask) {
-		res.status(500).json({ message: 'Error trying to update task status' })
 		throw new Error('Failed to approve task')
 	}
 
@@ -624,9 +565,6 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 		const addFreeTaskCount = await taskPerformer.save()
 
 		if (!addFreeTaskCount) {
-			res
-				.status(500)
-				.json({ message: 'Failed to return rejected free task count' })
 			throw new Error('Failed to return rejected free task count')
 		}
 	}
@@ -658,7 +596,6 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedAdvert = await advert.save()
 
 	if (!updatedAdvert) {
-		res.status(500).json({ message: 'Failed to reject task' })
 		throw new Error('Failed to failed task')
 	}
 
