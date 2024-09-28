@@ -1,37 +1,42 @@
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import asyncHandler from 'express-async-handler';
-import jwt from 'jsonwebtoken';
-import Advert from '../model/Advert.js';
-import RefChallenge from '../model/RefChallenge.js';
-import Referral from '../model/Referral.js';
-import Task from '../model/Task.js';
-import Token from '../model/Token.js';
-import User from '../model/User.js';
-import Wallet from '../model/Wallet.js';
-import sendEMail from '../utils/sendEmail.js';
-import sendEmail from '../utils/sendEmailApi.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDashboardData = exports.sendReferralEmail = exports.manageUser = exports.confirmEmailOTP = exports.verifyUser = exports.verifyEmailPasswordChange = exports.verifyEmail = exports.forgotPassword = exports.changePassword = exports.verifyOldPassword = exports.updateUserBankDetails = exports.updateUserAccountDetails = exports.updateUser = exports.loginStatus = exports.getUsers = exports.getUser = exports.loginUser = exports.refCahlRegisterUser = exports.refRegisterUser = exports.registerUser = void 0;
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const Advert_1 = __importDefault(require("../model/Advert"));
+const RefChallenge_1 = __importDefault(require("../model/RefChallenge"));
+const Referral_1 = __importDefault(require("../model/Referral"));
+const Task_1 = __importDefault(require("../model/Task"));
+const Token_1 = __importDefault(require("../model/Token"));
+const User_1 = __importDefault(require("../model/User"));
+const Wallet_1 = __importDefault(require("../model/Wallet"));
+const sendEmail_1 = __importDefault(require("../utils/sendEmail"));
+const sendEmailApi_1 = __importDefault(require("../utils/sendEmailApi"));
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('JWT_SECRET is not defined');
+    }
+    return jsonwebtoken_1.default.sign({ id }, secret, { expiresIn: '1d' });
 };
 //>>>> Register User
 // http://localhost:6001/api/user/register
-export const registerUser = asyncHandler(async (req, res) => {
+exports.registerUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { username, email, password, referralToken, referralUsername } = req.body;
-    console.log('🚀 ~ registerUser ~ referralToken, referralUsername:', referralToken, referralUsername);
     if (!username || !email || !password) {
-        res.status(400).json({ message: 'Please fill in all required fields' });
         throw new Error('Please fill in all required fields');
     }
-    const emailExists = await User.findOne({ email: email });
+    const emailExists = await User_1.default.findOne({ email: email });
     if (emailExists) {
-        res
-            .status(400)
-            .json({ message: 'Email has already been registered, please login' });
-        return;
+        throw new Error('Email has already been registered, please login');
     }
     let user;
-    user = await User.create({
+    user = await User_1.default.create({
         fullname: '',
         username,
         password,
@@ -61,10 +66,9 @@ export const registerUser = asyncHandler(async (req, res) => {
         referralChallengeReferredUsers: [],
     });
     if (!user) {
-        res.status(400).json({ message: 'Failed to register User' });
         throw new Error('Failed to register User');
     }
-    const wallet = await Wallet.create({
+    const wallet = await Wallet_1.default.create({
         userId: user._id,
         value: 0,
         totalEarning: 0,
@@ -72,9 +76,6 @@ export const registerUser = asyncHandler(async (req, res) => {
         amountSpent: 0,
     });
     if (!wallet) {
-        res.status(400).json({
-            message: 'Failed to Create Wallet for Registered User, Please contact admin',
-        });
         throw new Error('Failed to Create Wallet for Registered User, Please contact admin');
     }
     const { _id, username: registeredUsername, email: registeredEmail, isEmailVerified, } = user;
@@ -85,16 +86,15 @@ export const registerUser = asyncHandler(async (req, res) => {
         isEmailVerified,
     };
     if (referralToken) {
-        const hashedToken = crypto
+        const hashedToken = crypto_1.default
             .createHash('sha256')
             .update(referralToken)
             .digest('hex');
-        const token = await Token.findOne({ referralToken: hashedToken });
-        console.log('🚀 ~ registerUser ~ token:', token);
-        if (token && !token.isExpired()) {
+        const token = await Token_1.default.findOne({ referralToken: hashedToken });
+        if (token) {
             const referrerId = token.userId;
-            const referrer = await User.findById(referrerId);
-            const referral = await Referral.findOneAndUpdate({ referredEmail: email }, {
+            const referrer = await User_1.default.findById(referrerId);
+            const referral = await Referral_1.default.findOneAndUpdate({ referredEmail: email }, {
                 referredUserId: _id,
                 referredName: username,
                 status: 'Pending',
@@ -102,12 +102,11 @@ export const registerUser = asyncHandler(async (req, res) => {
                 new: true,
                 runValidators: true,
             });
-            console.log('🚀 ~ registerUser ~ referrer:', { referrer, referral });
         }
     }
     else if (referralUsername) {
-        const referredUser = await User.findOne({ username: referralUsername });
-        const referral = await Referral.findOneAndUpdate({ referredEmail: email }, {
+        const referredUser = await User_1.default.findOne({ username: referralUsername });
+        const referral = await Referral_1.default.findOneAndUpdate({ referredEmail: email }, {
             referredUserId: _id,
             referredName: username,
             status: 'Pending',
@@ -120,257 +119,223 @@ export const registerUser = asyncHandler(async (req, res) => {
 });
 //>>>> Register User For Ref Bonus
 // http://localhost:6001/api/user/refregister
-export const refRegisterUser = asyncHandler(async (req, res) => {
-    const { username, email, password, refusername } = req.body;
-    //User input validation
-    if (!username || !email || !password || !refusername) {
-        res.status(400).json({ message: 'Please fill in all required fields' });
-        throw new Error('Please fill in all required fields');
-    }
-    if (!refusername) {
-        res.status(400).json({ message: 'No referrer data recorded' });
-        throw new Error('No referrer data recorded');
-    }
-    //Check if the referrer still exist
-    const userRef = await User.findOne({ username: refusername });
-    if (!userRef) {
-        res.status(400).json({ message: 'Referrer does not exist' });
-        throw new Error('Referrer does not exist');
-    }
-    //checking for password lenght
-    if (password.length < 6) {
-        res.status(400).json({ message: 'Password must be upto 6 characters' });
-        throw new Error('Password must be upto 6 characters');
-    }
-    //check if user email already exist
-    //username
-    const usernameExists = await User.findOne({ username: username } || { email: email });
-    if (usernameExists) {
-        res.status(400).json({
-            message: 'Username has already been registered by another user',
+exports.refRegisterUser = (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const { username, email, password, refusername } = req.body;
+        //User input validation
+        if (!username || !email || !password || !refusername) {
+            throw new Error('Please fill in all required fields');
+        }
+        if (!refusername) {
+            throw new Error('No referrer data recorded');
+        }
+        //Check if the referrer still exist
+        const userRef = await User_1.default.findOne({ username: refusername });
+        if (!userRef) {
+            throw new Error('Referrer does not exist');
+        }
+        //checking for password lenght
+        if (password.length < 6) {
+            throw new Error('Password must be upto 6 characters');
+        }
+        //check if user email already exist or username
+        const usernameOrEmailExists = await User_1.default.findOne({
+            $or: [{ username }, { email }],
         });
-        throw new Error('Username has already been registered by another user');
-    }
-    //email exist
-    const emailExists = await User.findOne({ email: email });
-    if (emailExists) {
-        return res
-            .status(200)
-            .json({ message: 'Email has already been registered, please login' });
-    }
-    //Create new user
-    const user = await User.create({
-        fullname: '',
-        username,
-        password,
-        email,
-        phone: null,
-        bankName: '',
-        bankAccountNumber: '',
-        accountHolderName: '',
-        location: '',
-        community: '',
-        religion: '',
-        gender: '',
-        accountType: 'User',
-        accountStatus: 'Active',
-        referrersId: refusername,
-        isEmailVerified: false,
-        isPhoneVerified: false,
-        taskCompleted: 0,
-        taskOngoing: 0,
-        adsCreated: 0,
-        freeTaskCount: 2,
-        referCount: 0,
-        referrals: [],
-        referralChallengePts: 0,
-        referralBonusPts: 0,
-        referralChallengeReferredUsers: [],
-    });
-    if (!user) {
-        res.status(400).json({ message: 'Failed to register User' });
-        throw new Error('Failed to register User');
-    }
-    //Create new wallet for User
-    let wallet;
-    if (user) {
-        wallet = await Wallet.create({
-            userId: user._id,
-            value: 0,
-            refBonWallet: 0,
-            totalEarning: 0,
-            pendingBalance: 0,
-            amountSpent: 0,
-        });
-    }
-    if (!wallet) {
-        res.status(400).json({
-            message: 'Failed to Create Wallet for Registered User, Please contact admin',
-        });
-        throw new Error('Failed to Create Wallet for Registered User, Please contact admin');
-    }
-    //Update the referrer's referredUser's array
-    userRef.referrals.push(user._id);
-    const referrer = await userRef.save();
-    if (!referrer) {
-        res.status(500).json({
-            message: 'Internal error with referral system from the server',
-        });
-        throw new Error('Internal error with referral system from the server');
-    }
-    if (user && wallet && referrer) {
-        const { _id, username, email, referrersId, isEmailVerified } = user;
-        const userData = {
-            _id,
+        if (usernameOrEmailExists) {
+            throw new Error('Username or Email has already been registered by another user');
+        }
+        //Create new user
+        const user = await User_1.default.create({
+            fullname: '',
             username,
+            password,
             email,
-            referrersId,
-            isEmailVerified,
-        };
-        res.status(200).json(userData);
+            phone: null,
+            bankName: '',
+            bankAccountNumber: '',
+            accountHolderName: '',
+            location: '',
+            community: '',
+            religion: '',
+            gender: '',
+            accountType: 'User',
+            accountStatus: 'Active',
+            referrersId: refusername,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            taskCompleted: 0,
+            taskOngoing: 0,
+            adsCreated: 0,
+            freeTaskCount: 2,
+            referCount: 0,
+            referrals: [],
+            referralChallengePts: 0,
+            referralBonusPts: 0,
+            referralChallengeReferredUsers: [],
+        });
+        if (!user) {
+            throw new Error('Failed to register User');
+        }
+        //Create new wallet for User
+        let wallet;
+        if (user) {
+            wallet = await Wallet_1.default.create({
+                userId: user._id,
+                value: 0,
+                refBonWallet: 0,
+                totalEarning: 0,
+                pendingBalance: 0,
+                amountSpent: 0,
+            });
+        }
+        if (!wallet) {
+            throw new Error('Failed to Create Wallet for Registered User, Please contact admin');
+        }
+        //Update the referrer's referredUser's array
+        userRef.referrals.push(user._id);
+        const referrer = await userRef.save();
+        if (!referrer) {
+            throw new Error('Internal error with referral system from the server');
+        }
+        if (user && wallet && referrer) {
+            const { _id, username, email, referrersId, isEmailVerified } = user;
+            const userData = {
+                _id,
+                username,
+                email,
+                referrersId,
+                isEmailVerified,
+            };
+            res.status(200).json(userData);
+        }
+        if (!user && !wallet) {
+            throw new Error('Registeration failed');
+        }
     }
-    if (!user && !wallet) {
-        res.status(500).json('Registeration failed');
-        throw new Error('Registeration failed');
+    catch (error) {
+        res.status(500).json({ error });
     }
 });
 //>>>> Register User For Ref Challenge
 // http://localhost:6001/api/user/refChalregister
-export const refCahlRegisterUser = asyncHandler(async (req, res) => {
-    const { username, email, password, refusername } = req.body;
-    // res.status(200).json(req.body)
-    // return
-    //User input validation
-    if (!username || !email || !password || !refusername) {
-        res.status(400).json({ message: 'Please fill in all required fields' });
-        throw new Error('Please fill in all required fields');
-    }
-    if (!refusername) {
-        res.status(400).json({ message: 'No referrer data recorded' });
-        throw new Error('No referrer data recorded');
-    }
-    //Check if the referrer still exist
-    const userRef = await User.findOne({ username: refusername });
-    if (!userRef) {
-        res.status(400).json({ message: 'Referrer does not exist' });
-        throw new Error('Referrer does not exist');
-    }
-    //checking for password lenght
-    if (password.length < 6) {
-        res.status(400).json({ message: 'Password must be upto 6 characters' });
-        throw new Error('Password must be upto 6 characters');
-    }
-    //check if user email already exist
-    //username
-    const usernameExists = await User.findOne({ username: username } || { email: email });
-    if (usernameExists) {
-        res.status(400).json({
-            message: 'Username has already been registered by another user',
+exports.refCahlRegisterUser = (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const { username, email, password, refusername } = req.body;
+        // res.status(200).json(req.body)
+        // return
+        //User input validation
+        if (!username || !email || !password || !refusername) {
+            throw new Error('Please fill in all required fields');
+        }
+        if (!refusername) {
+            throw new Error('No referrer data recorded');
+        }
+        //Check if the referrer still exist
+        const userRef = await User_1.default.findOne({ username: refusername });
+        if (!userRef) {
+            throw new Error('Referrer does not exist');
+        }
+        //checking for password lenght
+        if (password.length < 6) {
+            throw new Error('Password must be upto 6 characters');
+        }
+        //check if user email already exist
+        //username
+        const usernameOrEmailExists = await User_1.default.findOne({
+            $or: [{ username }, { email }],
         });
-        throw new Error('Username has already been registered by another user');
-    }
-    //email exist
-    const emailExists = await User.findOne({ email: email });
-    if (emailExists) {
-        return res
-            .status(200)
-            .json({ message: 'Email has already been registered, please login' });
-    }
-    //Create new user
-    const user = await User.create({
-        fullname: '',
-        username,
-        password,
-        email,
-        phone: null,
-        bankName: '',
-        bankAccountNumber: '',
-        accountHolderName: '',
-        location: '',
-        community: '',
-        religion: '',
-        gender: '',
-        accountType: 'User',
-        accountStatus: 'Active',
-        referrersId: '',
-        refChallengeReferrersId: refusername,
-        isEmailVerified: false,
-        isPhoneVerified: false,
-        taskCompleted: 0,
-        taskOngoing: 0,
-        adsCreated: 0,
-        freeTaskCount: 2,
-        referCount: 0,
-        referrals: [],
-        referralChallengePts: 0,
-        referralBonusPts: 0,
-        referralChallengeReferredUsers: [],
-    });
-    if (!user) {
-        res.status(400).json({ message: 'Failed to register User' });
-        throw new Error('Failed to register User');
-    }
-    //Create new wallet for User
-    let wallet;
-    if (user) {
-        wallet = await Wallet.create({
-            userId: user._id,
-            value: 0,
-            refBonWallet: 0,
-            totalEarning: 0,
-            pendingBalance: 0,
-            amountSpent: 0,
-        });
-    }
-    if (!wallet) {
-        res.status(400).json({
-            message: 'Failed to Create Wallet for Registered User, Please contact admin',
-        });
-        throw new Error('Failed to Create Wallet for Registered User, Please contact admin');
-    }
-    if (user && wallet) {
-        const { _id, username, email, referrersId, isEmailVerified } = user;
-        const userData = {
-            _id,
+        if (usernameOrEmailExists) {
+            throw new Error('Username or Email has already been registered by another user');
+        }
+        //Create new user
+        const user = await User_1.default.create({
+            fullname: '',
             username,
+            password,
             email,
-            referrersId,
-            isEmailVerified,
-        };
-        res.status(200).json(userData);
+            phone: null,
+            bankName: '',
+            bankAccountNumber: '',
+            accountHolderName: '',
+            location: '',
+            community: '',
+            religion: '',
+            gender: '',
+            accountType: 'User',
+            accountStatus: 'Active',
+            referrersId: '',
+            refChallengeReferrersId: refusername,
+            isEmailVerified: false,
+            isPhoneVerified: false,
+            taskCompleted: 0,
+            taskOngoing: 0,
+            adsCreated: 0,
+            freeTaskCount: 2,
+            referCount: 0,
+            referrals: [],
+            referralChallengePts: 0,
+            referralBonusPts: 0,
+            referralChallengeReferredUsers: [],
+        });
+        if (!user) {
+            throw new Error('Failed to register User');
+        }
+        //Create new wallet for User
+        let wallet;
+        if (user) {
+            wallet = await Wallet_1.default.create({
+                userId: user._id,
+                value: 0,
+                refBonWallet: 0,
+                totalEarning: 0,
+                pendingBalance: 0,
+                amountSpent: 0,
+            });
+        }
+        if (!wallet) {
+            throw new Error('Failed to Create Wallet for Registered User, Please contact admin');
+        }
+        if (user && wallet) {
+            const { _id, username, email, referrersId, isEmailVerified } = user;
+            const userData = {
+                _id,
+                username,
+                email,
+                referrersId,
+                isEmailVerified,
+            };
+            res.status(200).json(userData);
+        }
+        if (!user && !wallet) {
+            throw new Error('Registeration failed');
+        }
     }
-    if (!user && !wallet) {
-        res.status(500).json('Registeration failed');
-        throw new Error('Registeration failed');
+    catch (error) {
+        res.status(500).json({ error });
     }
 });
 //>>>> Login User
 // http://localhost:6001/api/user/login
-export const loginUser = asyncHandler(async (req, res) => {
+exports.loginUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, password } = req.body;
     //validate login request
     if (!email || !password) {
-        res.status(400).json({ message: 'Please add details to login' });
         throw new Error('Please add details to login');
     }
     //Check if user exist
-    const user = await User.findOne({ email });
+    const user = await User_1.default.findOne({ email });
     //if user doesnt exist
     if (!user) {
-        res.status(400).json({ message: 'User not found, please Register' });
         throw new Error('User not found, please Register');
     }
     //when user exist - check if password is correct
-    const passwordIsCorrect = await bcrypt.compare(password, user.password);
+    const passwordIsCorrect = await bcryptjs_1.default.compare(password, user.password);
     if (!passwordIsCorrect) {
-        res.status(400).json({ message: 'Incorrect Password' });
         throw new Error('Incorrect Password');
     }
     //if user doesnt exist
     if (user.accountStatus === 'Banned') {
-        res.status(400).json({
-            message: 'User account Banned, send an email to appeal@belocated.ng to appeal',
-        });
         throw new Error('User account Banned, send an email to appeal@belocated.ng to appeal');
     }
     //Check if user email is verified
@@ -399,8 +364,8 @@ export const loginUser = asyncHandler(async (req, res) => {
         //    secure: true
         //  });
         if (user && passwordIsCorrect && token) {
-            const walletId = await Wallet.find({ userId: user._id });
-            const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts, isKycDone, } = user;
+            const walletId = await Wallet_1.default.find({ userId: user._id });
+            const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengePts, referralBonusPts, isKycDone, } = user;
             res.status(200).json({
                 id: _id,
                 fullname,
@@ -417,7 +382,6 @@ export const loginUser = asyncHandler(async (req, res) => {
                 bankAccountNumber,
                 accountHolderName,
                 isEmailVerified,
-                isPhoneVerified,
                 taskCompleted,
                 taskOngoing,
                 adsCreated,
@@ -425,7 +389,6 @@ export const loginUser = asyncHandler(async (req, res) => {
                 referrals,
                 referrersId,
                 refChallengeReferrersId,
-                referralChallengeReferredUsers,
                 referralChallengePts,
                 referralBonusPts,
                 isKycDone,
@@ -433,16 +396,15 @@ export const loginUser = asyncHandler(async (req, res) => {
             });
         }
         else {
-            res.status(400).json({ message: 'Invalid user email or Password' });
             throw new Error('Invalid user email or Password');
         }
     }
 });
 //>>>> GET User
 // http://localhost:6001/api/user/:id
-export const getUser = asyncHandler(async (req, res) => {
+exports.getUser = (0, express_async_handler_1.default)(async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        const user = await User_1.default.findById(req.user._id);
         if (!user) {
             res.status(400).json({ msg: 'Cannot find user' });
             throw new Error('Cannot find user');
@@ -450,7 +412,7 @@ export const getUser = asyncHandler(async (req, res) => {
         //Generate token
         const token = generateToken(user._id);
         if (user) {
-            const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts, isKycDone, } = user;
+            const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengePts, referralBonusPts, isKycDone, } = user;
             res.status(200).json({
                 id: _id,
                 fullname,
@@ -467,7 +429,6 @@ export const getUser = asyncHandler(async (req, res) => {
                 bankAccountNumber,
                 accountHolderName,
                 isEmailVerified,
-                isPhoneVerified,
                 taskCompleted,
                 taskOngoing,
                 adsCreated,
@@ -475,7 +436,6 @@ export const getUser = asyncHandler(async (req, res) => {
                 referrals,
                 referrersId,
                 refChallengeReferrersId,
-                referralChallengeReferredUsers,
                 referralChallengePts,
                 referralBonusPts,
                 token,
@@ -484,13 +444,13 @@ export const getUser = asyncHandler(async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error });
     }
 });
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
-export const getUsers = asyncHandler(async (req, res) => {
-    const users = await User.find({}, { password: 0 });
+exports.getUsers = (0, express_async_handler_1.default)(async (req, res) => {
+    const users = await User_1.default.find({}, { password: 0 });
     if (!users) {
         res.status(400);
         throw new Error('No User found in the database');
@@ -505,23 +465,23 @@ export const getUsers = asyncHandler(async (req, res) => {
 //     return res.status(200).json("Successfully Logged Out")
 // })
 //>>>> Get Login Status
-export const loginStatus = asyncHandler(async (req, res) => {
+exports.loginStatus = (0, express_async_handler_1.default)(async (req, res) => {
     var _a;
     const authToken = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(' ')[1];
     if (!authToken) {
-        return res.json(false);
+        res.json(false);
     }
     //Verify token
-    const verified = jwt.verify(authToken, process.env.JWT_SECRET);
+    const verified = jsonwebtoken_1.default.verify(authToken, process.env.JWT_SECRET);
     if (verified) {
-        return res.json(true);
+        res.json(true);
     }
     else {
-        return res.json(false);
+        res.json(false);
     }
 });
 //>>>> Update User details
-export const updateUser = asyncHandler(async (req, res) => {
+exports.updateUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, fullname, phone, state, lga, gender, religion } = req.body;
     console.log('🚀 ~ updateUser ~ userId:', userId);
     // if (userId !== req.user._id) {
@@ -529,12 +489,12 @@ export const updateUser = asyncHandler(async (req, res) => {
     // 		.status(400)
     // 		.json({ message: "There's a problem with the validation for this user" })
     // }
-    const user = await User.findById(req.user._id);
+    const user = await User_1.default.findById(req.user._id);
     //When request is not found
     if (!user) {
         res.status(404).json('User not found in DB');
     }
-    const updatedUserDetails = await User.findByIdAndUpdate({ _id: req.user.id }, {
+    const updatedUserDetails = await User_1.default.findByIdAndUpdate({ _id: req.user.id }, {
         fullname: fullname || req.user.fullname,
         phone: phone || req.user.phone,
         location: state || req.user.state,
@@ -550,7 +510,11 @@ export const updateUser = asyncHandler(async (req, res) => {
         throw new Error('Failed to update user details');
     }
     if (updatedUserDetails) {
-        const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, isPhoneVerified, taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, referralChallengeReferredUsers, referralChallengePts, referralBonusPts, } = updatedUserDetails;
+        const { _id, fullname, username, email, phone, location, community, religion, gender, accountType, accountStatus, bankName, bankAccountNumber, accountHolderName, isEmailVerified, 
+        // isPhoneVerified,
+        taskCompleted, taskOngoing, adsCreated, freeTaskCount, referrals, referrersId, refChallengeReferrersId, 
+        // referralChallengeReferredUsers,
+        referralChallengePts, referralBonusPts, } = updatedUserDetails;
         res.status(200).json({
             id: _id,
             fullname,
@@ -567,7 +531,7 @@ export const updateUser = asyncHandler(async (req, res) => {
             bankAccountNumber,
             accountHolderName,
             isEmailVerified,
-            isPhoneVerified,
+            // isPhoneVerified,
             taskCompleted,
             taskOngoing,
             adsCreated,
@@ -575,7 +539,7 @@ export const updateUser = asyncHandler(async (req, res) => {
             referrals,
             referrersId,
             refChallengeReferrersId,
-            referralChallengeReferredUsers,
+            // referralChallengeReferredUsers,
             referralChallengePts,
             referralBonusPts,
         });
@@ -584,11 +548,14 @@ export const updateUser = asyncHandler(async (req, res) => {
         res.status(400).json({ message: 'Invalid Updated User Details' });
     }
 });
-export const updateUserAccountDetails = asyncHandler(async (req, res) => {
+exports.updateUserAccountDetails = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, username, email, phone } = req.body;
     //check if username and email already exist
     //username
-    const user = await User.findById(userId);
+    const user = await User_1.default.findById(userId);
+    if (!user) {
+        throw new Error('User not found');
+    }
     //Check if user is authorized to make this update
     // if (user.isPhoneVerified === false) {
     //   res.status(401).json({message: "You are not allowed to make this change, complete phone number verification"})
@@ -597,108 +564,97 @@ export const updateUserAccountDetails = asyncHandler(async (req, res) => {
     //if (user.isPhoneVerified === true) {
     // Check if new email has already being registered by another user
     if (email && email !== user.email) {
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User_1.default.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already taken' });
+            throw new Error('Email already taken');
         }
     }
     // Check if new username has already being registered by another user
     if (username && username !== user.username) {
-        const existingUser = await User.findOne({ username });
+        const existingUser = await User_1.default.findOne({ username });
         if (existingUser) {
-            return res.status(400).json({ message: 'Username already taken' });
+            throw new Error('Username already taken');
         }
     }
     // Check if new phone number has already being registered by another user
     if (phone && phone !== user.phone) {
-        const existingUser = await User.findOne({ phone });
+        const existingUser = await User_1.default.findOne({ phone });
         if (existingUser) {
-            return res
-                .status(400)
-                .json({ message: 'Phone number is already in use' });
+            throw new Error('Phone number is already in use');
         }
     }
     //Update User Account Details
-    const updatedUser = await User.findByIdAndUpdate({ _id: userId }, {
+    const updatedUser = await User_1.default.findByIdAndUpdate({ _id: userId }, {
         email: email || req.user.email,
         username: username || req.user.username,
         phone: phone || req.user.phone,
     });
     if (!updatedUser) {
-        res.status(500);
         throw new Error('Failed to updated user account details');
     }
-    if (updateUser) {
-        const { password, ...userData } = updatedUser.toObject();
-        res.status(200).json(userData);
-    }
+    const { password, ...userData } = updatedUser.toObject();
+    res.status(200).json(userData);
     //}
 });
 //Update Bank Account Details
-export const updateUserBankDetails = asyncHandler(async (req, res) => {
-    const { userId, bankName, accountHolderName, bankAccountNumber } = req.body;
-    console.log('🚀 ~ updateUserBankDetails ~ userId, bankName, accountHolderName, bankAccountNumber:', {
-        userId,
-        bankName,
-        accountHolderName,
-        bankAccountNumber,
-        user: req.user,
-    });
-    const user = await User.findById(req.user._id);
-    console.log('🚀 ~ updateUserBankDetails ~ user:', user);
-    // Check if new bankAccountName && Account Number has already being registered by another user
-    if (bankAccountNumber && bankAccountNumber !== user.bankAccountNumber) {
-        const existingUser = await User.findOne({ bankAccountNumber });
-        if (existingUser) {
-            return res.status(400).json({ message: 'Bank Details already in use' });
+exports.updateUserBankDetails = (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const { userId, bankName, accountHolderName, bankAccountNumber } = req.body;
+        const user = await User_1.default.findById(req.user._id);
+        if (!user) {
+            throw new Error('User not found');
         }
-    }
-    const isKycDone = !!(user.fullname &&
-        user.phone &&
-        user.location &&
-        user.community &&
-        user.gender);
-    //Update User Account Details
-    const updatedUser = await User.findByIdAndUpdate({ _id: userId }, {
-        bankName: bankName || req.user.bankName,
-        accountHolderName: accountHolderName || req.user.accountHolderName,
-        bankAccountNumber: bankAccountNumber || req.user.bankAccountNumber,
-        isKycDone: isKycDone,
-    }, {
-        new: true,
-        runValidators: true,
-    });
-    console.log('🚀 ~ updateUserBankDetails ~ updatedUser:', updatedUser);
-    if (!updatedUser) {
-        res
-            .status(500)
-            .json({ message: 'Failed to updated user bank account details' });
-        throw new Error('Failed to updated user bank account details');
-    }
-    if (updateUser) {
+        // Check if new bankAccountName && Account Number has already being registered by another user
+        if (bankAccountNumber && bankAccountNumber !== user.bankAccountNumber) {
+            const existingUser = await User_1.default.findOne({ bankAccountNumber });
+            if (existingUser) {
+                throw new Error('Bank Details already in use');
+            }
+        }
+        const isKycDone = !!(user.fullname &&
+            user.phone &&
+            user.location &&
+            user.community &&
+            user.gender);
+        //Update User Account Details
+        const updatedUser = await User_1.default.findByIdAndUpdate({ _id: userId }, {
+            bankName: bankName || req.user.bankName,
+            accountHolderName: accountHolderName || req.user.accountHolderName,
+            bankAccountNumber: bankAccountNumber || req.user.bankAccountNumber,
+            isKycDone: isKycDone,
+        }, {
+            new: true,
+            runValidators: true,
+        });
+        if (!updatedUser) {
+            throw new Error('Failed to updated user bank account details');
+        }
         if (updatedUser.isKycDone) {
-            const referral = await Referral.findOne({ referredUserId: userId });
+            const referral = await Referral_1.default.findOne({ referredUserId: userId });
             if (referral && referral.status !== 'Completed') {
                 referral.status = 'Completed';
                 referral.pointsEarned += 10;
                 await referral.save();
-                const referrer = await User.findById(referral.referrerId);
+                const referrer = await User_1.default.findById(referral.referrerId);
                 console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer);
                 if (referrer) {
                     referrer.referralPoints += 10;
                     await referrer.save();
                 }
             }
+            const { password, ...userData } = updatedUser.toObject();
+            res.status(200).json({ ...userData, id: userData._id });
         }
-        const { password, ...userData } = updatedUser.toObject();
-        res.status(200).json({ ...userData, id: userData._id });
+        //}
     }
-    //}
+    catch (error) {
+        res.status(500).json(error);
+    }
 });
 //>>>> Verify Old user password
-export const verifyOldPassword = asyncHandler(async (req, res) => {
+exports.verifyOldPassword = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, oldPassword } = req.body;
-    const user = await User.findById(req.user._id);
+    const user = await User_1.default.findById(req.user._id);
     // Check if user exist
     if (!user) {
         res.status(400).json({ message: 'User not found, please register' });
@@ -710,7 +666,7 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
         throw new Error('Please add old password');
     }
     // check if old password matches password in the db
-    const passwordIsCorrect = await bcrypt.compare(oldPassword, user.password);
+    const passwordIsCorrect = await bcryptjs_1.default.compare(oldPassword, user.password);
     if (!passwordIsCorrect) {
         res.status(400).json({ message: 'Password is Incorrect' });
         throw new Error('Password is Incorrect');
@@ -720,10 +676,10 @@ export const verifyOldPassword = asyncHandler(async (req, res) => {
     }
 });
 //>>>> Change user old password
-export const changePassword = asyncHandler(async (req, res) => {
+exports.changePassword = (0, express_async_handler_1.default)(async (req, res) => {
     const { newPassword, oldPassword } = req.body;
     const userId = req.user._id;
-    const user = await User.findById(userId);
+    const user = await User_1.default.findById(userId);
     //Check if user exist
     if (!user) {
         res.status(400).json({ message: 'User not found, please register' });
@@ -735,7 +691,7 @@ export const changePassword = asyncHandler(async (req, res) => {
         throw new Error('unauthorized change');
     }
     // check if old password matches password in the db
-    const passwordIsCorrect = await bcrypt.compare(oldPassword, user.password);
+    const passwordIsCorrect = await bcryptjs_1.default.compare(oldPassword, user.password);
     //save new password
     if (user && passwordIsCorrect) {
         user.password = newPassword;
@@ -748,14 +704,14 @@ export const changePassword = asyncHandler(async (req, res) => {
     }
 });
 //>>>> Reset Password
-export const forgotPassword = asyncHandler(async (req, res) => {
+exports.forgotPassword = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, email, newPassword } = req.body;
     //checking for password lenght
     if (newPassword.length < 6) {
         res.status(400).json({ message: 'Password must be upto 6 characters' });
         throw new Error('Password must be upto 6 characters');
     }
-    const user = await User.findById(userId);
+    const user = await User_1.default.findById(userId);
     if (!user) {
         res.status(404).json({ message: 'User does not exist' });
         throw new Error('User does not exist');
@@ -773,28 +729,28 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     }
 });
 //>>>> Send and resend Verification Email
-export const verifyEmail = asyncHandler(async (req, res) => {
+exports.verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.params;
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User_1.default.findOne({ email: email.toLowerCase() });
     if (!user) {
         res.status(404).json('No user found');
         throw new Error('No user found');
     }
     if (user) {
         //Delete token if it exists in the DB
-        let token = await Token.findOne({ userId: user._id });
+        let token = await Token_1.default.findOne({ userId: user._id });
         if (token) {
             await token.deleteOne();
         }
         // generate new verification token
-        let verificationToken = crypto.randomBytes(32).toString('hex') + user._id;
+        let verificationToken = crypto_1.default.randomBytes(32).toString('hex') + user._id;
         //Hask token before saving to DB
-        const hashedToken = crypto
+        const hashedToken = crypto_1.default
             .createHash('sha256')
             .update(verificationToken)
             .digest('hex');
         //Save Token to DB
-        const saveTokenToDB = await new Token({
+        const saveTokenToDB = await new Token_1.default({
             userId: user._id,
             token: '',
             emailVerificationToken: hashedToken,
@@ -833,7 +789,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
             const reply_to = 'noreply@noreply.com';
             //Finally sending email
             //const emailSent = await sendEMail(subject, message, send_to, reply_to)
-            const response = await sendEmail(subject, message, send_to, user.username);
+            const response = await (0, sendEmailApi_1.default)(subject, message, send_to, user.username);
             if (!response) {
                 res.status(500).json('Email verification failed');
                 throw new Error('Email verification failed');
@@ -845,11 +801,11 @@ export const verifyEmail = asyncHandler(async (req, res) => {
     }
 });
 //>>>> Send and resend Password Verification Email
-export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
+exports.verifyEmailPasswordChange = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         const { email } = req.params;
         console.log('🚀 ~ verifyEmailPasswordChange ~ email:', email.toLowerCase());
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await User_1.default.findOne({ email: email.toLowerCase() });
         console.log('🚀 ~ verifyEmailPasswordChange ~ user:', user);
         if (!user) {
             res.status(404).json('No user found');
@@ -857,24 +813,24 @@ export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
         }
         if (user) {
             //Delete token if it exists in the DB
-            let token = await Token.findOne({ userId: user._id });
+            let token = await Token_1.default.findOne({ userId: user._id });
             if (token) {
                 await token.deleteOne();
             }
             // generate new verification token
-            let verificationToken = crypto
+            let verificationToken = crypto_1.default
                 .randomBytes(3)
                 .toString('hex')
                 .toUpperCase();
             console.log('🚀 ~ verifyEmailPasswordChange ~ verificationToken:', verificationToken);
             //Hask token before saving to DB
-            const hashedToken = crypto
+            const hashedToken = crypto_1.default
                 .createHash('sha256')
                 .update(verificationToken)
                 .digest('hex');
             console.log('🚀 ~ verifyEmailPasswordChange ~ hashedToken:', hashedToken);
             //Save Token to DB
-            const saveTokenToDB = await new Token({
+            const saveTokenToDB = await new Token_1.default({
                 userId: user._id,
                 token: '',
                 emailVerificationToken: '',
@@ -903,7 +859,7 @@ export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
                 const send_to = user.email;
                 const reply_to = 'noreply@noreply.com';
                 //Finally sending email
-                const emailSent = await sendEMail(subject, message, send_to, reply_to);
+                const emailSent = await (0, sendEmail_1.default)(subject, message, send_to, reply_to);
                 if (!emailSent) {
                     res.status(500).json('Password change verification failed');
                     throw new Error('Password change verification failed');
@@ -923,65 +879,64 @@ export const verifyEmailPasswordChange = asyncHandler(async (req, res) => {
     }
 });
 //>>>> Email Account Verification
-export const verifyUser = asyncHandler(async (req, res) => {
-    const { token } = req.params;
-    //Hask token, then compare with token in db
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    //find token in db
-    const userToken = await Token.findOne({
-        emailVerificationToken: hashedToken,
-        expiresAt: { $gt: Date.now() },
-    });
-    if (!userToken) {
-        res.status(409).json({
-            message: 'Invalid or Expired Token. The account is possibly already verified.',
+exports.verifyUser = (0, express_async_handler_1.default)(async (req, res) => {
+    try {
+        const { token } = req.params;
+        //Hask token, then compare with token in db
+        const hashedToken = crypto_1.default.createHash('sha256').update(token).digest('hex');
+        //find token in db
+        const userToken = await Token_1.default.findOne({
+            emailVerificationToken: hashedToken,
+            expiresAt: { $gt: Date.now() },
         });
-        return;
-    }
-    // find user
-    const updatedUserDetails = await User.findByIdAndUpdate({ _id: userToken.userId }, {
-        isEmailVerified: true,
-    }, {
-        new: true,
-        runValidators: true,
-    });
-    if (!updatedUserDetails) {
-        res.status(500);
-        throw new Error('Failed to verify user');
-    }
-    if (updatedUserDetails) {
-        // const updatedUser = await User.findById(userToken.userId)
-        // Ref Bonus Update Stats
-        if (updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.referrersId) {
-            //Getting referrer details from DB
-            // console.log(updatedUserDetails.referrersId)
-            // return
-            const userRef = await User.findOne({
-                username: updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.referrersId,
+        if (!userToken) {
+            res.status(409).json({
+                message: 'Invalid or Expired Token. The account is possibly already verified.',
             });
-            const userRefWallet = await Wallet.findOne({ userId: userRef._id });
-            if (!userRef) {
-                res.status(400).json({ message: 'Referrer does not exist' });
-                throw new Error('Referrer does not exist');
-            }
-            if (!userRefWallet) {
-                res.status(400).json({ message: 'Referrer wallet does not exist' });
-                throw new Error('Referrer wallet does not exist');
-            }
-            // Update referCount for userRef
-            userRef.referralBonusPts += 1;
-            const updatedUserRefCount = await userRef.save();
-            //Pay Referrer his referral bonus
-            userRefWallet.refBonWallet += 50;
-            const referrer = await userRefWallet.save();
-            if (!referrer || !updatedUserRefCount) {
-                res.status(500).json({
-                    message: 'Internal error with referral system from the server',
+            return;
+        }
+        // find user
+        const updatedUserDetails = await User_1.default.findByIdAndUpdate({ _id: userToken.userId }, {
+            isEmailVerified: true,
+        }, {
+            new: true,
+            runValidators: true,
+        });
+        if (!updatedUserDetails) {
+            throw new Error('Failed to verify user');
+        }
+        if (updatedUserDetails) {
+            // const updatedUser = await User.findById(userToken.userId)
+            // Ref Bonus Update Stats
+            if (updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.referrersId) {
+                //Getting referrer details from DB
+                // console.log(updatedUserDetails.referrersId)
+                // return
+                const userRef = await User_1.default.findOne({
+                    username: updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.referrersId,
                 });
-                throw new Error('Internal error with referral system from the server');
-            }
-            //Send Welcome Email
-            const message = `
+                if (!userRef) {
+                    throw new Error('Referrer does not exist');
+                }
+                const userRefWallet = await Wallet_1.default.findOne({ userId: userRef._id });
+                if (!userRef) {
+                    throw new Error('Referrer does not exist');
+                }
+                if (!userRefWallet) {
+                    res.status(400).json({ message: 'Referrer wallet does not exist' });
+                    throw new Error('Referrer wallet does not exist');
+                }
+                // Update referCount for userRef
+                userRef.referralBonusPts += 1;
+                const updatedUserRefCount = await userRef.save();
+                //Pay Referrer his referral bonus
+                userRefWallet.refBonWallet += 50;
+                const referrer = await userRefWallet.save();
+                if (!referrer || !updatedUserRefCount) {
+                    throw new Error('Internal error with referral system from the server');
+                }
+                //Send Welcome Email
+                const message = `
  <h2>Hello, ${userRef.username}</h2>
  <p>We are so happy to inform you that you've recieved 1 Point for referring a user to the Belocated platform.</p>
  <p>When your accumulated points get to the required threshold, they can be converted to money and added to your regular wallet for withdrawal via bank transfer or airtime, or you can use the funds to run a promotion on Belocated</p>
@@ -1006,59 +961,56 @@ export const verifyUser = asyncHandler(async (req, res) => {
  <p>Best Regards</p>
  <p>CEO BELOCATED</p>
  `;
-            const subject = 'Congratulations, you Just Earned a Referral Point!';
-            const send_to = userRef.email;
-            const reply_to = 'noreply@noreply.com';
-            //Finally sending email
-            const emailSent = await sendEmail(subject, message, send_to, userRef.username);
-            if (!emailSent) {
-                res.status(500).json('Failed to send referral bonus email');
-                throw new Error('Failed to send referral bonus email');
+                const subject = 'Congratulations, you Just Earned a Referral Point!';
+                const send_to = userRef.email;
+                const reply_to = 'noreply@noreply.com';
+                //Finally sending email
+                const emailSent = await (0, sendEmailApi_1.default)(subject, message, send_to, userRef.username);
+                if (!emailSent) {
+                    throw new Error('Failed to send referral bonus email');
+                }
             }
-        }
-        // Ref Challenge Update Stats
-        if (updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.refChallengeReferrersId) {
-            //Getting referrer details from DB
-            const userRef = await User.findOne({
-                username: updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.refChallengeReferrersId,
-            });
-            if (!userRef) {
-                res.status(400).json({ message: 'Referrer does not exist' });
-                throw new Error('Referrer does not exist');
-            }
-            // If referrer does exist
-            // Get all the referral challenges
-            const pastChallenges = await RefChallenge.find();
-            if (!pastChallenges) {
-                console.log('No challenges found');
-                // Send message to admin reporting that a user referred someone in the challenge when there's no challenge ongoing.
-            }
-            //Check if there's an onging referrer challenge
-            //Update the referral challenge stats
-            const hasOngoingChallenge = pastChallenges.find((pc) => pc.status === 'Ongoing');
-            if (!hasOngoingChallenge) {
-                console.log("There's no ongoing challenge");
-                // Send email to admin notifying admin that there's no ongoing challenge and a user referred someone.
-            }
-            //If there's an ongoing challenge
-            //Update the userRef referred User's array According to the ref challenge
-            //If this field is not existing mongodb need to create it for that user.
-            userRef.referralChallengeReferredUsers.push(updatedUserDetails._id);
-            userRef.referralChallengePts += 1;
-            const referrer = await userRef.save();
-            // Update the challenge
-            hasOngoingChallenge.totalRefUsers += 1;
-            hasOngoingChallenge.referralChallengeContestants.push(userRef._id);
-            const updatedRefChallenge = await hasOngoingChallenge.save();
-            if (!updatedRefChallenge || !referrer) {
-                res.status(500).json({
-                    message: 'Internal error with referral system from the server',
+            // Ref Challenge Update Stats
+            if (updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.refChallengeReferrersId) {
+                //Getting referrer details from DB
+                const userRef = await User_1.default.findOne({
+                    username: updatedUserDetails === null || updatedUserDetails === void 0 ? void 0 : updatedUserDetails.refChallengeReferrersId,
                 });
-                throw new Error('Internal error with referral system from the server');
+                if (!userRef) {
+                    throw new Error('Referrer does not exist');
+                }
+                // If referrer does exist
+                // Get all the referral challenges
+                const pastChallenges = await RefChallenge_1.default.find();
+                if (!pastChallenges) {
+                    console.log('No challenges found');
+                    // Send message to admin reporting that a user referred someone in the challenge when there's no challenge ongoing.
+                }
+                //Check if there's an onging referrer challenge
+                //Update the referral challenge stats
+                const hasOngoingChallenge = pastChallenges.find((pc) => pc.status === 'Ongoing');
+                //If there's an ongoing challenge
+                //Update the userRef referred User's array According to the ref challenge
+                //If this field is not existing mongodb need to create it for that user.
+                // userRef.referralChallengeReferredUsers.push(updatedUserDetails._id)
+                userRef.referralChallengePts += 1;
+                const referrer = await userRef.save();
+                if (!hasOngoingChallenge) {
+                    console.log("There's no ongoing challenge");
+                    // Send email to admin notifying admin that there's no ongoing challenge and a user referred someone.
+                }
+                // Update the challenge
+                if (hasOngoingChallenge) {
+                    hasOngoingChallenge.totalRefUsers += 1;
+                    hasOngoingChallenge.referralChallengeContestants.push(userRef._id);
+                }
+                const updatedRefChallenge = await (hasOngoingChallenge === null || hasOngoingChallenge === void 0 ? void 0 : hasOngoingChallenge.save());
+                if (!updatedRefChallenge || !referrer) {
+                    throw new Error('Internal error with referral system from the server');
+                }
             }
-        }
-        //Send Welcome Email
-        const message = `
+            //Send Welcome Email
+            const message = `
  <h2>Hello, ${updatedUserDetails.username}</h2>
  <p>We are so happy you are here because it means you believe in the brand and what it stands for.</p>
  <p>BeLocated was created just for you - giving you an opportuinity to publicize your brand on your terms and earn on your terms.</p>
@@ -1103,26 +1055,30 @@ export const verifyUser = asyncHandler(async (req, res) => {
  <p>Best Regards</p>
  <p>CEO BELOCATED</p>
  `;
-        const subject = 'Welcome Note from the CEO';
-        const send_to = updatedUserDetails.email;
-        const reply_to = 'noreply@noreply.com';
-        //Finally sending email
-        const emailSent = await sendEmail(subject, message, send_to, updatedUserDetails.username);
-        if (!emailSent) {
-            res.status(500).json('Failed to send welcome email');
-            throw new Error('Failed to send welcome email');
+            const subject = 'Welcome Note from the CEO';
+            const send_to = updatedUserDetails.email;
+            const reply_to = 'noreply@noreply.com';
+            //Finally sending email
+            const emailSent = await (0, sendEmailApi_1.default)(subject, message, send_to, updatedUserDetails.username);
+            if (!emailSent) {
+                res.status(500).json('Failed to send welcome email');
+                throw new Error('Failed to send welcome email');
+            }
+            const { _id, isEmailVerified } = updatedUserDetails;
+            res.status(200).json({ _id, isEmailVerified });
         }
-        const { _id, isEmailVerified } = updatedUserDetails;
-        res.status(200).json({ _id, isEmailVerified });
+    }
+    catch (error) {
+        res.status(500).json(error);
     }
 });
 //>>>> Email OTP Verification
-export const confirmEmailOTP = asyncHandler(async (req, res) => {
+exports.confirmEmailOTP = (0, express_async_handler_1.default)(async (req, res) => {
     const { OTP } = req.params;
     //Hask token, then compare with token in db
-    const hashedToken = crypto.createHash('sha256').update(OTP).digest('hex');
+    const hashedToken = crypto_1.default.createHash('sha256').update(OTP).digest('hex');
     //find token in db
-    const userOTP = await Token.findOne({
+    const userOTP = await Token_1.default.findOne({
         phoneVerificationOTP: hashedToken,
         expiresAt: { $gt: Date.now() },
     });
@@ -1247,7 +1203,7 @@ export const confirmEmailOTP = asyncHandler(async (req, res) => {
 //       }
 // })
 //>>> Delete User
-export const manageUser = asyncHandler(async (req, res) => {
+exports.manageUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, status } = req.body;
     console.log(status);
     if (req.user.accountType !== 'Admin' &&
@@ -1255,12 +1211,12 @@ export const manageUser = asyncHandler(async (req, res) => {
         res.status(401);
         throw new Error('User not authorized to perform this action');
     }
-    const user = await User.findById({ _id: userId });
+    const user = await User_1.default.findById({ _id: userId });
     if (!user) {
-        res.status(400).json('User does not exist');
+        throw new Error('User does not exist');
     }
     if (status == 'Delete') {
-        const delUser = await User.findByIdAndDelete(userId);
+        const delUser = await User_1.default.findByIdAndDelete(userId);
         if (!delUser) {
             res.status(500);
             throw new Error('Error deleting User');
@@ -1276,24 +1232,24 @@ export const manageUser = asyncHandler(async (req, res) => {
     }
     res.status(200).json('User management successful');
 });
-export const sendReferralEmail = asyncHandler(async (req, res) => {
+exports.sendReferralEmail = (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;
     console.log('🚀 ~ sendReferralEmail ~ email:', email);
     const referrerId = req.user._id;
     // Find the referrer
-    const referrer = await User.findById(referrerId);
+    const referrer = await User_1.default.findById(referrerId);
     if (!referrer) {
         res.status(404).json('Referrer not found');
         throw new Error('Referrer not found');
     }
     // Generate a referral token
-    let referralToken = crypto.randomBytes(32).toString('hex') + referrer._id;
-    const hashedToken = crypto
+    let referralToken = crypto_1.default.randomBytes(32).toString('hex') + referrer._id;
+    const hashedToken = crypto_1.default
         .createHash('sha256')
         .update(referralToken)
         .digest('hex');
     // Save the token in the database
-    const saveTokenToDB = await new Token({
+    const saveTokenToDB = await new Token_1.default({
         userId: referrer._id,
         token: '',
         emailVerificationToken: '',
@@ -1323,13 +1279,13 @@ export const sendReferralEmail = asyncHandler(async (req, res) => {
     const send_to = email;
     const reply_to = 'noreply@noreply.com';
     // Send the referral email
-    const response = await sendEmail(subject, message, send_to, reply_to);
+    const response = await (0, sendEmailApi_1.default)(subject, message, send_to, reply_to);
     if (!response) {
         res.status(500).json('Failed to send referral email');
         throw new Error('Failed to send referral email');
     }
     if (referrer) {
-        const referral = new Referral({
+        const referral = new Referral_1.default({
             referrerId: referrerId,
             referredUserId: null,
             referredEmail: email,
@@ -1340,12 +1296,12 @@ export const sendReferralEmail = asyncHandler(async (req, res) => {
     }
     res.status(200).json('Referral email sent successfully');
 });
-export const getDashboardData = asyncHandler(async (req, res) => {
+exports.getDashboardData = (0, express_async_handler_1.default)(async (req, res) => {
     const userId = req.user._id;
-    const user = await User.findById(userId);
-    const wallet = await Wallet.findOne({ userId: userId });
-    const adverts = await Advert.find({ userId }).sort('-createdAt');
-    const tasks = await Task.find({
+    const user = await User_1.default.findById(userId);
+    const wallet = await Wallet_1.default.findOne({ userId: userId });
+    const adverts = await Advert_1.default.find({ userId }).sort('-createdAt');
+    const tasks = await Task_1.default.find({
         taskPerformerId: userId,
         status: 'Completed',
     }).sort('-createdAt');

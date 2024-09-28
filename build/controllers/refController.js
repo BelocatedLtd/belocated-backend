@@ -1,13 +1,19 @@
-import asyncHandler from 'express-async-handler';
-import RefChallenge from '../model/RefChallenge.js';
-import Referral from '../model/Referral.js';
-import User from '../model/User.js';
-import Wallet from '../model/Wallet.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getReferralDashboardData = exports.getAllUserReferrals = exports.convertRefBonusPts = exports.getAllRefChallenges = exports.getOngoingRefChallenge = void 0;
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const RefChallenge_1 = __importDefault(require("../model/RefChallenge"));
+const Referral_1 = __importDefault(require("../model/Referral"));
+const User_1 = __importDefault(require("../model/User"));
+const Wallet_1 = __importDefault(require("../model/Wallet"));
 //Get All Ongoing Challenge
 // http://localhost:6001/api/ref/challenge/
-export const getOngoingRefChallenge = asyncHandler(async (req, res) => {
+exports.getOngoingRefChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     //const ongoingChallenge = await RefChallenge.findOne({status: "Ongoing"})
-    const challenges = await RefChallenge.find();
+    const challenges = await RefChallenge_1.default.find();
     if (!challenges) {
         res.status(400).json({ message: 'No referral challenge found' });
     }
@@ -19,7 +25,7 @@ export const getOngoingRefChallenge = asyncHandler(async (req, res) => {
 });
 //Get All Referral Challenge
 // http://localhost:6001/api/tasks
-export const getAllRefChallenges = asyncHandler(async (req, res) => {
+exports.getAllRefChallenges = (0, express_async_handler_1.default)(async (req, res) => {
     const { _id } = req.user;
     if (req.user.accountType !== 'Admin' ||
         req.user.accountType !== 'Super Admin') {
@@ -29,7 +35,7 @@ export const getAllRefChallenges = asyncHandler(async (req, res) => {
     if (req.user.accountType === 'Admin' ||
         req.user.accountType === 'Super Admin') {
         let challenges;
-        challenges = await RefChallenge.find().sort('-createdAt');
+        challenges = await RefChallenge_1.default.find().sort('-createdAt');
         if (!challenges) {
             res.status(400).json({ message: 'Cannot find any referral challenge' });
             throw new Error('Cannot find any referral challen');
@@ -41,9 +47,17 @@ export const getAllRefChallenges = asyncHandler(async (req, res) => {
 });
 /*  CONVERT REF BONUS TO WALLLET FUNDS */
 // http://localhost:6001/api/transactions/all
-export const convertRefBonusPts = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
-    const wallet = await Wallet.findOne({ userId: req.user._id });
+exports.convertRefBonusPts = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await User_1.default.findById(req.user._id);
+    const wallet = await Wallet_1.default.findOne({ userId: req.user._id });
+    if (!user) {
+        res.status(400).json({ message: 'User not found' });
+        throw new Error('User not found');
+    }
+    if (!wallet) {
+        res.status(400).json({ message: 'Wallet not found' });
+        throw new Error('Wallet not found');
+    }
     //
     wallet.value += user.referralBonusPts;
     const updatedWallet = wallet.save();
@@ -57,20 +71,20 @@ export const convertRefBonusPts = asyncHandler(async (req, res) => {
     }
     res.status(200).json('Ref bonus points successfully converted');
 });
-export const getAllUserReferrals = asyncHandler(async (req, res) => {
+exports.getAllUserReferrals = (0, express_async_handler_1.default)(async (req, res) => {
     const userId = req.user._id;
     // Find the referrer
-    const referrer = await User.findById(userId);
+    const referrer = await User_1.default.findById(userId);
     if (!referrer) {
         res.status(404).json({ message: 'Referrer not found' });
         return;
     }
     // Get all referrals made by the referrer
-    const referrals = await Referral.find({ referrerId: userId });
+    const referrals = await Referral_1.default.find({ referrerId: userId });
     // Prepare the response data
     const referralData = await Promise.all(referrals.map(async (referral) => {
         const referredUser = referral.referredUserId
-            ? await User.findById(referral.referredUserId)
+            ? await User_1.default.findById(referral.referredUserId)
             : null;
         return {
             referralId: referral._id,
@@ -83,10 +97,10 @@ export const getAllUserReferrals = asyncHandler(async (req, res) => {
     }));
     res.status(200).json(referrals);
 });
-export const getReferralDashboardData = asyncHandler(async (req, res) => {
+exports.getReferralDashboardData = (0, express_async_handler_1.default)(async (req, res) => {
     const userId = req.user._id;
-    const user = await User.findById(userId);
-    const referrals = await Referral.find({ referrerId: userId });
+    const user = await User_1.default.findById(userId);
+    const referrals = await Referral_1.default.find({ referrerId: userId });
     if (!user) {
         res.status(404).json({ message: 'Referrer not found' });
         return;

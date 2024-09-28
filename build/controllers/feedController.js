@@ -1,8 +1,14 @@
-import asyncHandler from 'express-async-handler';
-import Feed from '../model/Feed.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.trashFeed = exports.getFeed = exports.saveActivity = void 0;
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const Feed_1 = __importDefault(require("../model/Feed"));
 // Save new Feed to DB
-export const saveActivity = asyncHandler(async (data) => {
-    const newActivity = await Feed.create({
+const saveActivity = async (data) => {
+    const newActivity = await Feed_1.default.create({
         userId: data.userId,
         action: data.action,
     });
@@ -12,9 +18,10 @@ export const saveActivity = asyncHandler(async (data) => {
     if (newActivity) {
         console.log('New activity saved!');
     }
-});
-export const getFeed = asyncHandler(async (req, res) => {
-    const activityFeed = await Feed.find().sort('-createdAt');
+};
+exports.saveActivity = saveActivity;
+exports.getFeed = (0, express_async_handler_1.default)(async (req, res) => {
+    const activityFeed = await Feed_1.default.find().sort('-createdAt');
     if (!activityFeed) {
         res.status(400).json('failed to fetch activities');
         throw new Error('failed to fetch activities');
@@ -23,8 +30,8 @@ export const getFeed = asyncHandler(async (req, res) => {
         res.status(200).json(activityFeed);
     }
 });
-export const trashFeed = asyncHandler(async (req, res) => {
-    const activityFeed = await Feed.deleteMany();
+exports.trashFeed = (0, express_async_handler_1.default)(async (req, res) => {
+    const activityFeed = await Feed_1.default.deleteMany();
     if (!activityFeed) {
         res.status(400).json('failed to trash activities');
         throw new Error('failed to trash activities');

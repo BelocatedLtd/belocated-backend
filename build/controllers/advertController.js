@@ -1,14 +1,19 @@
-import { v2 as cloudinary } from 'cloudinary';
-import asyncHandler from 'express-async-handler';
-import Advert from '../model/Advert.js';
-import Task from '../model/Task.js';
-import Transaction from '../model/Transaction.js';
-import User from '../model/User.js';
-import Wallet from '../model/Wallet.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAdvertById = exports.getTotalTasksByAllPlatforms = exports.getQualifiedAdverts = exports.deleteAdvert = exports.getAllAdvert = exports.getAdvert = exports.toggleAdvertFreeStatus = exports.initializeAdvert = exports.createAdvert = void 0;
+const cloudinary_1 = require("cloudinary");
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const Advert_1 = __importDefault(require("../model/Advert"));
+const Task_1 = __importDefault(require("../model/Task"));
+const Transaction_1 = __importDefault(require("../model/Transaction"));
+const User_1 = __importDefault(require("../model/User"));
+const Wallet_1 = __importDefault(require("../model/Wallet"));
 //Create New Advert
 // http://localhost:6001/api/advert/create
-export const createAdvert = asyncHandler(async (req, res) => {
-    console.log('🚀 ~ createAdvert ~ createAdvert:', createAdvert);
+exports.createAdvert = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, caption, adAmount, socialPageLink, paymentMethod, paymentRef, } = req.body;
     // Validation
     if (!platform ||
@@ -28,14 +33,14 @@ export const createAdvert = asyncHandler(async (req, res) => {
             .json({ message: 'Please fill in all the required fields' });
         throw new Error('Please fill in all fields');
     }
-    const admins = await User.find({ accountType: 'Admin' });
+    const admins = await User_1.default.find({ accountType: 'Admin' });
     if (!admins) {
         res.status(500).json({ message: 'No admin found' });
         throw new Error('No admin found');
     }
     try {
         // Getting user wallet
-        const wallet = await Wallet.findOne({ userId: req.user._id });
+        const wallet = await Wallet_1.default.findOne({ userId: req.user._id });
         if (!wallet) {
             res.status(400).json({ message: 'Wallet not found' });
             throw new Error('Wallet not found');
@@ -49,7 +54,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
         }
         //Cloudinary configuration
         // Return "https" URLs by setting secure: true
-        cloudinary.config({
+        cloudinary_1.v2.config({
             cloud_name: process.env.CLOUDINARY_NAME,
             api_key: process.env.CLOUDINARY_API_KEY,
             api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -58,8 +63,11 @@ export const createAdvert = asyncHandler(async (req, res) => {
         let uploadedImages = [];
         if (req.files) {
             try {
-                for (const file of req.files) {
-                    const result = await cloudinary.uploader.upload(file.path, {
+                const files = Array.isArray(req.files)
+                    ? req.files
+                    : Object.values(req.files).flat();
+                for (const file of files) {
+                    const result = await cloudinary_1.v2.uploader.upload(file.path, {
                         resource_type: 'auto',
                         folder: 'Advert Media Contents',
                     });
@@ -81,7 +89,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
         const selectedAdmin = admins[randomIndex];
         //After image has being uploaded to cloudinary - Now create advert
         //Create New Advert
-        const advert = await Advert.create({
+        const advert = await Advert_1.default.create({
             userId,
             platform,
             service,
@@ -112,14 +120,14 @@ export const createAdvert = asyncHandler(async (req, res) => {
         if (wallet.value >= adAmount && advert) {
             // Update user wallet after payment made
             //Debit user main wallet
-            const updatedUserWallet = await Wallet.updateOne({ userId: req.user._id }, {
+            const updatedUserWallet = await Wallet_1.default.updateOne({ userId: req.user._id }, {
                 $inc: { value: -adAmount },
             }, {
                 new: true,
                 runValidators: true,
             });
             //Increase value of amount spent by user
-            const updateAmountSpent = await Wallet.updateOne({ userId: req.user._id }, {
+            const updateAmountSpent = await Wallet_1.default.updateOne({ userId: req.user._id }, {
                 $inc: { amountSpent: adAmount },
             }, {
                 new: true,
@@ -134,7 +142,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
             if (updatedUserWallet && updateAmountSpent) {
                 // Change Advert Status to Running && Create Transaction
                 //Change advert status
-                const updateAdStatus = await Advert.updateOne({ _id: advert._id }, {
+                const updateAdStatus = await Advert_1.default.updateOne({ _id: advert._id }, {
                     status: 'Running',
                 }, {
                     new: true,
@@ -149,7 +157,7 @@ export const createAdvert = asyncHandler(async (req, res) => {
                 //Create new transaction
                 if (updateAdStatus) {
                     //Create New Transaction
-                    const transaction = await Transaction.create({
+                    const transaction = await Transaction_1.default.create({
                         userId,
                         email: req.user.email,
                         date: Date.now(),
@@ -172,11 +180,11 @@ export const createAdvert = asyncHandler(async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error });
     }
 });
-export const initializeAdvert = asyncHandler(async (req, res) => {
-    console.log('🚀 ~ initializeAdvert ~ initializeAdvert:', initializeAdvert);
+exports.initializeAdvert = (0, express_async_handler_1.default)(async (req, res) => {
+    console.log('🚀 ~ initializeAdvert ~ initializeAdvert:', exports.initializeAdvert);
     try {
         const { userId, platform, service, adTitle, desiredROI, costPerTask, earnPerTask, gender, state, lga, caption, adAmount, socialPageLink, paymentRef, } = req.body;
         // Validation
@@ -196,14 +204,14 @@ export const initializeAdvert = asyncHandler(async (req, res) => {
                 .json({ message: 'Please fill in all the required fields' });
             throw new Error('Please fill in all fields');
         }
-        const existingAdvert = await Advert.findOne({ paymentRef });
+        const existingAdvert = await Advert_1.default.findOne({ paymentRef });
         if (existingAdvert) {
             res.status(400).json({
                 message: 'An advert with this payment reference already exists!',
             });
             return;
         }
-        const admins = await User.find({ accountType: 'Admin' });
+        const admins = await User_1.default.find({ accountType: 'Admin' });
         if (!admins) {
             res.status(500).json({ message: 'No admin found' });
             throw new Error('No admin found');
@@ -213,18 +221,18 @@ export const initializeAdvert = asyncHandler(async (req, res) => {
         const selectedAdmin = admins[randomIndex];
         console.log('🚀 ~ initializeAdvert ~ selectedAdmin:', selectedAdmin);
         //Cloudinary configuration
-        cloudinary.config({
+        cloudinary_1.v2.config({
             cloud_name: process.env.CLOUDINARY_NAME,
             api_key: process.env.CLOUDINARY_API_KEY,
             api_secret: process.env.CLOUDINARY_API_SECRET,
         });
-        //Upload screenshots to databse
+        // Upload screenshots to database
         let uploadedImages = [];
-        if (req.files.length > 0) {
-            console.log('🚀 ~ initializeAdvert ~ file:');
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            console.log('🚀 ~ initializeAdvert ~ files:', req.files);
             try {
                 for (const file of req.files) {
-                    const result = await cloudinary.uploader.upload(file.path, {
+                    const result = await cloudinary_1.v2.uploader.upload(file.path, {
                         resource_type: 'auto',
                         folder: 'Advert Media Contents',
                     });
@@ -241,7 +249,7 @@ export const initializeAdvert = asyncHandler(async (req, res) => {
             }
         }
         // Create New Advert
-        const advert = await Advert.create({
+        const advert = await Advert_1.default.create({
             userId,
             platform,
             service,
@@ -273,15 +281,15 @@ export const initializeAdvert = asyncHandler(async (req, res) => {
         res.status(200).json(advert);
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error });
     }
 });
 //Change Advert Free Status
 // http://localhost:6001/api/advert/create
-export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
+exports.toggleAdvertFreeStatus = (0, express_async_handler_1.default)(async (req, res) => {
     const { advertId } = req.body;
-    const advert = await Advert.findById(req.params.id);
-    const user = await User.findById(req.user._id);
+    const advert = await Advert_1.default.findById(req.params.id);
+    const user = await User_1.default.findById(req.user._id);
     if (req.user.accountType !== 'Admin' &&
         req.user.accountType !== 'Super Admin') {
         res.status(401).json({ message: 'Unauthorized User' });
@@ -314,11 +322,11 @@ export const toggleAdvertFreeStatus = asyncHandler(async (req, res) => {
 });
 //Get user Advert
 // http://localhost:6001/api/advert
-export const getAdvert = asyncHandler(async (req, res) => {
+exports.getAdvert = (0, express_async_handler_1.default)(async (req, res) => {
     //const { userId } = req.body
     const { _id } = req.user;
     try {
-        const adverts = await Advert.find({ userId: _id }).sort('-createdAt');
+        const adverts = await Advert_1.default.find({ userId: _id }).sort('-createdAt');
         if (!adverts) {
             res.status(400).json({ mesage: 'Cannot find any ad for this user' });
             throw new Error('Cannot find any ad for this user');
@@ -328,19 +336,19 @@ export const getAdvert = asyncHandler(async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error });
     }
 });
 // Get All Advert
 // http://localhost:6001/api/advert/all
-export const getAllAdvert = asyncHandler(async (req, res) => {
+exports.getAllAdvert = (0, express_async_handler_1.default)(async (req, res) => {
     try {
         // Get page and limit from query parameters
-        const page = parseInt(req.query.page);
-        const limit = parseInt(req.query.limit);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
         let adverts;
         if (!page && !limit) {
-            adverts = await Advert.find()
+            adverts = await Advert_1.default.find()
                 .sort('-createdAt')
                 .populate('userId', 'fullname email');
         }
@@ -348,14 +356,14 @@ export const getAllAdvert = asyncHandler(async (req, res) => {
             const currentPage = page || 1;
             const currentLimit = limit || 10;
             const startIndex = (currentPage - 1) * currentLimit;
-            const totalAdverts = await Advert.countDocuments();
-            adverts = await Advert.find()
+            const totalAdverts = await Advert_1.default.countDocuments();
+            adverts = await Advert_1.default.find()
                 .sort('-createdAt')
                 .skip(startIndex)
                 .limit(currentLimit)
                 .populate('userId', 'fullname email');
             const totalPages = Math.ceil(totalAdverts / currentLimit);
-            return res.status(200).json({
+            res.status(200).json({
                 adverts,
                 page: currentPage,
                 totalPages,
@@ -365,9 +373,7 @@ export const getAllAdvert = asyncHandler(async (req, res) => {
             });
         }
         if (!adverts || adverts.length === 0) {
-            return res
-                .status(400)
-                .json({ message: 'No advert found in the database' });
+            throw new Error('No advert found in the database');
         }
         res.status(200).json({
             adverts,
@@ -375,11 +381,11 @@ export const getAllAdvert = asyncHandler(async (req, res) => {
         });
     }
     catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error });
     }
 });
 //>>> Delete Advert
-export const deleteAdvert = asyncHandler(async (req, res) => {
+exports.deleteAdvert = (0, express_async_handler_1.default)(async (req, res) => {
     const { advertId } = req.params;
     if (req.user.accountType !== 'Admin' &&
         req.user.accountType !== 'Super Admin') {
@@ -388,51 +394,50 @@ export const deleteAdvert = asyncHandler(async (req, res) => {
             .json({ message: 'User not authorized to perform this action' });
         throw new Error('User not authorized to perform this action');
     }
-    const advert = await Advert.findById({ _id: advertId });
+    const advert = await Advert_1.default.findById({ _id: advertId });
     if (!advert) {
         res
             .status(400)
             .json({ message: 'Advert does not exist or already deleted' });
         throw new Error('Advert does not exist or already deleted');
     }
-    const delAdvert = await Advert.findByIdAndDelete(advertId);
+    const delAdvert = await Advert_1.default.findByIdAndDelete(advertId);
     if (!delAdvert) {
         res.status(500).json({ message: 'Error Deleting Advert' });
         throw new Error('Error Deleting Advert');
     }
     res.status(200).json('Advert Deleted successfully');
 });
-export const getQualifiedAdverts = asyncHandler(async (req, res) => {
+exports.getQualifiedAdverts = (0, express_async_handler_1.default)(async (req, res) => {
     const { _id, location, community, gender } = req.user;
     const { platformName } = req.params;
     try {
         // Fetch all adverts for the specified platform, sorted by creation date in descending order
-        const adverts = await Advert.find({
+        const adverts = await Advert_1.default.find({
             platform: platformName,
             status: 'Running',
         }).sort('-createdAt');
         console.log('🚀 ~ getQualifiedAdverts ~ adverts:', adverts.length);
         if (!adverts.length) {
-            return res.status(400).json({ message: 'No adverts found' });
+            throw new Error('No adverts found');
         }
         // Retrieve tasks associated with the user
-        const userTasks = await Task.find({ taskPerformerId: _id }).select('advertId');
+        const userTasks = await Task_1.default.find({ taskPerformerId: _id }).select('advertId');
         console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length);
-        const userTaskAdvertIds = userTasks.map((task) => task.advertId.toString());
+        const userTaskAdvertIds = userTasks.map((task) => { var _a; return ((_a = task.advertId) === null || _a === void 0 ? void 0 : _a.toString()) || ''; });
         // Group adverts by service type
-        const advertsByServiceType = adverts.reduce((acc, advert) => {
+        const advertsByServiceType = {};
+        adverts.forEach((advert) => {
             const serviceType = advert.service || 'Undefined'; // Handle undefined serviceType
-            if (!acc[serviceType]) {
-                acc[serviceType] = { adverts: [], count: 0 };
+            if (!advertsByServiceType[serviceType]) {
+                advertsByServiceType[serviceType] = { adverts: [], count: 0 };
             }
-            acc[serviceType].adverts.push(advert);
-            acc[serviceType].count++;
-            return acc;
-        }, {});
+            advertsByServiceType[serviceType].adverts.push(advert);
+            advertsByServiceType[serviceType].count++;
+        });
         // Filter and select one advert per service type
         const selectedAdverts = [];
         for (const serviceType in advertsByServiceType) {
-            console.log('🚀 ~ advertsByServiceType ~ serviceType:', serviceType);
             const { adverts: serviceAdverts } = advertsByServiceType[serviceType];
             const filteredAdverts = serviceAdverts.filter((advert) => {
                 const locationMatch = advert.state === location || advert.state === 'All';
@@ -441,7 +446,6 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
                 const notAlreadyTasked = !userTaskAdvertIds.includes(advert._id.toString());
                 return (locationMatch && communityMatch && genderMatch && notAlreadyTasked);
             });
-            console.log('🚀 ~ filteredAdverts ~ filteredAdverts:', filteredAdverts.length);
             if (filteredAdverts.length > 0) {
                 const filteredAdvert = filteredAdverts[0];
                 selectedAdverts.push({
@@ -451,25 +455,65 @@ export const getQualifiedAdverts = asyncHandler(async (req, res) => {
             }
         }
         // Respond with the selected adverts including the task counts
-        return res.status(200).json(selectedAdverts);
+        res.status(200).json(selectedAdverts);
     }
     catch (error) {
         // Handle any errors that occur during the process
-        return res.status(500).json({ error: error.message });
+        res.status(500).json({ error });
+    }
+});
+exports.getTotalTasksByAllPlatforms = (0, express_async_handler_1.default)(async (req, res) => {
+    const { _id, location, community, gender } = req.user;
+    try {
+        const eligibleAdverts = await Advert_1.default.find({
+            status: 'Running',
+            $and: [
+                {
+                    $or: [{ state: location }, { state: 'All' }],
+                },
+                {
+                    $or: [{ lga: community }, { lga: 'All' }],
+                },
+                {
+                    $or: [{ gender: gender }, { gender: 'All' }],
+                },
+            ],
+        }).sort('-createdAt');
+        if (!eligibleAdverts.length) {
+            res.status(200).json(null);
+            return;
+        }
+        const userTasks = await Task_1.default.find({ taskPerformerId: _id }).select('advertId');
+        const userTaskAdvertIds = new Set(userTasks.map((task) => { var _a; return ((_a = task.advertId) === null || _a === void 0 ? void 0 : _a.toString()) || ''; }));
+        const platformTaskCounts = {};
+        eligibleAdverts.forEach((advert) => {
+            if (!userTaskAdvertIds.has(advert._id.toString())) {
+                const platformName = advert.platform;
+                if (!platformTaskCounts[platformName]) {
+                    platformTaskCounts[platformName] = { totalTasks: 0 };
+                }
+                platformTaskCounts[platformName].totalTasks++;
+            }
+        });
+        res.status(200).json(platformTaskCounts);
+    }
+    catch (error) {
+        res.status(500).json({ error: error || 'Internal Server Error' });
     }
 });
 // get advert by id
-export const getAdvertById = asyncHandler(async (req, res) => {
+exports.getAdvertById = (0, express_async_handler_1.default)(async (req, res) => {
     const { id } = req.params;
     try {
-        const advert = await Advert.findById({ _id: id }).populate('userId');
+        const advert = await Advert_1.default.findById({ _id: id }).populate('userId');
         if (!advert) {
-            return res.status(400).json({ message: 'Advert not found' });
+            res.status(400).json({ message: 'Advert not found' });
+            return;
         }
-        return res.status(200).json(advert);
+        res.status(200).json(advert);
     }
     catch (error) {
-        return res.status(500).json({ error: error.message });
+        res.status(500).json({ error });
     }
 });
 //# sourceMappingURL=advertController.js.map
