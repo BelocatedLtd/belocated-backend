@@ -196,6 +196,7 @@ export const createAdvert = asyncHandler(
 							runValidators: true,
 						},
 					)
+					console.log('🚀 ~ updateAdStatus:', updateAdStatus)
 
 					if (!updateAdStatus) {
 						res
@@ -214,10 +215,11 @@ export const createAdvert = asyncHandler(
 							chargedAmount: adAmount,
 							trxId: `ad_p${advert._id}`,
 							paymentRef,
-							trxType: 'Ad Payment',
+							trxType: 'advert_payment',
 							status: 'Approved Successful',
 							paymentMethod,
 						})
+						console.log('🚀 ~ advert:', { advert, transaction })
 
 						if (!transaction) {
 							res.status(400).json({ message: 'Failed to create transaction' })
