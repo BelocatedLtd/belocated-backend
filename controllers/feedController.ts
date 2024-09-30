@@ -22,16 +22,14 @@ export const saveActivity = async (data: {
 }
 
 export const getFeed = asyncHandler(async (req: Request, res: Response) => {
-	const activityFeed = await Feed.find().sort('-createdAt')
+	const activityFeed = await Feed.find().sort('-createdAt').limit(6)
 
-	if (!activityFeed) {
-		res.status(400).json('failed to fetch activities')
-		throw new Error('failed to fetch activities')
+	if (!activityFeed || activityFeed.length === 0) {
+		res.status(404).json({ message: 'No activities found' })
+		return
 	}
 
-	if (activityFeed) {
-		res.status(200).json(activityFeed)
-	}
+	res.status(200).json(activityFeed)
 })
 
 export const trashFeed = asyncHandler(async (req: Request, res: Response) => {

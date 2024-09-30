@@ -45,7 +45,7 @@ app.disable('x-powered-by')
 app.use(cookieParser())
 app.use(
 	cors({
-		origin: [process.env.FRONTEND_URL as string],
+		origin: [process.env.FRONTEND_URL as string, 'http://192.168.1.192:5173'],
 		credentials: true,
 	}),
 )

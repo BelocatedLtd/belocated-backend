@@ -627,9 +627,44 @@ export const getUserWithdrawals = asyncHandler(
 export const getUserTransactions = asyncHandler(
 	async (req: Request, res: Response) => {
 		try {
-			const transactions = await Transaction.find({
-				userId: req.user._id,
-			}).sort('-createdAt')
+			const page = parseInt(req.query.page as string) || 1
+			const limit = parseInt(req.query.limit as string) || 10
+
+			let transactions
+
+			if (!page && !limit) {
+				transactions = await Transaction.find({
+					userId: req.user._id,
+				}).sort('-createdAt')
+			} else {
+				const currentPage = page || 1
+				const currentLimit = limit || 10
+
+				const startIndex = (currentPage - 1) * currentLimit
+
+				const totalTransactions = await Transaction.countDocuments({
+					userId: req.user._id,
+				})
+
+				transactions = await Transaction.find({
+					userId: req.user._id,
+				})
+					.sort('-createdAt')
+					.skip(startIndex)
+					.limit(currentLimit)
+
+				const totalPages = Math.ceil(totalTransactions / currentLimit)
+
+				res.status(200).json({
+					transactions,
+					page: currentPage,
+					totalPages,
+					totalTransactions,
+					hasNextPage: currentPage < totalPages,
+					hasPreviousPage: currentPage > 1,
+				})
+			}
+
 			if (!transactions) {
 				res
 					.status(400)

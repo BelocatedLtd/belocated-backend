@@ -389,124 +389,128 @@ export const refCahlRegisterUser = asyncHandler(
 //>>>> Login User
 // http://localhost:6001/api/user/login
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
-	const { email, password } = req.body
+	try {
+		const { email, password } = req.body
 
-	//validate login request
-	if (!email || !password) {
-		throw new Error('Please add details to login')
-	}
-
-	//Check if user exist
-	const user = await User.findOne({ email })
-
-	//if user doesnt exist
-	if (!user) {
-		throw new Error('User not found, please Register')
-	}
-
-	//when user exist - check if password is correct
-	const passwordIsCorrect = await bcrypt.compare(password, user.password)
-
-	if (!passwordIsCorrect) {
-		throw new Error('Incorrect Password')
-	}
-
-	//if user doesnt exist
-	if (user.accountStatus === 'Banned') {
-		throw new Error(
-			'User account Banned, send an email to appeal@belocated.ng to appeal',
-		)
-	}
-
-	//Check if user email is verified
-	if (user.isEmailVerified === false) {
-		const { username, email, isEmailVerified } = user
-		const userData = {
-			username,
-			email,
-			isEmailVerified,
+		//validate login request
+		if (!email || !password) {
+			throw new Error('Please add details to login')
 		}
-		res.status(200).json(userData)
-		return
-	}
 
-	if (user.isEmailVerified === true) {
-		//   res.status(400).json({message: "Error trying to log into your account, please contact admin"})
-		//  throw new Error("Error trying to log into your account, please contact admin")
+		//Check if user exist
+		const user = await User.findOne({ email })
 
-		//Generate token
-		const token = generateToken(user._id)
+		//if user doesnt exist
+		if (!user) {
+			throw new Error('User not found, please Register')
+		}
 
-		//send HTTP-Only cookie
-		//  res.cookie("token", token,
-		//  {
-		//    httpOnly: true,
-		//    withCredentials: true,
-		//    expires: new Date(Date.now() + 1000 * 86400), // 1 day
-		//    sameSite: "none",
-		//    secure: true
-		//  });
+		//when user exist - check if password is correct
+		const passwordIsCorrect = await bcrypt.compare(password, user.password)
 
-		if (user && passwordIsCorrect && token) {
-			const walletId = await Wallet.find({ userId: user._id })
-			const {
-				_id,
-				fullname,
+		if (!passwordIsCorrect) {
+			throw new Error('Incorrect Password')
+		}
+
+		//if user doesnt exist
+		if (user.accountStatus === 'Banned') {
+			throw new Error(
+				'User account Banned, send an email to appeal@belocated.ng to appeal',
+			)
+		}
+
+		//Check if user email is verified
+		if (user.isEmailVerified === false) {
+			const { username, email, isEmailVerified } = user
+			const userData = {
 				username,
 				email,
-				phone,
-				location,
-				community,
-				religion,
-				gender,
-				accountType,
-				accountStatus,
-				bankName,
-				bankAccountNumber,
-				accountHolderName,
 				isEmailVerified,
-				taskCompleted,
-				taskOngoing,
-				adsCreated,
-				freeTaskCount,
-				referrals,
-				referrersId,
-				refChallengeReferrersId,
-				referralChallengePts,
-				referralBonusPts,
-				isKycDone,
-			} = user
-			res.status(200).json({
-				id: _id,
-				fullname,
-				username,
-				email,
-				phone,
-				location,
-				community,
-				religion,
-				gender,
-				accountType,
-				accountStatus,
-				bankName,
-				bankAccountNumber,
-				accountHolderName,
-				isEmailVerified,
-				taskCompleted,
-				taskOngoing,
-				adsCreated,
-				freeTaskCount,
-				referrals,
-				referrersId,
-				refChallengeReferrersId,
-				referralChallengePts,
-				referralBonusPts,
-				isKycDone,
-				token,
-			})
-		} else {
-			throw new Error('Invalid user email or Password')
+			}
+			res.status(200).json(userData)
+			return
 		}
+
+		if (user.isEmailVerified === true) {
+			//   res.status(400).json({message: "Error trying to log into your account, please contact admin"})
+			//  throw new Error("Error trying to log into your account, please contact admin")
+
+			//Generate token
+			const token = generateToken(user._id)
+
+			//send HTTP-Only cookie
+			//  res.cookie("token", token,
+			//  {
+			//    httpOnly: true,
+			//    withCredentials: true,
+			//    expires: new Date(Date.now() + 1000 * 86400), // 1 day
+			//    sameSite: "none",
+			//    secure: true
+			//  });
+
+			if (user && passwordIsCorrect && token) {
+				const walletId = await Wallet.find({ userId: user._id })
+				const {
+					_id,
+					fullname,
+					username,
+					email,
+					phone,
+					location,
+					community,
+					religion,
+					gender,
+					accountType,
+					accountStatus,
+					bankName,
+					bankAccountNumber,
+					accountHolderName,
+					isEmailVerified,
+					taskCompleted,
+					taskOngoing,
+					adsCreated,
+					freeTaskCount,
+					referrals,
+					referrersId,
+					refChallengeReferrersId,
+					referralChallengePts,
+					referralBonusPts,
+					isKycDone,
+				} = user
+				res.status(200).json({
+					id: _id,
+					fullname,
+					username,
+					email,
+					phone,
+					location,
+					community,
+					religion,
+					gender,
+					accountType,
+					accountStatus,
+					bankName,
+					bankAccountNumber,
+					accountHolderName,
+					isEmailVerified,
+					taskCompleted,
+					taskOngoing,
+					adsCreated,
+					freeTaskCount,
+					referrals,
+					referrersId,
+					refChallengeReferrersId,
+					referralChallengePts,
+					referralBonusPts,
+					isKycDone,
+					token,
+				})
+			} else {
+				throw new Error('Invalid user email or Password')
+			}
+		}
+	} catch (error) {
+		res.status(500).json({ error })
 	}
 })
 
