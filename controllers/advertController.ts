@@ -427,15 +427,42 @@ export const toggleAdvertFreeStatus = asyncHandler(
 export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 	//const { userId } = req.body
 	const { _id } = req.user
-	try {
-		const adverts = await Advert.find({ userId: _id }).sort('-createdAt')
-		if (!adverts) {
-			res.status(400).json({ mesage: 'Cannot find any ad for this user' })
-			throw new Error('Cannot find any ad for this user')
-		}
+	console.log('🚀 ~ getAdvert ~ _id:', _id)
 
-		if (adverts) {
-			res.status(200).json(adverts)
+	try {
+		// Get page and limit from query parameters
+		const page = parseInt(req.query.page as string) || 1
+		const limit = parseInt(req.query.limit as string) || 10
+
+		console.log('🚀 ~ getAdvert ~ page:', page, limit)
+
+		if (!page && !limit) {
+			const adverts = await Advert.find({ userId: _id })
+			res.status(200).json({
+				adverts,
+				totalAdverts: adverts.length,
+			})
+		} else {
+			const currentPage = page || 1
+			const currentLimit = limit || 10
+
+			const startIndex = (currentPage - 1) * currentLimit
+
+			const totalAdverts = await Advert.countDocuments({ userId: _id })
+
+			const adverts = await Advert.find({ userId: _id })
+				.skip(startIndex)
+				.limit(currentLimit)
+				.sort('-createdAt')
+
+			const totalPages = Math.ceil(totalAdverts / currentLimit)
+
+			res.status(200).json({
+				adverts,
+				totalAdverts,
+				totalPages,
+				currentPage: Number(page),
+			})
 		}
 	} catch (error) {
 		res.status(500).json({ error })
@@ -451,12 +478,15 @@ export const getAllAdvert = asyncHandler(
 			const page = parseInt(req.query.page as string) || 1
 			const limit = parseInt(req.query.limit as string) || 10
 
-			let adverts
-
 			if (!page && !limit) {
-				adverts = await Advert.find()
+				const adverts = await Advert.find()
 					.sort('-createdAt')
 					.populate('userId', 'fullname email')
+
+				res.status(200).json({
+					adverts,
+					totalAdverts: adverts.length,
+				})
 			} else {
 				const currentPage = page || 1
 				const currentLimit = limit || 10
@@ -465,7 +495,7 @@ export const getAllAdvert = asyncHandler(
 
 				const totalAdverts = await Advert.countDocuments()
 
-				adverts = await Advert.find()
+				const adverts = await Advert.find()
 					.sort('-createdAt')
 					.skip(startIndex)
 					.limit(currentLimit)
@@ -482,16 +512,8 @@ export const getAllAdvert = asyncHandler(
 					hasPreviousPage: currentPage > 1,
 				})
 			}
-
-			if (!adverts || adverts.length === 0) {
-				throw new Error('No advert found in the database')
-			}
-
-			res.status(200).json({
-				adverts,
-				totalAdverts: adverts.length, // or total number of adverts if paginated
-			})
 		} catch (error) {
+			console.log('🚀 ~ error:', error)
 			res.status(500).json({ error })
 		}
 	},
