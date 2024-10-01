@@ -152,12 +152,28 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	if (req.user.accountType === 'Admin') {
-		tasks = await Task.find().sort('-createdAt')
+		const { page = 1, limit = 10 } = req.query
+
+		const tasks = await Task.find()
+			.skip((Number(page) - 1) * Number(limit))
+			.limit(Number(limit))
+
+		const totalTasks = await Task.countDocuments({
+			taskPerformerId: req.user._id,
+		})
+		const totalPages = Math.ceil(totalTasks / Number(limit))
 
 		if (!tasks) {
 			res.status(400).json({ message: 'Cannot find any task' })
 			throw new Error('Cannot find any task')
 		}
+
+		res.status(200).json({
+			tasks,
+			totalTasks,
+			totalPages,
+			currentPage: Number(page),
+		})
 	}
 
 	if (tasks) {

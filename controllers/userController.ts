@@ -592,15 +592,34 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-	const users = await User.find({}, { password: 0 })
+	const page = req.query.page || 1
+	const limit = Number(req.query.limit) || 10
 
-	if (!users) {
+	const currentPage = page || 1
+	const currentLimit = limit || 10
+
+	const users = await User.find({}, { password: 0 })
+		.skip((Number(page) - 1) * limit)
+		.limit(limit)
+
+	const totalUsers = await User.countDocuments()
+
+	const totalPages = Math.ceil(totalUsers / currentLimit)
+
+	if (users.length === 0) {
 		res.status(400)
 		throw new Error('No User found in the database')
 	}
 
 	if (users) {
-		res.status(200).json(users)
+		res.status(200).json({
+			users,
+			page: currentPage,
+			totalPages,
+			totalUsers,
+			hasNextPage: Number(currentPage) < totalPages,
+			hasPreviousPage: Number(currentPage) > 1,
+		})
 	}
 })
 

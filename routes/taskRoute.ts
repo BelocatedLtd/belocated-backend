@@ -26,7 +26,14 @@ router.post('/create', protect, CreateNewTask) // User opts in to perform a task
 router.post('/submit', protect, upload.array('images'), submitTask) // User submits task after perfomring
 router.post('/approve', protect, approveTask) //Admin approves task and user gets paid
 router.post('/reject', protect, rejectTask) //Admin rejects task
-router.get('/', protect, getTasks) // Get all tasks from db
+router.get(
+	'/',
+	protect,
+	celebrate({
+		query: paginateSchema,
+	}),
+	getTasks,
+) // Get all tasks from db
 // pagination
 router.get(
 	'/task',

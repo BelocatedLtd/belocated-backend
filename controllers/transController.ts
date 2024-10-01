@@ -693,13 +693,35 @@ export const getTransactions = asyncHandler(
 			throw new Error('Not authorized')
 		}
 
-		const transactions = await Transaction.find().sort('-createdAt')
+		const page = parseInt(req.query.page as string) || 1
+		const limit = parseInt(req.query.limit as string) || 10
+
+		const currentPage = page || 1
+		const currentLimit = limit || 10
+
+		const startIndex = (currentPage - 1) * currentLimit
+
+		const transactions = await Transaction.find()
+			.sort('-createdAt')
+			.skip(startIndex)
+			.limit(currentLimit)
 
 		if (!transactions) {
 			res.status(400).json({ message: 'No transaction found in the database' })
 			throw new Error('No transaction found in the database')
 		}
 
-		res.status(200).json(transactions)
+		const totalTransactions = await Transaction.countDocuments()
+
+		const totalPages = Math.ceil(totalTransactions / currentLimit)
+
+		res.status(200).json({
+			transactions,
+			page: currentPage,
+			totalPages,
+			totalTransactions,
+			hasNextPage: currentPage < totalPages,
+			hasPreviousPage: currentPage > 1,
+		})
 	},
 )
