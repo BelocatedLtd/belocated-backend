@@ -86,14 +86,16 @@ export const getTask = asyncHandler(async (req: Request, res: Response) => {
 	try {
 		const { page = 1, limit = 10 } = req.query
 
+		console.log('🚀 ~ getTask ~ req.user._id:', req.user._id.toString())
 		const tasks = await Task.find({
-			taskPerformerId: req.user._id,
+			taskPerformerId: req.user._id.toString(),
 		})
+			.sort('-createdAt')
 			.skip((Number(page) - 1) * Number(limit))
 			.limit(Number(limit))
 
 		const totalTasks = await Task.countDocuments({
-			taskPerformerId: req.user._id,
+			taskPerformerId: req.user._id.toString(),
 		})
 		const totalPages = Math.ceil(totalTasks / Number(limit))
 

@@ -9,8 +9,15 @@ const TaskSchema = new mongoose.Schema(
 			required: true,
 		},
 		taskPerformerId: {
-			type: String,
+			type: Schema.Types.Mixed, // Allows both ObjectId and String
+			ref: 'User',
 			required: true,
+			validate: {
+				validator: function (v: mongoose.Types.ObjectId | string) {
+					return mongoose.Types.ObjectId.isValid(v) || typeof v === 'string'
+				},
+				message: 'taskPerformerId must be either an ObjectId or String',
+			},
 		},
 		title: {
 			type: String,

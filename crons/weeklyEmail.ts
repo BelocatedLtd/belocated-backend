@@ -96,7 +96,7 @@ const sendWeeklyEmail = async () => {
 			(wallet) => wallet?.userId == user?._id.toString(),
 		)?.totalEarning
 		const userTaskCount = tasks?.filter(
-			(task) => task?.taskPerformerId == user?._id.toString(),
+			(task) => task?.taskPerformerId == user?._id,
 		)
 
 		const message = `

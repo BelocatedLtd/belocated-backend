@@ -455,10 +455,31 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 				.limit(currentLimit)
 				.sort('-createdAt')
 
+			const advertsWithTasks = await Promise.all(
+				adverts.map(async (advert) => {
+					// include the perfomer details
+					const taskSubmitters = await Task.find({
+						advertId: advert._id,
+						status: 'Submitted',
+					}).populate('taskPerformerId', 'fullname username email')
+
+					const completedTasksCount = await Task.countDocuments({
+						advertId: advert._id,
+						status: { $in: ['Completed', 'Approved'] },
+					})
+
+					return {
+						...advert.toObject(),
+						taskSubmitters,
+						completedTasksCount,
+					}
+				}),
+			)
+
 			const totalPages = Math.ceil(totalAdverts / currentLimit)
 
 			res.status(200).json({
-				adverts,
+				adverts: advertsWithTasks,
 				totalAdverts,
 				totalPages,
 				currentPage: Number(page),
@@ -565,8 +586,6 @@ export const getQualifiedAdverts = asyncHandler(
 				platform: platformName,
 				status: 'Running',
 			}).sort('-createdAt')
-
-			console.log('🚀 ~ getQualifiedAdverts ~ adverts:', adverts.length)
 
 			if (!adverts.length) {
 				throw new Error('No adverts found')
