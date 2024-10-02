@@ -45,7 +45,11 @@ app.disable('x-powered-by')
 app.use(cookieParser())
 app.use(
 	cors({
-		origin: [process.env.FRONTEND_URL as string, 'http://192.168.1.192:5173'],
+		origin: [
+			process.env.FRONTEND_URL as string,
+			'http://192.168.1.192:5173',
+			'https://dolphin-app-esx2u.ondigitalocean.app',
+		],
 		credentials: true,
 	}),
 )
