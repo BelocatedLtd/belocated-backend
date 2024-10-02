@@ -48,7 +48,7 @@ app.use(
 		origin: [
 			process.env.FRONTEND_URL as string,
 			'http://192.168.1.192:5173',
-			'https://dolphin-app-esx2u.ondigitalocean.app',
+			'https://belocated-admin.vercel.app',
 		],
 		credentials: true,
 	}),
