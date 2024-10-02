@@ -49,6 +49,7 @@ app.use(
 			process.env.FRONTEND_URL as string,
 			'http://192.168.1.192:5173',
 			'https://belocated-admin.vercel.app',
+			'https://starfish-app-fdkwl.ondigitalocean.app',
 		],
 		credentials: true,
 	}),
