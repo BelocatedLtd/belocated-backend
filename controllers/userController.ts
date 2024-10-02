@@ -606,6 +606,26 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 	const totalPages = Math.ceil(totalUsers / currentLimit)
 
+	// for each user get Ads Created, task ongoing and task completed
+	const usersWithStats = await Promise.all(
+		users.map(async (user) => {
+			const adsCreated = await Advert.countDocuments({ userId: user._id })
+			const taskOngoing = await Task.countDocuments({
+				taskPerformerId: user._id,
+				status: {
+					$nin: ['Approved', 'Completed'],
+				},
+			})
+			const taskCompleted = await Task.countDocuments({
+				taskPerformerId: user._id,
+				status: {
+					$in: ['Completed', 'Approved'],
+				},
+			})
+			return { ...user.toObject(), adsCreated, taskOngoing, taskCompleted }
+		}),
+	)
+
 	if (users.length === 0) {
 		res.status(400)
 		throw new Error('No User found in the database')
@@ -613,7 +633,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 	if (users) {
 		res.status(200).json({
-			users,
+			users: usersWithStats,
 			page: currentPage,
 			totalPages,
 			totalUsers,
