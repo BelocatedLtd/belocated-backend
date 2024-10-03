@@ -47,9 +47,9 @@ app.use(
 	cors({
 		origin: [
 			process.env.FRONTEND_URL as string,
-			'http://192.168.1.192:5173',
+			'http://localhost:5173',
 			'https://belocated-admin.vercel.app',
-			'https://starfish-app-fdkwl.ondigitalocean.app',
+			'https://urchin-app-nbzqm.ondigitalocean.app',
 		],
 		credentials: true,
 	}),
