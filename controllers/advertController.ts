@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary'
 import { Request, Response } from 'express'
 import asyncHandler from 'express-async-handler'
+import mongoose from 'mongoose'
 import { IAdvert } from '../@types/types'
 import Advert from '../model/Advert'
 import Task from '../model/Task'
@@ -495,20 +496,35 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 export const getAllAdvert = asyncHandler(
 	async (req: Request, res: Response) => {
 		try {
-			// Get page and limit from query parameters
 			const page = parseInt(req.query.page as string) || 1
 			const limit = parseInt(req.query.limit as string) || 10
 
+			// If no pagination is requested
 			if (!page && !limit) {
 				const adverts = await Advert.find()
 					.sort('-createdAt')
 					.populate('userId', 'fullname email')
 
+				// For each advert, get the task count
+				const advertsWithTaskCount = await Promise.all(
+					adverts.map(async (advert) => {
+						const tasksCount = await Task.countDocuments({
+							advertId: new mongoose.Types.ObjectId(advert._id),
+						})
+						const currentTasks = advert?.tasks
+						if (currentTasks) {
+							advert.tasks = tasksCount
+						}
+						return advert
+					}),
+				)
+
 				res.status(200).json({
-					adverts,
-					totalAdverts: adverts.length,
+					adverts: advertsWithTaskCount,
+					totalAdverts: advertsWithTaskCount.length,
 				})
 			} else {
+				// Pagination logic
 				const currentPage = page || 1
 				const currentLimit = limit || 10
 
@@ -522,10 +538,24 @@ export const getAllAdvert = asyncHandler(
 					.limit(currentLimit)
 					.populate('userId', 'fullname email')
 
+				// For each advert, get the task count
+				const advertsWithTaskCount = await Promise.all(
+					adverts.map(async (advert) => {
+						const tasksCount = await Task.countDocuments({
+							advertId: new mongoose.Types.ObjectId(advert._id),
+						})
+						const currentTasks = advert?.tasks
+						if (currentTasks) {
+							advert.tasks = tasksCount
+						}
+						return advert
+					}),
+				)
+
 				const totalPages = Math.ceil(totalAdverts / currentLimit)
 
 				res.status(200).json({
-					adverts,
+					adverts: advertsWithTaskCount,
 					page: currentPage,
 					totalPages,
 					totalAdverts,
@@ -712,8 +742,13 @@ export const getAdvertById = asyncHandler(
 		try {
 			const advert = await Advert.findById({ _id: id }).populate('userId')
 
-			const tasksCount = await Task.countDocuments({ advertId: id })
-			console.log('🚀 ~ tasksCount:', tasksCount)
+			const tasksCount = await Task.countDocuments({
+				advertId: new mongoose.Types.ObjectId(id),
+			})
+			const currentTasks = advert?.tasks
+			if (currentTasks) {
+				advert.tasks = tasksCount
+			}
 
 			if (!advert) {
 				res.status(400).json({ message: 'Advert not found' })

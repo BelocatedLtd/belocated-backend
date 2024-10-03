@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary'
 import { Request, Response } from 'express'
 import asyncHandler from 'express-async-handler'
+import mongoose from 'mongoose'
 import Advert from '../model/Advert'
 import Task from '../model/Task'
 import User from '../model/User'
@@ -243,26 +244,32 @@ export const getTasksByAdvertId = asyncHandler(
 		const { advertId } = req.params
 
 		const { page = 1, limit = 10, status = 'All' } = req.query
+		const advertObjectId = new mongoose.Types.ObjectId(advertId)
+
 		let tasks
 		if (status === 'All') {
-			tasks = await Task.find({ advertId: advertId })
+			tasks = await Task.find({
+				advertId: advertObjectId,
+			})
 				.skip((Number(page) - 1) * Number(limit))
 				.limit(Number(limit))
 				.sort('-createdAt')
 				.populate('advertiserId')
 				.populate('taskPerformerId')
-				.populate('advertId')
 		} else {
-			tasks = await Task.find({ advertId: advertId, status })
+			tasks = await Task.find({
+				advertId: advertObjectId,
+				status,
+			})
 				.skip((Number(page) - 1) * Number(limit))
 				.limit(Number(limit))
 				.sort('-createdAt')
 				.populate('advertiserId')
 				.populate('taskPerformerId')
-				.populate('advertId')
 		}
 
-		const totalTasks = await Task.countDocuments({ advertId: advertId })
+		const totalTasks = await Task.countDocuments({ advertId: advertObjectId })
+		console.log('🚀 ~ totalTasks:', totalTasks)
 		const totalPages = Math.ceil(totalTasks / Number(limit))
 
 		if (!tasks || tasks.length === 0) {
