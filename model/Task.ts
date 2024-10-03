@@ -3,13 +3,20 @@ const Schema = mongoose.Schema
 
 const TaskSchema = new mongoose.Schema(
 	{
-		advertId: { type: Schema.Types.ObjectId, ref: 'Advert' },
-		advertiserId: {
-			type: String,
+		// advertId: { type: Schema.Types.ObjectId, ref: 'Advert' },
+		advertId: {
+			type: Schema.Types.Mixed,
+			ref: 'Advert',
 			required: true,
+			validate: {
+				validator: function (v: mongoose.Types.ObjectId | string) {
+					return mongoose.Types.ObjectId.isValid(v) || typeof v === 'string'
+				},
+				message: 'advertId must be either an ObjectId or String',
+			},
 		},
 		taskPerformerId: {
-			type: Schema.Types.Mixed, // Allows both ObjectId and String
+			type: Schema.Types.Mixed,
 			ref: 'User',
 			required: true,
 			validate: {
@@ -17,6 +24,17 @@ const TaskSchema = new mongoose.Schema(
 					return mongoose.Types.ObjectId.isValid(v) || typeof v === 'string'
 				},
 				message: 'taskPerformerId must be either an ObjectId or String',
+			},
+		},
+		advertiserId: {
+			type: Schema.Types.Mixed,
+			ref: 'User',
+			required: true,
+			validate: {
+				validator: function (v: mongoose.Types.ObjectId | string) {
+					return mongoose.Types.ObjectId.isValid(v) || typeof v === 'string'
+				},
+				message: 'advertiserId must be either an ObjectId or String',
 			},
 		},
 		title: {

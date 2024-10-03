@@ -160,10 +160,16 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
 			tasks = await Task.find()
 				.skip((Number(page) - 1) * Number(limit))
 				.limit(Number(limit))
+				.populate('taskPerformerId')
+				.populate('advertiserId')
+				.populate('advertId')
 		} else {
 			tasks = await Task.find({ status })
 				.skip((Number(page) - 1) * Number(limit))
 				.limit(Number(limit))
+				.populate('advertiserId')
+				.populate('taskPerformerId')
+				.populate('advertId')
 		}
 
 		const totalTasks = await Task.countDocuments(
