@@ -592,55 +592,58 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-	const page = req.query.page || 1
+	const page = Number(req.query.page) || 1
 	const limit = Number(req.query.limit) || 10
+	const search = (req.query.search as string) || ''
+	console.log('🚀 ~ getUsers ~ search:', search)
+	const searchRegex = new RegExp(search, 'i')
 
-	const currentPage = page || 1
-	const currentLimit = limit || 10
+	const currentPage = page
 
-	const users = await User.find({}, { password: 0 })
-		.skip((Number(page) - 1) * limit)
+	const queryFilter = {
+		$or: [
+			{ username: { $regex: searchRegex } },
+			{ email: { $regex: searchRegex } },
+			{ fullname: { $regex: searchRegex } },
+		],
+	}
+
+	const users = await User.find(queryFilter, { password: 0 })
+		.skip((page - 1) * limit)
 		.limit(limit)
 
-	const totalUsers = await User.countDocuments()
+	const totalUsers = await User.countDocuments(queryFilter)
 
-	const totalPages = Math.ceil(totalUsers / currentLimit)
+	const totalPages = Math.ceil(totalUsers / limit)
 
-	// for each user get Ads Created, task ongoing and task completed
 	const usersWithStats = await Promise.all(
 		users.map(async (user) => {
 			const adsCreated = await Advert.countDocuments({ userId: user._id })
 			const taskOngoing = await Task.countDocuments({
 				taskPerformerId: user._id,
-				status: {
-					$nin: ['Approved', 'Completed'],
-				},
+				status: { $nin: ['Approved', 'Completed'] },
 			})
 			const taskCompleted = await Task.countDocuments({
 				taskPerformerId: user._id,
-				status: {
-					$in: ['Completed', 'Approved'],
-				},
+				status: { $in: ['Completed', 'Approved'] },
 			})
 			return { ...user.toObject(), adsCreated, taskOngoing, taskCompleted }
 		}),
 	)
 
 	if (users.length === 0) {
-		res.status(400)
-		throw new Error('No User found in the database')
+		res.status(404).json({ message: 'No users found' })
+		throw new Error('No users found in the database')
 	}
 
-	if (users) {
-		res.status(200).json({
-			users: usersWithStats,
-			page: currentPage,
-			totalPages,
-			totalUsers,
-			hasNextPage: Number(currentPage) < totalPages,
-			hasPreviousPage: Number(currentPage) > 1,
-		})
-	}
+	res.status(200).json({
+		users: usersWithStats,
+		page: currentPage,
+		totalPages,
+		totalUsers,
+		hasNextPage: currentPage < totalPages,
+		hasPreviousPage: currentPage > 1,
+	})
 })
 
 //>>>>  LOGOUT USERS
