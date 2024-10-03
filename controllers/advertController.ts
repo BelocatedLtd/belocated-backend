@@ -711,6 +711,10 @@ export const getAdvertById = asyncHandler(
 		const { id } = req.params
 		try {
 			const advert = await Advert.findById({ _id: id }).populate('userId')
+
+			const tasksCount = await Task.countDocuments({ advertId: id })
+			console.log('🚀 ~ tasksCount:', tasksCount)
+
 			if (!advert) {
 				res.status(400).json({ message: 'Advert not found' })
 				return

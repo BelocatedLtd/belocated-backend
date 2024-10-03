@@ -8,6 +8,7 @@ import {
 	getTask,
 	getTaskById,
 	getTasks,
+	getTasksByAdvertId,
 	getTasksByUserId,
 	rejectTask,
 	submitTask,
@@ -40,6 +41,15 @@ router.get(
 		query: paginateSchema,
 	}),
 	getTasksByUserId,
+)
+
+router.get(
+	'/advert/:advertId',
+	protect,
+	celebrate({
+		query: paginateSchema,
+	}),
+	getTasksByAdvertId,
 )
 
 // pagination

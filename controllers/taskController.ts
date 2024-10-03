@@ -238,6 +238,47 @@ export const getTasksByUserId = asyncHandler(
 	},
 )
 
+export const getTasksByAdvertId = asyncHandler(
+	async (req: Request, res: Response) => {
+		const { advertId } = req.params
+
+		const { page = 1, limit = 10, status = 'All' } = req.query
+		let tasks
+		if (status === 'All') {
+			tasks = await Task.find({ advertId: advertId })
+				.skip((Number(page) - 1) * Number(limit))
+				.limit(Number(limit))
+				.sort('-createdAt')
+				.populate('advertiserId')
+				.populate('taskPerformerId')
+				.populate('advertId')
+		} else {
+			tasks = await Task.find({ advertId: advertId, status })
+				.skip((Number(page) - 1) * Number(limit))
+				.limit(Number(limit))
+				.sort('-createdAt')
+				.populate('advertiserId')
+				.populate('taskPerformerId')
+				.populate('advertId')
+		}
+
+		const totalTasks = await Task.countDocuments({ advertId: advertId })
+		const totalPages = Math.ceil(totalTasks / Number(limit))
+
+		if (!tasks || tasks.length === 0) {
+			res.status(400).json({ message: 'Cannot find any task' })
+			return
+		}
+
+		res.status(200).json({
+			tasks,
+			totalTasks,
+			totalPages,
+			currentPage: Number(page),
+		})
+	},
+)
+
 // Submit Task
 // http://localhost:6001/api/tasks/submit
 export const submitTask = asyncHandler(async (req: Request, res: Response) => {
