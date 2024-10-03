@@ -146,28 +146,34 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
 //Get user Tasks
 // http://localhost:6001/api/tasks
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-	const { _id } = req.user
-
+	const { _id } = req.user as { _id: string }
 	let tasks
+
 	if (req.user.accountType !== 'Admin') {
 		tasks = await Task.find({ taskPerformerId: _id }).sort('-createdAt')
 	}
 
 	if (req.user.accountType === 'Admin') {
-		const { page = 1, limit = 10 } = req.query
+		const { page = 1, limit = 10, status = 'All' } = req.query
 
-		const tasks = await Task.find()
-			.skip((Number(page) - 1) * Number(limit))
-			.limit(Number(limit))
+		if (status === 'All') {
+			tasks = await Task.find()
+				.skip((Number(page) - 1) * Number(limit))
+				.limit(Number(limit))
+		} else {
+			tasks = await Task.find({ status })
+				.skip((Number(page) - 1) * Number(limit))
+				.limit(Number(limit))
+		}
 
-		const totalTasks = await Task.countDocuments({
-			taskPerformerId: req.user._id,
-		})
+		const totalTasks = await Task.countDocuments(
+			status === 'All' ? {} : { status },
+		)
 		const totalPages = Math.ceil(totalTasks / Number(limit))
 
-		if (!tasks) {
+		if (!tasks || tasks.length === 0) {
 			res.status(400).json({ message: 'Cannot find any task' })
-			throw new Error('Cannot find any task')
+			return
 		}
 
 		res.status(200).json({
@@ -176,10 +182,12 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
 			totalPages,
 			currentPage: Number(page),
 		})
+		return
 	}
 
 	if (tasks) {
 		res.status(200).json(tasks)
+		return
 	}
 })
 
