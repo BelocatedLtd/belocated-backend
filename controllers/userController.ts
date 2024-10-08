@@ -382,11 +382,12 @@ export const refCahlRegisterUser = asyncHandler(
 			if (!user && !wallet) {
 				throw new Error('Registeration failed')
 			}
-		} catch (error) {
-			res.status(500).json({ error })
-		}
-	},
-)
+		} catch (error: any) {
+		console.error('Error occurred:', error); // Log the actual error for debugging
+		res.status(500).json({ message: error.message || 'Internal Server Error' });
+	  }
+})
+
 
 //>>>> Login User
 // http://localhost:6001/api/user/login
@@ -511,10 +512,12 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 				throw new Error('Invalid user email or Password')
 			}
 		}
-	} catch (error) {
-		res.status(500).json({ error })
-	}
+	} catch (error: any) {
+		console.error('Error occurred:', error); // Log the actual error for debugging
+		res.status(500).json({ message: error.message || 'Internal Server Error' });
+	  }
 })
+
 
 //>>>> GET User
 // http://localhost:6001/api/user/:id
@@ -586,9 +589,10 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 				isKycDone,
 			})
 		}
-	} catch (error) {
-		res.status(500).json({ error })
-	}
+	} catch (error: any) {
+		console.error('Error occurred:', error); // Log the actual error for debugging
+		res.status(500).json({ message: error.message || 'Internal Server Error' });
+	  }
 })
 
 //>>>>  GET ALL USERS
