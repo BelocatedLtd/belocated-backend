@@ -46,7 +46,7 @@ dotenv.config()
 app.use(express.json())
 
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: 'belocated.ng',
     credentials: true, // This allows credentials (cookies) to be sent with the request
   };
   
