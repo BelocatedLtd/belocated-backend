@@ -14,8 +14,9 @@ import Wallet from '../model/Wallet'
 import sendEMail from '../utils/sendEmail'
 import sendEmail from '../utils/sendEmailApi'
 
+const JWT_SECRET ='@@belocated2731223389@@';
 const generateToken = (id: Types.ObjectId) => {
-	const secret = process.env.JWT_SECRET
+	const secret ='@@belocated2731223389@@';
 	if (!secret) {
 		throw new Error('JWT_SECRET is not defined')
 	}
@@ -261,11 +262,11 @@ export const refRegisterUser = asyncHandler(
 			if (!user && !wallet) {
 				throw new Error('Registeration failed')
 			}
-		} catch (error) {
-			res.status(500).json({ error })
-		}
-	},
-)
+		} catch (error: any) {
+		console.error('Error occurred:', error); // Log the actual error for debugging
+		res.status(500).json({ message: error.message || 'Internal Server Error' });
+	  }
+})
 
 
 //>>>> Register User For Ref Challenge
