@@ -35,32 +35,33 @@ const io = new Server(server, {
 	//     credentials: true
 	// },
 	// allowEIO3: true,
-})
+	// cors: {
+	// 	origin: 'http://localhost:5173', 
+	// 	credentials: true, 
+	// },
+	// allowEIO3: true,
+});
 
 dotenv.config()
 app.use(express.json())
 
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true, // This allows credentials (cookies) to be sent with the request
+  };
+  
+  app.use(cors(corsOptions));
 app.use(morgan('common'))
 app.disable('x-powered-by')
 app.use(cookieParser())
-app.use(
-	cors({
-		origin: [
-			process.env.FRONTEND_URL as string,
-			'http://localhost:5173',
-			'https://belocated-admin.vercel.app',
-			'https://urchin-app-nbzqm.ondigitalocean.app',
-		],
-		credentials: true,
-	}),
-)
+
 
 app.use(bodyParser.json({ limit: '30mb' }))
 
 app.use(bodyParser.urlencoded({ limit: '30mb', extended: true }))
 
-app.use(helmet())
-app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }))
+//app.use(helmet())
+//app.use(helmet.crossOriginResourcePolicy({ policy: 'same-origin' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 //Error middleware
@@ -124,3 +125,10 @@ mongoose
 		)
 	})
 	.catch((error) => console.log(`${error} did not connect`))
+
+
+
+
+
+// 'https://belocated-admin.vercel.app',
+			// 'https://urchin-app-nbzqm.ondigitalocean.app',
