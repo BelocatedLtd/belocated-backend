@@ -741,7 +741,7 @@ export const remainingTask = asyncHandler(async (req: Request, res: Response) =>
 
     try {
         // Fetch the total tasks from DB
-        const totalTasks = await Task.countDocuments({});
+        const totalTasks = await Task.countDocuments({userId});
 
         // Fetch the number of tasks the user has completed (status = 'Approved')
         const completedTasks = await Task.countDocuments({
