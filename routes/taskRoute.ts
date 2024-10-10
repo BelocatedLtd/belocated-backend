@@ -12,6 +12,7 @@ import {
 	getTasksByUserId,
 	rejectTask,
 	submitTask,
+	remainingTask,
 } from '../controllers/taskController'
 import { protect } from '../middleware/authMiddleware'
 import { paginateSchema } from '../validate'
@@ -62,7 +63,7 @@ router.get(
 	getTask,
 )
 router.get('/:id', protect, getTaskById)
-
+router.get('/remaining/:userId', protect, remainingTask);
 router.delete('/delete/:taskId', protect, deleteTask)
 
 export default router
