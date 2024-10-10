@@ -735,4 +735,27 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	res.status(200).json('Task Deleted successfully')
-})
+});
+export const remainingTask = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.params;
+
+    try {
+        // Fetch the total tasks from DB
+        const totalTasks = await Task.countDocuments({});
+
+        // Fetch the number of tasks the user has completed (status = 'Approved')
+        const completedTasks = await Task.countDocuments({
+            taskPerformerId: userId,
+            status: 'Approved',
+        });
+
+        // Return the remaining task count
+        res.json({
+            totalTasks,
+            completedTasks,
+            remainingTasks: totalTasks - completedTasks,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching tasks' });
+    }
+});
