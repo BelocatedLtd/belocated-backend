@@ -16,7 +16,7 @@ const sendEmail = async (
 		// Send the email
 		const result = await client.sendMail({
 			from: {
-				address: 'noreply@belocated.ng',
+				address: 'noreply@www.belocated.ng',
 				name: 'Belocated',
 			},
 			to: [
