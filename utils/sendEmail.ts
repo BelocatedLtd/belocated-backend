@@ -47,7 +47,7 @@ var transport = nodemailer.createTransport({
 
 const sendEMail = async (subject: string, message: string, send_to: string, reply_to: string) => {
 	var mailOptions = {
-		from:'"Belocated" <cs@www.belocated.ng>',
+		from:'"Belocated" <cs@belocated.ng>',
 		to: send_to,
 		subject: subject,
 		html: message,
