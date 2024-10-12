@@ -735,16 +735,16 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	res.status(200).json('Task Deleted successfully')
-});
-export const remainingTask = asyncHandler(async (req: Request, res: Response) => {
+})
+export const remainingApprovedTasks = asyncHandler(async (req: Request, res: Response) => {
     const { userId } = req.params;
 
     try {
         // Fetch the total tasks from DB
-        const totalTasks = await Task.countDocuments({userId});
+        const totalTasks = await Task.countDocuments({});
 
         // Fetch the number of tasks the user has completed (status = 'Approved')
-        const completedTasks = await Task.countDocuments({
+        const approvedTasks = await Task.countDocuments({
             taskPerformerId: userId,
             status: 'Approved',
         });
@@ -752,10 +752,36 @@ export const remainingTask = asyncHandler(async (req: Request, res: Response) =>
         // Return the remaining task count
         res.json({
             totalTasks,
-            completedTasks,
-            remainingTasks: totalTasks - completedTasks,
+            approvedTasks,
+            remainingTaskstoApprove: totalTasks - approvedTasks,
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tasks' });
     }
 });
+
+export const remainingCompletedTask = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.params;
+
+    try {
+        // Fetch the total tasks from DB
+        const totalTasks = await Task.countDocuments({});
+
+        // Fetch the number of tasks the user has completed (status = 'Approved')
+        const completedTasks = await Task.countDocuments({
+            taskPerformerId: userId,
+            status: 'Completed',
+        });
+
+        // Return the remaining task count
+        res.json({
+           totalTasks,
+           completedTasks,
+           remainingTaskToComplete: totalTasks - completedTasks,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching tasks' });
+    }
+});
+
+  
