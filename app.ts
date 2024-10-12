@@ -74,6 +74,7 @@ app.use('/api/transactions', transactionRoute)
 app.use('/api/activities', feedRoute)
 app.use('/api/ref', refRoute)
 app.use('/api/admin', adminRoute)
+app.use('/api/task', taskRoute)
 app.use(errors())
 
 //Cron job schedule for weekly email
