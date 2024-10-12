@@ -748,12 +748,18 @@ export const remainingApprovedTasks = asyncHandler(async (req: Request, res: Res
             taskPerformerId: userId,
             status: 'Approved',
         });
+	    
+	const completedTasks = await Task.countDocuments({
+            taskPerformerId: userId,
+            status:'Awaiting Submission',
+        });
+	    
 
         // Return the remaining task count
         res.json({
             totalTasks,
             approvedTasks,
-            remainingTaskstoApprove: totalTasks - approvedTasks,
+             remainingTaskstoApprove: completedTasks - approvedTasks,
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tasks' });
@@ -770,7 +776,7 @@ export const remainingCompletedTask = asyncHandler(async (req: Request, res: Res
         // Fetch the number of tasks the user has completed (status = 'Approved')
         const completedTasks = await Task.countDocuments({
             taskPerformerId: userId,
-            status: 'Completed',
+             status:'Awaiting Submission',
         });
 
         // Return the remaining task count
