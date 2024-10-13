@@ -38,7 +38,7 @@ router.get('/all', getAllAdvert)
 
 router.get('/qualified/:platformName', protect, getQualifiedAdverts)
 router.get('/qualified', protect, getTotalTasksByAllPlatforms)
-
+router.get('/submitTask', protect, submitTask)
 router.delete('/delete/:advertId', protect, deleteAdvert)
 
 router.get('/:id', protect, getAdvertById)
