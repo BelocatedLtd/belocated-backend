@@ -625,6 +625,7 @@ export const getQualifiedAdverts = asyncHandler(
 			const userTasks = await Task.find({ taskPerformerId: _id }).select(
 				'advertId',
 			)
+			const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
 			console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length)
 			const userTaskAdvertIds = userTasks.map(
 				(task) => task.advertId?.toString() || '',
@@ -658,9 +659,10 @@ export const getQualifiedAdverts = asyncHandler(
 					const notAlreadyTasked = !userTaskAdvertIds.includes(
 						advert._id.toString(),
 					)
+					const notAlreadyPerformed = !performedTaskIds.has(advert._id.toString());
 
 					return (
-						locationMatch && communityMatch && genderMatch && notAlreadyTasked
+						locationMatch && communityMatch && genderMatch && notAlreadyTasked && notAlreadyPerformed
 					)
 				})
 
@@ -682,58 +684,129 @@ export const getQualifiedAdverts = asyncHandler(
 	},
 )
 
+
+
+
+// Handle task submission and prevent duplicate tasks
+export const submitTask = asyncHandler (async (req: Request, res: Response) => {
+	const { advertId, performerId } = req.body;
+	// const { _id, location, community, gender } = req.user;
+  
+	try {
+	  // Check if the task has already been performed by the user
+	  const existingTask = await Task.findOne({ advertId, taskPerformerId: performerId });
+  
+	  if (existingTask) {
+		 res.status(400).json({ message: 'Task already performed. Please select another task.' });
+	  }
+  
+	} catch (error) {
+	  res.status(500).json({ error });
+	}
+  });
+
+
+
+// export const getTotalTasksByAllPlatforms = asyncHandler(
+// 	async (req: Request, res: Response) => {
+// 		const { _id, location, community, gender } = req.user
+
+// 		try {
+// 			const eligibleAdverts = await Advert.find({
+// 				status: 'Running',
+// 				$and: [
+// 					{
+// 						$or: [{ state: location }, { state: 'All' }],
+// 					},
+// 					{
+// 						$or: [{ lga: community }, { lga: 'All' }],
+// 					},
+// 					{
+// 						$or: [{ gender: gender }, { gender: 'All' }],
+// 					},
+// 				],
+// 			}).sort('-createdAt')
+
+// 			if (!eligibleAdverts.length) {
+// 				res.status(200).json(null)
+// 				return
+// 			}
+
+// 			const userTasks = await Task.find({ taskPerformerId: _id }).select(
+// 				'advertId',
+// 			)
+// 			const userTaskAdvertIds = new Set(
+// 				userTasks.map((task) => task.advertId?.toString() || ''),
+// 			)
+
+// 			const platformTaskCounts: Record<string, { totalTasks: number }> = {}
+
+// 			eligibleAdverts.forEach((advert) => {
+// 				if (!userTaskAdvertIds.has(advert._id.toString())) {
+// 					const platformName = advert.platform
+
+// 					if (!platformTaskCounts[platformName]) {
+// 						platformTaskCounts[platformName] = { totalTasks: 0 }
+// 					}
+
+// 					platformTaskCounts[platformName].totalTasks++
+// 				}
+// 			})
+
+// 			res.status(200).json(platformTaskCounts)
+// 		} catch (error) {
+// 			res.status(500).json({ error: error || 'Internal Server Error' })
+// 		}
+// 	},
+// )
+
+
 export const getTotalTasksByAllPlatforms = asyncHandler(
 	async (req: Request, res: Response) => {
-		const { _id, location, community, gender } = req.user
-
-		try {
-			const eligibleAdverts = await Advert.find({
-				status: 'Running',
-				$and: [
-					{
-						$or: [{ state: location }, { state: 'All' }],
-					},
-					{
-						$or: [{ lga: community }, { lga: 'All' }],
-					},
-					{
-						$or: [{ gender: gender }, { gender: 'All' }],
-					},
-				],
-			}).sort('-createdAt')
-
-			if (!eligibleAdverts.length) {
-				res.status(200).json(null)
-				return
-			}
-
-			const userTasks = await Task.find({ taskPerformerId: _id }).select(
-				'advertId',
-			)
-			const userTaskAdvertIds = new Set(
-				userTasks.map((task) => task.advertId?.toString() || ''),
-			)
-
-			const platformTaskCounts: Record<string, { totalTasks: number }> = {}
-
-			eligibleAdverts.forEach((advert) => {
-				if (!userTaskAdvertIds.has(advert._id.toString())) {
-					const platformName = advert.platform
-
-					if (!platformTaskCounts[platformName]) {
-						platformTaskCounts[platformName] = { totalTasks: 0 }
-					}
-
-					platformTaskCounts[platformName].totalTasks++
-				}
-			})
-
-			res.status(200).json(platformTaskCounts)
-		} catch (error) {
-			res.status(500).json({ error: error || 'Internal Server Error' })
+	  const { _id, location, community, gender } = req.user;
+  
+	  try {
+		const eligibleAdverts = await Advert.find({
+		  status: 'Running',
+		  $and: [
+			{ $or: [{ state: location }, { state: 'All' }] },
+			{ $or: [{ lga: community }, { lga: 'All' }] },
+			{ $or: [{ gender: gender }, { gender: 'All' }] },
+		  ],
+		}).sort('-createdAt');
+  
+		if (!eligibleAdverts.length) {
+		   res.status(200).json({});
 		}
-	},
-)
+  
+		// Get tasks already performed by the user
+		const userTasks = await Task.find({ taskPerformerId: _id }).select('advertId');
+		const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
+  
+		const platformTaskCounts: Record<string, { totalTasks: number; remainingTasks: number }> = {};
+  
+		eligibleAdverts.forEach(advert => {
+		  const platformName = advert.platform;
+		  const alreadyPerformed = performedTaskIds.has(advert._id.toString());
+  
+		  if (!platformTaskCounts[platformName]) {
+			platformTaskCounts[platformName] = { totalTasks: 0, remainingTasks: 0 };
+		  }
+  
+		  platformTaskCounts[platformName].totalTasks++;
+		  if (!alreadyPerformed) {
+			platformTaskCounts[platformName].remainingTasks++;
+		  }
+		});
+  
+		res.status(200).json(platformTaskCounts);
+	  } catch (error) {
+		res.status(500).json({ error });
+	  }
+	}
+  );
+
+
 
 // get advert by id
 export const getAdvertById = asyncHandler(
