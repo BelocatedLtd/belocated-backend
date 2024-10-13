@@ -11,6 +11,7 @@ import {
 	getTotalTasksByAllPlatforms,
 	initializeAdvert,
 	toggleAdvertFreeStatus,
+	submitTask,
 } from '../controllers/advertController'
 import { protect } from '../middleware/authMiddleware'
 import { paginateSchema } from '../validate'
