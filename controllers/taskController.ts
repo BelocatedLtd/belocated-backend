@@ -741,7 +741,9 @@ export const remainingApprovedTasks = asyncHandler(async (req: Request, res: Res
 
     try {
         // Fetch the total tasks from DB
-        const totalTasks = await Advert.countDocuments({});
+       	const totalTasks = await Advert.countDocuments({
+			status:'Running',
+		});
 console.log(totalTasks);
         // Fetch the number of tasks the user has completed (status = 'Approved')
         const approvedTasks = await Task.countDocuments({
@@ -771,7 +773,9 @@ export const remainingCompletedTask = asyncHandler(async (req: Request, res: Res
 
     try {
         // Fetch the total tasks from DB
-        const totalTasks = await Advert.countDocuments({});
+      	const totalTasks = await Advert.countDocuments({
+			status:'Running',
+		});
 console.log(totalTasks);
         // Fetch the number of tasks the user has completed (status = 'Approved')
         const completedTasks = await Task.countDocuments({
