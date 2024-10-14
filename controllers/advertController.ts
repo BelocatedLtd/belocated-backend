@@ -628,19 +628,24 @@ export const getQualifiedAdverts = asyncHandler(
 			console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length)
 
 				// Fetch completed task IDs by the user on the specified platform
-		const completedTasks = await Task.find({
-			taskPerformerId: _id,
-			platform:platformName,
-		  }).select('advertId'); // Select only the advertId field
-	
-		  // Extract completed task IDs into an array
-		  const completedTaskIds = completedTasks.map(task => task.advertId);
-	
-		  // Fetch total tasks for the specified platform that are not completed by the user
-		  const remainingTasks = await Task.countDocuments({
-			platform:platformName,
-			advertId: { $nin: completedTaskIds }, // Exclude completed tasks
-		  });
+		  // Check for submitted tasks in the Task collection
+				  const completedOrSubmittedTasks = await Task.find({
+					taskPerformerId: _id,
+					platform: platformName,
+					status: { $in: ['submitted', 'completed'] },
+				  }).select('advertId'); // Extract only advertId
+			  
+				  // Extract the advertIds of completed or submitted tasks
+				  const completedTaskIds = completedOrSubmittedTasks.map(task => task.advertId);
+			  
+				  // Fetch all adverts on this platform that are NOT completed/submitted by the user
+				  const availableAdverts = await Advert.find({
+					platform: platformName,
+					_id: { $nin: completedTaskIds }, // Exclude completed/submitted tasks
+				  }).select('_id'); // Select only the advert IDs
+			  
+				  // Calculate the number of remaining tasks
+				  const remainingTasksCount = availableAdverts.length;
 			
 			// Group adverts by service type
 			const advertsByServiceType: Record<
@@ -680,7 +685,7 @@ export const getQualifiedAdverts = asyncHandler(
 					const filteredAdvert = filteredAdverts[0]
 					selectedAdverts.push({
 						...filteredAdvert._doc,
-						availableTasks: remainingTasks, // Count only the filtered adverts
+						availableTasks: remainingTasksCount, // Count only the filtered adverts
 					})
 				}
 			}
