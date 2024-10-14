@@ -822,3 +822,24 @@ export const getRemainingTasksByPlatform = asyncHandler(
 	  }
 	}
   );
+	export const checkRemainingTask = asyncHandler(
+		async (req: Request, res: Response) => {
+	const { advertId, performerId } = req.params;
+  
+	try {
+	  const existingTask = await Task.findOne({
+		advertId: advertId,
+		taskPerformerId: performerId,
+		status: { $in: ['submitted', 'completed', 'approved'] }, // Checking relevant statuses
+	  });
+  
+	  if (existingTask) {
+		res.status(200).json({ exists: true }); // Task already exists
+	  } else {
+		res.status(200).json({ exists: false }); // Task does not exist
+	  }
+	} catch (error) {
+	  console.error('Error checking existing task:', error);
+	  res.status(500).json({ message: 'Server error' });
+	}
+  });
