@@ -794,49 +794,31 @@ console.log(totalTasks);
     }
 });
 
-
-// Controller to get remaining tasks per platform for a specific user
+// Controller to get remaining tasks for a specific user on a specific platform
 export const getRemainingTasksByPlatform = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { userId } = req.params;
-
-    try {
-      // Group tasks by platform and count the total tasks available per platform
-      const totalTasksByPlatform = await Task.aggregate([
-        { $group: { _id: "$platform", totalTasks: { $sum: 1 } } }
-      ]);
-
-      // Fetch tasks completed by the user (status = 'Approved')
-      const completedTasksByUser = await Task.aggregate([
-        { $match: { taskPerformerId: userId, status: 'Completed' } },
-        { $group: { _id: "$platform", completedTasks: { $sum: 1 } } }
-      ]);
-
-      // Map approved tasks for quick lookup by platform
-      const completedTasksMap: Record<string, number> = completedTasksByUser.reduce(
-        (acc, task) => {
-          acc[task._id] = task.completedTasks;
-          return acc;
-        },
-        {}
-      );
-
-      // Calculate remaining tasks per platform
-      const remainingTasks = totalTasksByPlatform.map((platform) => ({
-        platform: platform._id,
-        remainingTasks: Math.max(
-          platform.totalTasks - (completedTasksMap[platform._id] || 0),
-          0
-        ),
-      }));
-
-      res.status(200).json({ remainingTasks });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error fetching remaining tasks' });
-    }
-  }
-);
-
-
+	async (req: Request, res: Response) => {
+	  const { userId, platform } = req.params; // Extract userId and platform from request parameters
   
+	  try {
+		// Fetch completed task IDs by the user on the specified platform
+		const completedTasks = await Task.find({
+		  taskPerformerId: userId,
+		  platform,
+		}).select('advertId'); // Select only the advertId field
+  
+		// Extract completed task IDs into an array
+		const completedTaskIds = completedTasks.map(task => task.advertId);
+  
+		// Fetch total tasks for the specified platform that are not completed by the user
+		const remainingTasks = await Task.countDocuments({
+		  platform,
+		  advertId: { $nin: completedTaskIds }, // Exclude completed tasks
+		});
+  
+		res.status(200).json({ platform, remainingTasks });
+	  } catch (error) {
+		console.error(error);
+		res.status(500).json({ message: 'Error fetching remaining tasks' });
+	  }
+	}
+  );
