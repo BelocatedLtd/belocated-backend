@@ -641,6 +641,7 @@ export const getQualifiedAdverts = asyncHandler(
 				  // Fetch all adverts on this platform that are NOT completed/submitted by the user
 				  const availableAdverts = await Advert.find({
 					platform: platformName,
+					  status:'running', 
 					_id: { $nin: completedTaskIds }, // Exclude completed/submitted tasks
 				  }).select('_id'); // Select only the advert IDs
 			  
