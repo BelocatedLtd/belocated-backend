@@ -14,6 +14,7 @@ import {
 	submitTask,
 	remainingApprovedTasks,
 	remainingCompletedTask,
+	getRemainingTasksByPlatform,
 } from '../controllers/taskController'
 import { protect } from '../middleware/authMiddleware'
 import { paginateSchema } from '../validate'
