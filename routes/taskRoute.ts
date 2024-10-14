@@ -66,7 +66,7 @@ router.get(
 router.get('/:id', protect, getTaskById)
 router.get('/remaining/:userId', protect, remainingCompletedTask);
 router.get('/approved/:userId', protect, remainingApprovedTasks);
-
+router.get('/remaining-tasks/:userId', protect, getRemainingTasksByPlatform);
 router.delete('/delete/:taskId', protect, deleteTask)
 
 export default router
