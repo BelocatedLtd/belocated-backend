@@ -604,7 +604,6 @@ export const deleteAdvert = asyncHandler(
 		res.status(200).json('Advert Deleted successfully')
 	},
 )
-
 export const getQualifiedAdverts = asyncHandler(
 	async (req: Request, res: Response) => {
 		const { _id, location, community, gender } = req.user
@@ -627,10 +626,22 @@ export const getQualifiedAdverts = asyncHandler(
 			)
 			const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
 			console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length)
-			const userTaskAdvertIds = userTasks.map(
-				(task) => task.advertId?.toString() || '',
-			)
 
+				// Fetch completed task IDs by the user on the specified platform
+		const completedTasks = await Task.find({
+			taskPerformerId: _id,
+			platform:platformName,
+		  }).select('advertId'); // Select only the advertId field
+	
+		  // Extract completed task IDs into an array
+		  const completedTaskIds = completedTasks.map(task => task.advertId);
+	
+		  // Fetch total tasks for the specified platform that are not completed by the user
+		  const remainingTasks = await Task.countDocuments({
+			platform:platformName,
+			advertId: { $nin: completedTaskIds }, // Exclude completed tasks
+		  });
+			
 			// Group adverts by service type
 			const advertsByServiceType: Record<
 				string,
@@ -649,6 +660,7 @@ export const getQualifiedAdverts = asyncHandler(
 			const selectedAdverts = []
 			for (const serviceType in advertsByServiceType) {
 				const { adverts: serviceAdverts } = advertsByServiceType[serviceType]
+				
 				const filteredAdverts = serviceAdverts.filter((advert) => {
 					const locationMatch =
 						advert.state === location || advert.state === 'All'
@@ -656,13 +668,11 @@ export const getQualifiedAdverts = asyncHandler(
 						advert.lga === community || advert.lga === 'All'
 					const genderMatch =
 						advert.gender === gender || advert.gender === 'All'
-					const notAlreadyTasked = !userTaskAdvertIds.includes(
-						advert._id.toString(),
-					)
+					
 					const notAlreadyPerformed = !performedTaskIds.has(advert._id.toString());
 
 					return (
-						locationMatch && communityMatch && genderMatch && notAlreadyTasked && notAlreadyPerformed
+						locationMatch && communityMatch && genderMatch && notAlreadyPerformed
 					)
 				})
 
@@ -670,7 +680,7 @@ export const getQualifiedAdverts = asyncHandler(
 					const filteredAdvert = filteredAdverts[0]
 					selectedAdverts.push({
 						...filteredAdvert._doc,
-						availableTasks: filteredAdverts.length, // Count only the filtered adverts
+						availableTasks: remainingTasks, // Count only the filtered adverts
 					})
 				}
 			}
