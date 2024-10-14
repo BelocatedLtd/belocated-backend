@@ -1748,10 +1748,11 @@ export const getDashboardData = asyncHandler(
 
 		const adverts = await Advert.find({ userId }).sort('-createdAt')
 
-		const tasks = await Task.find({
-			taskPerformerId: userId,
-			status: 'Submitted',
-		}).sort('-createdAt')
+		const completedTasks = await Task.countDocuments({
+    taskPerformerId: userId,
+    status: 'Submitted',
+});
+
 
 		if (!user || !wallet) {
 			res.status(404).json({ message: 'User not found' })
@@ -1761,7 +1762,7 @@ export const getDashboardData = asyncHandler(
 		const totalEarnings = wallet.totalEarning
 		const myBalance = wallet.value
 		const advertsCreated = adverts.length
-		const tasksCompleted = tasks.length
+		const tasksCompleted = completedTasks
 
 		const dashboardData = {
 			totalEarnings: {
