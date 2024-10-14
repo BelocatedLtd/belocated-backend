@@ -1750,7 +1750,7 @@ export const getDashboardData = asyncHandler(
 
 		const tasks = await Task.find({
 			taskPerformerId: userId,
-			status: 'Completed',
+			status: 'Submitted',
 		}).sort('-createdAt')
 
 		if (!user || !wallet) {
