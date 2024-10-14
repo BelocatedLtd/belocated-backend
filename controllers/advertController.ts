@@ -632,7 +632,7 @@ export const getQualifiedAdverts = asyncHandler(
 				  const completedOrSubmittedTasks = await Task.find({
 					taskPerformerId: _id,
 					platform: platformName,
-					status: { $in: ['Submitted', 'Completed', 'Approved'] },
+					status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
 				  }).select('advertId'); // Extract only advertId
 			  
 				  // Extract the advertIds of completed or submitted tasks
