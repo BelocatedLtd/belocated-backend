@@ -794,4 +794,49 @@ console.log(totalTasks);
     }
 });
 
+
+// Controller to get remaining tasks per platform for a specific user
+export const getRemainingTasksByPlatform = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+
+    try {
+      // Group tasks by platform and count the total tasks available per platform
+      const totalTasksByPlatform = await Task.aggregate([
+        { $group: { _id: "$platform", totalTasks: { $sum: 1 } } }
+      ]);
+
+      // Fetch tasks completed by the user (status = 'Approved')
+      const completedTasksByUser = await Task.aggregate([
+        { $match: { taskPerformerId: userId, status: 'Completed' } },
+        { $group: { _id: "$platform", completedTasks: { $sum: 1 } } }
+      ]);
+
+      // Map approved tasks for quick lookup by platform
+      const completedTasksMap: Record<string, number> = completedTasksByUser.reduce(
+        (acc, task) => {
+          acc[task._id] = task.completedTasks;
+          return acc;
+        },
+        {}
+      );
+
+      // Calculate remaining tasks per platform
+      const remainingTasks = totalTasksByPlatform.map((platform) => ({
+        platform: platform._id,
+        remainingTasks: Math.max(
+          platform.totalTasks - (completedTasksMap[platform._id] || 0),
+          0
+        ),
+      }));
+
+      res.status(200).json({ remainingTasks });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching remaining tasks' });
+    }
+  }
+);
+
+
   
