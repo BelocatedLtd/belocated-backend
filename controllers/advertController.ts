@@ -614,6 +614,11 @@ export const getQualifiedAdverts = asyncHandler(
 			const adverts = await Advert.find({
 				platform: platformName,
 				status: 'Running',
+				$and: [
+					{ $or: [{ state: location }, { state: 'All' }] },
+					{ $or: [{ lga: community }, { lga: 'All' }] },
+					{ $or: [{ gender: gender }, { gender: 'All' }] },
+				  ],
 			}).sort('-createdAt')
 
 			if (!adverts.length) {
