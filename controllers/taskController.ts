@@ -737,12 +737,18 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
 	res.status(200).json('Task Deleted successfully')
 })
 export const remainingApprovedTasks = asyncHandler(async (req: Request, res: Response) => {
-    const { userId } = req.params;
+	const { _id, location, community, gender } = req.user
+        const { userId } = req.params;
 
     try {
         // Fetch the total tasks from DB
        	const totalTasks = await Advert.countDocuments({
 			status:'Running',
+		$and: [
+				{ $or: [{ state: location }, { state: 'All' }] },
+				{ $or: [{ lga: community }, { lga: 'All' }] },
+				{ $or: [{ gender: gender }, { gender: 'All' }] },
+			  ],
 		});
 console.log(totalTasks);
         // Fetch the number of tasks the user has completed (status = 'Approved')
@@ -769,12 +775,18 @@ console.log(totalTasks);
 });
 
 export const remainingCompletedTask = asyncHandler(async (req: Request, res: Response) => {
+	const { _id, location, community, gender } = req.user
     const { userId } = req.params;
 
     try {
         // Fetch the total tasks from DB
       	const totalTasks = await Advert.countDocuments({
 			status:'Running',
+		$and: [
+				{ $or: [{ state: location }, { state: 'All' }] },
+				{ $or: [{ lga: community }, { lga: 'All' }] },
+				{ $or: [{ gender: gender }, { gender: 'All' }] },
+			  ],
 		});
 console.log(totalTasks);
         // Fetch the number of tasks the user has completed (status = 'Approved')
