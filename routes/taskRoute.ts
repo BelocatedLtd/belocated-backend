@@ -69,7 +69,8 @@ router.get('/:id', protect, getTaskById)
 router.get('/remaining/:userId', protect, remainingCompletedTask);
 router.get('/approved/:userId', protect, remainingApprovedTasks);
 router.get('/remaining-tasks/:userId/:platform', protect, getRemainingTasksByPlatform);
-router.get('/api/tasks/check/:advertId/:performerId', protect, checkRemainingTask);
+router.get('/check/:advertId/:performerId', protect, checkRemainingTask);
+
 
 router.delete('/delete/:taskId', protect, deleteTask)
 
