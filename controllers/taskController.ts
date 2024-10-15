@@ -830,7 +830,7 @@ export const getRemainingTasksByPlatform = asyncHandler(
 	  const existingTask = await Task.findOne({
 		advertId,
 		taskPerformerId: performerId,
-		status: { $in: ['submitted', 'completed', 'approved'] },
+		status: { $in: ['Submitted', 'Completed', 'Approved'] },
 	  });
   
 	  // Respond based on whether the task was found
