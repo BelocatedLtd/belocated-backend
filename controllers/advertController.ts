@@ -647,7 +647,12 @@ export const getQualifiedAdverts = asyncHandler(
 				  const availableAdverts = await Advert.find({
 					platform: platformName,
 					  status:'Running', 
-					_id: { $nin: completedTaskIds }, // Exclude completed/submitted tasks
+					_id: { $nin: completedTaskIds }, 
+				       $and: [
+					{ $or: [{ state: location }, { state: 'All' }] },
+					{ $or: [{ lga: community }, { lga: 'All' }] },
+					{ $or: [{ gender: gender }, { gender: 'All' }] },
+				  ],// Exclude completed/submitted tasks
 				  }).select('_id'); // Select only the advert IDs
 			  
 				  // Calculate the number of remaining tasks
