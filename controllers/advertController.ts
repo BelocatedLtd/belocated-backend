@@ -448,18 +448,11 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 
 		const advertsWithTasks = await Promise.all(
 			adverts.map(async (advert) => {
-				// Fetch the tasks associated with this advert and populate the task performer's details
+				// Fetch the submitters of the tasks associated with this advert
 				const taskSubmitters = await Task.find({
 					advertId: advert._id,
 					status: 'Submitted',
-				}).populate('taskPerformerId', 'fullname username email'); 
-
-				// Extract only the necessary performer details from the populated data
-				const submitterDetails = taskSubmitters.map((task) => ({
-					fullname: task.taskPerformerId?.fullname,
-					username: task.taskPerformerId?.username,
-					email: task.taskPerformerId?.email,
-				}));
+				}).populate('taskPerformerId', 'fullname username email'); // Ensure this is the correct reference to the user model
 
 				// Count the completed and approved tasks for the advert
 				const completedTasksCount = await Task.countDocuments({
@@ -470,7 +463,7 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 				// Return the advert with the additional task information
 				return {
 					...advert.toObject(),
-					taskSubmitters: submitterDetails, // Array of performers' details only
+					taskSubmitters, // This should include fullname and username
 					completedTasksCount,
 				};
 			}),
@@ -486,7 +479,8 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 		});
 	} catch (error) {
 		console.log('🚀 ~ Error fetching adverts:', error); // Log the error for debugging
-		res.status(500).json({ error: 'Failed to fetch adverts' }); // Send a more descriptive error message
+		
+			res.status(500).json({ error })// Send a more descriptive error message
 	}
 });
 
