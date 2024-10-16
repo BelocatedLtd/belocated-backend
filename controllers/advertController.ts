@@ -506,23 +506,39 @@ export const getAllAdvert = asyncHandler(
 					.populate('userId', 'fullname email')
 
 				// For each advert, get the task count
-				const advertsWithTaskCount = await Promise.all(
+				const advertsWithDetails = await Promise.all(
 					adverts.map(async (advert) => {
+						// Fetch task count
 						const tasksCount = await Task.countDocuments({
 							advertId: new mongoose.Types.ObjectId(advert._id),
-						})
-						const currentTasks = advert?.tasks
-						if (currentTasks) {
-							advert.tasks = tasksCount
+						});
+
+						if (advert.tasks) {
+							advert.tasks = tasksCount;
 						}
-						return advert
-					}),
-				)
+
+						// Fetch task performers' details
+						const taskPerformersDetails = await Promise.all(
+							advert.taskPerformers.map(async (userId) => {
+								const user = await User.findById(userId).select(
+									'username fullname'
+								);
+								return user;
+							})
+						);
+
+						// Add the taskPerformers details to the advert
+						return {
+							...advert.toObject(),
+							taskPerformersDetails,
+						};
+					})
+				);
 
 				res.status(200).json({
-					adverts: advertsWithTaskCount,
-					totalAdverts: advertsWithTaskCount.length,
-				})
+					adverts: advertsWithDetails,
+					totalAdverts: advertsWithDetails.length,
+				});
 			} else {
 				// Pagination logic
 				const currentPage = page || 1
@@ -538,32 +554,47 @@ export const getAllAdvert = asyncHandler(
 					.limit(currentLimit)
 					.populate('userId', 'fullname email')
 
-				// For each advert, get the task count
-				const advertsWithTaskCount = await Promise.all(
+				const advertsWithDetails = await Promise.all(
 					adverts.map(async (advert) => {
+						// Fetch task count
 						const tasksCount = await Task.countDocuments({
 							advertId: new mongoose.Types.ObjectId(advert._id),
-						})
-						const currentTasks = advert?.tasks
-						if (currentTasks) {
-							advert.tasks = tasksCount
-						}
-						return advert
-					}),
-				)
+						});
 
-				const totalPages = Math.ceil(totalAdverts / currentLimit)
+						if (advert.tasks) {
+							advert.tasks = tasksCount;
+						}
+
+						// Fetch task performers' details
+						const taskPerformersDetails = await Promise.all(
+							advert.taskPerformers.map(async (userId) => {
+								const user = await User.findById(userId).select(
+									'username fullname'
+								);
+								return user;
+							})
+						);
+
+						// Add the taskPerformers details to the advert
+						return {
+							...advert.toObject(),
+							taskPerformersDetails,
+						};
+					})
+				);
+
+				const totalPages = Math.ceil(totalAdverts / currentLimit);
 
 				res.status(200).json({
-					adverts: advertsWithTaskCount,
+					adverts: advertsWithDetails,
 					page: currentPage,
 					totalPages,
 					totalAdverts,
 					hasNextPage: currentPage < totalPages,
 					hasPreviousPage: currentPage > 1,
-				})
+				});
 			}
-		} catch (error) {
+		}catch (error) {
 			console.log('🚀 ~ error:', error)
 			res.status(500).json({ error })
 		}
