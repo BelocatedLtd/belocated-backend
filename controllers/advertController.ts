@@ -426,70 +426,63 @@ export const toggleAdvertFreeStatus = asyncHandler(
 //Get user Advert
 // http://localhost:6001/api/advert
 export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
-	//const { userId } = req.body
-	const { _id } = req.user
-	console.log('🚀 ~ getAdvert ~ _id:', _id)
+	// Extract the user ID from the authenticated user's request
+	const { _id } = req.user;
+	console.log('🚀 ~ getAdvert ~ _id:', _id);
 
 	try {
 		// Get page and limit from query parameters
-		const page = parseInt(req.query.page as string) || 1
-		const limit = parseInt(req.query.limit as string) || 10
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
 
-		console.log('🚀 ~ getAdvert ~ page:', page, limit)
+		console.log('🚀 ~ getAdvert ~ page:', page, 'limit:', limit);
 
-		if (!page && !limit) {
-			const adverts = await Advert.find({ userId: _id })
-			res.status(200).json({
-				adverts,
-				totalAdverts: adverts.length,
-			})
-		} else {
-			const currentPage = page || 1
-			const currentLimit = limit || 10
+		// Fetch adverts based on the user ID
+		const totalAdverts = await Advert.countDocuments({ userId: _id });
+		const startIndex = (page - 1) * limit;
 
-			const startIndex = (currentPage - 1) * currentLimit
+		const adverts = await Advert.find({ userId: _id })
+			.skip(startIndex)
+			.limit(limit)
+			.sort('-createdAt');
 
-			const totalAdverts = await Advert.countDocuments({ userId: _id })
+		const advertsWithTasks = await Promise.all(
+			adverts.map(async (advert) => {
+				// Fetch the submitters of the tasks associated with this advert
+				const taskSubmitters = await Task.find({
+					advertId: advert._id,
+					status: 'Submitted',
+				}).populate('taskPerformerId', 'fullname username email'); // Ensure this is the correct reference to the user model
 
-			const adverts = await Advert.find({ userId: _id })
-				.skip(startIndex)
-				.limit(currentLimit)
-				.sort('-createdAt')
+				// Count the completed and approved tasks for the advert
+				const completedTasksCount = await Task.countDocuments({
+					advertId: advert._id,
+					status: { $in: ['Completed', 'Approved'] },
+				});
 
-			const advertsWithTasks = await Promise.all(
-				adverts.map(async (advert) => {
-					// include the perfomer details
-					const taskSubmitters = await Task.find({
-						advertId: advert._id,
-						status: 'Submitted',
-					}).populate('taskPerformerId', 'fullname username email')
+				// Return the advert with the additional task information
+				return {
+					...advert.toObject(),
+					taskSubmitters, // This should include fullname and username
+					completedTasksCount,
+				};
+			}),
+		);
 
-					const completedTasksCount = await Task.countDocuments({
-						advertId: advert._id,
-						status: { $in: ['Completed', 'Approved'] },
-					})
+		const totalPages = Math.ceil(totalAdverts / limit);
 
-					return {
-						...advert.toObject(),
-						taskSubmitters,
-						completedTasksCount,
-					}
-				}),
-			)
-
-			const totalPages = Math.ceil(totalAdverts / currentLimit)
-
-			res.status(200).json({
-				adverts: advertsWithTasks,
-				totalAdverts,
-				totalPages,
-				currentPage: Number(page),
-			})
-		}
+		res.status(200).json({
+			adverts: advertsWithTasks,
+			totalAdverts,
+			totalPages,
+			currentPage: page,
+		});
 	} catch (error) {
-		res.status(500).json({ error })
+		console.log('🚀 ~ Error fetching adverts:', error); // Log the error for debugging
+		
+			res.status(500).json({ error })// Send a more descriptive error message
 	}
-})
+});
 
 // Get All Advert
 // http://localhost:6001/api/advert/all
