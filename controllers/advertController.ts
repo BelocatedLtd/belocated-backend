@@ -449,10 +449,14 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 		const advertsWithTasks = await Promise.all(
 			adverts.map(async (advert) => {
 				// Fetch the submitters of the tasks associated with this advert
-				const taskSubmitters = await Task.find({
-					advertId: advert._id,
-					status: 'Submitted',
-				}).populate('taskPerformerId', 'fullname username email'); // Ensure this is the correct reference to the user model
+				const taskSubmitters = await Promise.all(
+					advert.taskPerformers.map(async (userId) => {
+						const user = await User.findById(userId).select(
+							'username fullname'
+						);
+						return user;
+					})
+				);// Ensure this is the correct reference to the user model
 
 				// Count the completed and approved tasks for the advert
 				const completedTasksCount = await Task.countDocuments({
@@ -468,7 +472,6 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 				};
 			}),
 		);
-
 		const totalPages = Math.ceil(totalAdverts / limit);
 
 		res.status(200).json({
