@@ -426,72 +426,63 @@ export const toggleAdvertFreeStatus = asyncHandler(
 //Get user Advert
 // http://localhost:6001/api/advert
 export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
-  // Extract the user ID from the authenticated user's request
-  const { _id } = req.user;
-  console.log('🚀 ~ getAdvert ~ _id:', _id);
+	// Extract the user ID from the authenticated user's request
+	const { _id } = req.user;
+	console.log('🚀 ~ getAdvert ~ _id:', _id);
 
-  try {
-    // Get page and limit from query parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+	try {
+		// Get page and limit from query parameters
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
 
-    console.log('🚀 ~ getAdvert ~ page:', page, 'limit:', limit);
+		console.log('🚀 ~ getAdvert ~ page:', page, 'limit:', limit);
 
-    // Fetch adverts based on the user ID
-    const totalAdverts = await Advert.countDocuments({ userId: _id });
-    const startIndex = (page - 1) * limit;
+		// Fetch adverts based on the user ID
+		const totalAdverts = await Advert.countDocuments({ userId: _id });
+		const startIndex = (page - 1) * limit;
 
-    const adverts = await Advert.find({ userId: _id })
-      .skip(startIndex)
-      .limit(limit)
-      .sort('-createdAt');
+		const adverts = await Advert.find({ userId: _id })
+			.skip(startIndex)
+			.limit(limit)
+			.sort('-createdAt');
 
-    const advertsWithTasks = await Promise.all(
-      adverts.map(async (advert) => {
-        // Fetch the submitters of the tasks associated with this advert
-        const taskSubmitters = await Task.find({
-          advertId: advert._id,
-          status: 'Submitted',
-        }).populate({
-          path: 'taskPerformerId', // Path to the referenced user model
-          select: 'fullname username email', // Select only these fields
-          model: 'User', // Ensure you're populating from the User model
-        });
+		const advertsWithTasks = await Promise.all(
+			adverts.map(async (advert) => {
+				// Fetch the submitters of the tasks associated with this advert
+				const taskSubmitters = await Task.find({
+					advertId: advert._id,
+					status: 'Submitted',
+				}).populate('taskPerformerId', 'fullname username email'); // Ensure this is the correct reference to the user model
 
-        // Ensure taskPerformerId isn't null by filtering valid ones
-        const validTaskSubmitters = taskSubmitters.filter(
-          (submitter) => submitter.taskPerformerId !== null
-        );
+				// Count the completed and approved tasks for the advert
+				const completedTasksCount = await Task.countDocuments({
+					advertId: advert._id,
+					status: { $in: ['Completed', 'Approved'] },
+				});
 
-        // Count the completed and approved tasks for the advert
-        const completedTasksCount = await Task.countDocuments({
-          advertId: advert._id,
-          status: { $in: ['Completed', 'Approved'] },
-        });
+				// Return the advert with the additional task information
+				return {
+					...advert.toObject(),
+					taskSubmitters, // This should include fullname and username
+					completedTasksCount,
+				};
+			}),
+		);
 
-        // Return the advert with the additional task information
-        return {
-          ...advert.toObject(),
-          taskSubmitters: validTaskSubmitters, // Filtered valid task submitters
-          completedTasksCount,
-        };
-      })
-    );
+		const totalPages = Math.ceil(totalAdverts / limit);
 
-    const totalPages = Math.ceil(totalAdverts / limit);
-
-    res.status(200).json({
-      adverts: advertsWithTasks,
-      totalAdverts,
-      totalPages,
-      currentPage: page,
-    });
-  } catch (error) {
-    console.log('🚀 ~ Error fetching adverts:', error); // Log the error for debugging
-    res.status(500).json({ error }); // Send a more descriptive error message
-  }
+		res.status(200).json({
+			adverts: advertsWithTasks,
+			totalAdverts,
+			totalPages,
+			currentPage: page,
+		});
+	} catch (error) {
+		console.log('🚀 ~ Error fetching adverts:', error); // Log the error for debugging
+		
+			res.status(500).json({ error })// Send a more descriptive error message
+	}
 });
-
 
 // Get All Advert
 // http://localhost:6001/api/advert/all
