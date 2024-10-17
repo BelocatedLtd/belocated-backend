@@ -426,7 +426,7 @@ export const toggleAdvertFreeStatus = asyncHandler(
 
 //Get user Advert
 // http://localhost:6001/api/advert
-const getAdvert = asyncHandler(async (req: Request, res: Response) => {
+export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
   const { _id } = req.user;
   console.log('🚀 ~ getAdvert ~ _id:', _id);
 
