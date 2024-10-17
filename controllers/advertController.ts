@@ -426,58 +426,54 @@ export const toggleAdvertFreeStatus = asyncHandler(
 
 //Get user Advert
 // http://localhost:6001/api/advert
-export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
-  // Extract the user ID from the authenticated user's request
+const getAdvert = asyncHandler(async (req: Request, res: Response) => {
   const { _id } = req.user;
   console.log('🚀 ~ getAdvert ~ _id:', _id);
 
   try {
-    // Get page and limit from query parameters
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-
-    console.log('🚀 ~ getAdvert ~ page:', page, 'limit:', limit);
-
-    // Fetch adverts based on the user ID
-    const totalAdverts = await Advert.countDocuments({ userId: _id });
     const startIndex = (page - 1) * limit;
+
+    const totalAdverts = await Advert.countDocuments({ userId: _id });
 
     const adverts = await Advert.find({ userId: _id })
       .skip(startIndex)
       .limit(limit)
       .sort('-createdAt');
 
-	  const advertsWithTasks = await Promise.all(
-		adverts.map(async (advert) => {
-		  const taskSubmitters = await Task.find({
-			advertId: advert._id,
-			status: 'Submitted',
-		  }).populate({
-			path: 'taskPerformerId',
-			select: 'fullname username email',
-			model: 'User',
-			transform: (doc) => doc || {}, // Optional: Ensure the populated doc is non-null
-		  });
-  
-		  // Convert `taskPerformerId` to ObjectId if it's a string
-		  taskSubmitters.forEach((submitter) => {
-			if (typeof submitter.taskPerformerId === 'string') {
-			  submitter.taskPerformerId = new Types.ObjectId(submitter.taskPerformerId);
-			}
-		  });
+    const advertsWithTasks = await Promise.all(
+      adverts.map(async (advert) => {
+        const taskSubmitters = await Task.find({
+          advertId: advert._id,
+          status: 'Submitted',
+        }).populate({
+          path: 'taskPerformerId',
+          select: 'fullname username email', // Ensure these fields exist
+          model: 'User',
+        });
 
-        // Count the completed and approved tasks for the advert
+        // Debug: Log to check if taskSubmitters contains valid performer IDs
+        console.log('🚀 ~ taskSubmitters:', taskSubmitters);
+
+        // Ensure the conversion only happens when needed
+        const validTaskSubmitters = taskSubmitters.map((submitter) => {
+          if (typeof submitter.taskPerformerId === 'string') {
+            submitter.taskPerformerId = new Types.ObjectId(submitter.taskPerformerId);
+          }
+          return submitter;
+        });
+
         const completedTasksCount = await Task.countDocuments({
           advertId: advert._id,
           status: { $in: ['Completed', 'Approved'] },
         });
 
-        // Return the advert with the additional task information
-		return {
-			...advert.toObject(),
-			taskSubmitters,
-			completedTasksCount,
-		  };
+        return {
+          ...advert.toObject(),
+          taskSubmitters: validTaskSubmitters,
+          completedTasksCount,
+        };
       })
     );
 
@@ -490,10 +486,11 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
       currentPage: page,
     });
   } catch (error) {
-    console.log('🚀 ~ Error fetching adverts:', error); // Log the error for debugging
-    res.status(500).json({ error }); // Send a more descriptive error message
+    console.error('🚀 ~ Error fetching adverts:', error);
+    res.status(500).json({ error });
   }
 });
+
 // Get All Advert
 // http://localhost:6001/api/advert/all
 export const getAllAdvert = asyncHandler(
