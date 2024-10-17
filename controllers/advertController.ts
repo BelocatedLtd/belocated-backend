@@ -444,6 +444,8 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 
     const advertsWithTasks = await Promise.all(
       adverts.map(async (advert) => {
+	      const tasking = await Task.find()
+	      
         const taskSubmitters = await Task.find({
           advertId: advert._id,
           status: 'Submitted',
