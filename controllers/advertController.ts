@@ -455,7 +455,7 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
     const advertsWithTasks = await Promise.all(
       adverts.map(async (advert) => {
         const taskSubmitters = await Task.find({
-          advertId: advert._id,
+          advertId: advert._id.toString(),
           status: { $in: ['Completed', 'Approved', 'Submitted'] },
         }).populate('taskPerformerId', 'fullname username email');
 
