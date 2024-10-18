@@ -442,21 +442,25 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
       .limit(limit)
       .sort('-createdAt');
 
+    if (!adverts.length) {
+     res.status(200).json({
+        adverts: [],
+        totalAdverts: 0,
+        totalPages: 0,
+        currentPage: page,
+      });
+	     return;
+    }
+
     const advertsWithTasks = await Promise.all(
-      adverts.map(async (advert) => { 
+      adverts.map(async (advert) => {
         const taskSubmitters = await Task.find({
           advertId: advert._id,
-          status: 'Submitted',
-        }).populate({
-          path: 'taskPerformerId',
-          select: 'fullname username email', // Ensure these fields exist
-          model: 'User',
-        });
+          status: { $in: ['Completed', 'Approved', 'Submitted'] },
+        }).populate('taskPerformerId', 'fullname username email');
 
-        // Debug: Log to check if taskSubmitters contains valid performer IDs
         console.log('🚀 ~ taskSubmitters:', taskSubmitters);
 
-        // Ensure the conversion only happens when needed
         const validTaskSubmitters = taskSubmitters.map((submitter) => {
           if (typeof submitter.taskPerformerId === 'string') {
             submitter.taskPerformerId = new Types.ObjectId(submitter.taskPerformerId);
@@ -490,6 +494,7 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
     res.status(500).json({ error });
   }
 });
+
 
 // Get All Advert
 // http://localhost:6001/api/advert/all
