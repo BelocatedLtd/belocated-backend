@@ -452,37 +452,34 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
 	     return;
     }
 
-     const advertsWithTasks = await Promise.all(
-			adverts.map(async (advert) => {
-			  const tasksWithUsers = await Task.aggregate([
-				{
-				  $match: {
-					advertId: advert._id.toString(),
-					status: { $in: ['Completed', 'Approved', 'Submitted'] },
-				  },
-				},
-				{
-				  $lookup: {
-					from: 'users', // The collection name for users
-					localField: 'taskPerformerId',
-					foreignField: '_id',
-					as: 'taskPerformerDetails',
-				  },
-				},
-				{ $unwind: '$taskPerformerDetails' }, // Flatten the result
-			  ]);
-		  
-			  console.log('🚀 ~ tasksWithUsers:', tasksWithUsers);
-		  
-			  const completedTasksCount = tasksWithUsers.length;
-		  
-			  return {
-				...advert.toObject(),
-				taskSubmitters: tasksWithUsers,
-				completedTasksCount,
-			  };
-			})
-		  );
+    const advertsWithTasks = await Promise.all(
+      adverts.map(async (advert) => {
+        const taskSubmitters = await Task.find({
+          advertId: advert._id.toString(),
+          status: { $in: ['Completed', 'Approved', 'Submitted'] },
+        }).populate('taskPerformerId', 'fullname username email');
+
+        console.log('🚀 ~ taskSubmitters:', taskSubmitters);
+
+        const validTaskSubmitters = taskSubmitters.map((submitter) => {
+          if (typeof submitter.taskPerformerId === 'string') {
+            submitter.taskPerformerId = new Types.ObjectId(submitter.taskPerformerId);
+          }
+          return submitter;
+        });
+
+        const completedTasksCount = await Task.countDocuments({
+          advertId: advert._id.toString(),
+          status: { $in: ['Completed', 'Approved', 'Submitted'] },
+        });
+
+        return {
+          ...advert.toObject(),
+          taskSubmitters: validTaskSubmitters,
+          completedTasksCount,
+        };
+      })
+    );
 
     const totalPages = Math.ceil(totalAdverts / limit);
 
