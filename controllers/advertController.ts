@@ -469,7 +469,7 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
         });
 
         const completedTasksCount = await Task.countDocuments({
-          advertId: advert._id,
+          advertId: advert._id.toString(),
           status: { $in: ['Completed', 'Approved', 'Submitted'] },
         });
 
