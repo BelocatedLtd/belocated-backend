@@ -837,7 +837,9 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 		}
   
 		// Get tasks already performed by the user
-		const userTasks = await Task.find({ taskPerformerId: _id }).select('advertId');
+			const userTasks = await Task.find(
+			{ taskPerformerId: _id, status: "Submitted" }
+		  ).select('advertId');
 		const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
   
 		const platformTaskCounts: Record<string, { totalTasks: number; remainingTasks: number }> = {};
