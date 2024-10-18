@@ -751,7 +751,7 @@ export const submitTask = asyncHandler (async (req: Request, res: Response) => {
   
 	try {
 	  // Check if the task has already been performed by the user
-	  const existingTask = await Task.findOne({ advertId, taskPerformerId: performerId });
+	    const existingTask = await Task.findOne({ advertId: advertId, taskPerformerId: performerId });
   
 	  if (existingTask) {
 		 res.status(400).json({ message: 'Task already performed. Please select another task.' });
