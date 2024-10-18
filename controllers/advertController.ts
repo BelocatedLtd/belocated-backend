@@ -822,12 +822,12 @@ export const submitTask = asyncHandler (async (req: Request, res: Response) => {
 // 	},
 // )
 
-
 export const getTotalTasksByAllPlatforms = asyncHandler(
 	async (req: Request, res: Response) => {
 	  const { _id, location, community, gender } = req.user;
   
 	  try {
+		// Step 1: Fetch eligible adverts based on user criteria.
 		const eligibleAdverts = await Advert.find({
 		  status: 'Running',
 		  $and: [
@@ -837,40 +837,57 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 		  ],
 		}).sort('-createdAt');
   
+		// Step 2: Return empty object if no eligible adverts are found.
 		if (!eligibleAdverts.length) {
 		   res.status(200).json({});
 		}
   
-		// Get tasks already performed by the user
-			const userTasks = await Task.find({
-        taskPerformerId: _id,
-        status: { $in: ['Submitted', 'Completed', 'Approved'] },
-      }).select('advertId');
-		const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
+		// Step 3: Get all tasks performed by the user across all platforms with relevant statuses.
+		const userTasks = await Task.find({
+		  taskPerformerId: _id,
+		  status: { $in: ['Submitted', 'Completed', 'Approved'] },
+		}).select('advertId');
   
-		const platformTaskCounts: Record<string, { totalTasks: number; remainingTasks: number }> = {};
+		// Step 4: Create a set of advert IDs for tasks already performed by the user.
+		const performedTaskIds = new Set(
+		  userTasks.map((task) => task.advertId?.toString() || '')
+		);
   
-		eligibleAdverts.forEach(advert => {
+		// Step 5: Initialize a platform task counter.
+		const platformTaskCounts: Record<
+		  string,
+		  { totalTasks: number; remainingTasks: number }
+		> = {};
+  
+		// Step 6: Iterate over eligible adverts to populate platform task counts.
+		eligibleAdverts.forEach((advert) => {
 		  const platformName = advert.platform;
-		  const alreadyPerformed = performedTaskIds.has(advert._id.toString());
+		  const advertIdString = advert._id.toString();
+		  const alreadyPerformed = performedTaskIds.has(advertIdString);
   
+		  // Initialize platform entry if it doesn't exist.
 		  if (!platformTaskCounts[platformName]) {
 			platformTaskCounts[platformName] = { totalTasks: 0, remainingTasks: 0 };
 		  }
   
+		  // Increment total tasks for the platform.
 		  platformTaskCounts[platformName].totalTasks++;
+  
+		  // Only increment remaining tasks if the task hasn't been performed yet.
 		  if (!alreadyPerformed) {
 			platformTaskCounts[platformName].remainingTasks++;
 		  }
 		});
   
+		// Step 7: Send the response with the platform task counts.
 		res.status(200).json(platformTaskCounts);
 	  } catch (error) {
+		// Step 8: Handle any errors that occur.
 		res.status(500).json({ error });
 	  }
 	}
   );
-
+  
 
 
 // get advert by id
