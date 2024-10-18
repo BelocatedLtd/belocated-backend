@@ -515,7 +515,7 @@ export const getAllAdvert = asyncHandler(
 					adverts.map(async (advert) => {
 						// Fetch task count
 						const tasksCount = await Task.countDocuments({
-							advertId: new mongoose.Types.ObjectId(advert._id),
+							advertId: advert._id,
 						});
 
 						if (advert.tasks) {
@@ -605,7 +605,6 @@ export const getAllAdvert = asyncHandler(
 		}
 	},
 )
-
 //>>> Delete Advert
 export const deleteAdvert = asyncHandler(
 	async (req: Request, res: Response) => {
