@@ -33,7 +33,12 @@ export const CreateNewTask = asyncHandler(
 			socialPageLink,
 			adMedia,
 		} = req.body
-
+	  // Check if the task has already been performed by the user
+	  const existingTask = await Task.findOne({ advertId, taskPerformerId: taskPerformerId });
+  
+	  if (existingTask) {
+		 res.status(400).json({ message: 'Task already performed. Please select another task.' });
+	
 		const advert = await Advert.findById(advertId)
 
 		if (!advert) {
