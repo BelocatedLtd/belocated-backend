@@ -661,7 +661,7 @@ export const getQualifiedAdverts = asyncHandler(
 			}
 
 			// Retrieve tasks associated with the user
-			const userTasks = await Task.find({ taskPerformerId: _id }).select(
+			const userTasks = await Task.find({ taskPerformerId: _id?.toString() }).select(
 				'advertId',
 			)
 			const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
@@ -670,7 +670,7 @@ export const getQualifiedAdverts = asyncHandler(
 				// Fetch completed task IDs by the user on the specified platform
 		  // Check for submitted tasks in the Task collection
 				  const completedOrSubmittedTasks = await Task.find({
-					taskPerformerId: _id,
+					taskPerformerId: _id?.toString(),
 					platform: platformName,
 					status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
 				  }).select('advertId'); // Extract only advertId
