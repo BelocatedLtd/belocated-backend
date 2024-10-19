@@ -843,7 +843,7 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
   
 		// Step 3: Get all tasks performed by the user with relevant statuses.
 		const userTasks = await Task.find({
-		  taskPerformerId: _id,
+		  taskPerformerId: _id?.toString(),
 		  status: { $in: ['Submitted', 'Completed', 'Approved'] },
 		}).select('advertId');
   
