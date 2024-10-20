@@ -495,57 +495,26 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-
+  
 // Get All Advert
 // http://localhost:6001/api/advert/all
 export const getAllAdvert = asyncHandler(
 	async (req: Request, res: Response) => {
 		try {
+			// Get page and limit from query parameters
 			const page = parseInt(req.query.page as string) || 1
 			const limit = parseInt(req.query.limit as string) || 10
 
-			// If no pagination is requested
 			if (!page && !limit) {
 				const adverts = await Advert.find()
 					.sort('-createdAt')
 					.populate('userId', 'fullname email')
 
-				// For each advert, get the task count
-				const advertsWithDetails = await Promise.all(
-					adverts.map(async (advert) => {
-						// Fetch task count
-						const tasksCount = await Task.countDocuments({
-							advertId: advert._id,
-						});
-
-						if (advert.tasks) {
-							advert.tasks = tasksCount;
-						}
-
-						// Fetch task performers' details
-						const taskPerformersDetails = await Promise.all(
-							advert.taskPerformers.map(async (userId) => {
-								const user = await User.findById(userId).select(
-									'username fullname'
-								);
-								return user;
-							})
-						);
-
-						// Add the taskPerformers details to the advert
-						return {
-							...advert.toObject(),
-							taskPerformersDetails,
-						};
-					})
-				);
-
 				res.status(200).json({
-					adverts: advertsWithDetails,
-					totalAdverts: advertsWithDetails.length,
-				});
+					adverts,
+					totalAdverts: adverts.length,
+				})
 			} else {
-				// Pagination logic
 				const currentPage = page || 1
 				const currentLimit = limit || 10
 
@@ -559,52 +528,24 @@ export const getAllAdvert = asyncHandler(
 					.limit(currentLimit)
 					.populate('userId', 'fullname email')
 
-				const advertsWithDetails = await Promise.all(
-					adverts.map(async (advert) => {
-						// Fetch task count
-						const tasksCount = await Task.countDocuments({
-							advertId: new mongoose.Types.ObjectId(advert._id),
-						});
-
-						if (advert.tasks) {
-							advert.tasks = tasksCount;
-						}
-
-						// Fetch task performers' details
-						const taskPerformersDetails = await Promise.all(
-							advert.taskPerformers.map(async (userId) => {
-								const user = await User.findById(userId).select(
-									'username fullname'
-								);
-								return user;
-							})
-						);
-
-						// Add the taskPerformers details to the advert
-						return {
-							...advert.toObject(),
-							taskPerformersDetails,
-						};
-					})
-				);
-
-				const totalPages = Math.ceil(totalAdverts / currentLimit);
+				const totalPages = Math.ceil(totalAdverts / currentLimit)
 
 				res.status(200).json({
-					adverts: advertsWithDetails,
+					adverts,
 					page: currentPage,
 					totalPages,
 					totalAdverts,
 					hasNextPage: currentPage < totalPages,
 					hasPreviousPage: currentPage > 1,
-				});
+				})
 			}
-		}catch (error) {
+		} catch (error) {
 			console.log('🚀 ~ error:', error)
 			res.status(500).json({ error })
 		}
 	},
 )
+
 //>>> Delete Advert
 export const deleteAdvert = asyncHandler(
 	async (req: Request, res: Response) => {
