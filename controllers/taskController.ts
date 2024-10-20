@@ -124,7 +124,8 @@ export const getTask = asyncHandler(async (req: Request, res: Response) => {
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
 	const { id } = req.params
 	try {
-		const tasks = await Task.findById({ _id: id }).populate('advertId')
+		const thisId = new mongoose.Types.ObjectId(id)
+		const tasks = await Task.findById({ _id: thisId }).populate('advertId')
 
 		if (!tasks) {
 			res.status(400).json({ message: 'Cannot find task' })
