@@ -251,7 +251,7 @@ export const getTasksByAdvertId = asyncHandler(
 		const { advertId } = req.params
 
 		const { page = 1, limit = 10, status = 'All' } = req.query
-		const advertObjectId = new mongoose.Types.ObjectId(advertId)
+		const advertObjectId = advertId
 
 		let tasks
 		if (status === 'All') {
