@@ -66,6 +66,7 @@ router.get(
 	getTask,
 )
 router.get('/:id', protect, getTaskById)
+router.get('tasking/:id', protect, getTaskById)
 router.get('/remaining/:userId', protect, remainingCompletedTask);
 router.get('/approved/:userId', protect, remainingApprovedTasks);
 router.get('/remaining-tasks/:userId/:platform', protect, getRemainingTasksByPlatform);
