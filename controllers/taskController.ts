@@ -123,8 +123,11 @@ export const getTask = asyncHandler(async (req: Request, res: Response) => {
 
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+      console.log('id is : ',id)
+	 const thisId = new mongoose.Types.ObjectId(id);
+      console.log('objectid is: ',thisId)
     try {
-        const thisId = new mongoose.Types.ObjectId(id);
+       
 console.log(thisId)
         const tasks = await Task.findById({ _id: thisId }).populate('advertId');
 
