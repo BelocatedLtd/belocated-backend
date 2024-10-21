@@ -122,34 +122,31 @@ export const getTask = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
-	const { id } = req.params
-	try {
-		const thisId = new mongoose.Types.ObjectId(id)
-		console.log(thisId)
-		const tasks = await Task.findById({ _id: thisId }).populate('advertId')
+    const { id } = req.params;
+    try {
+        const thisId = new mongoose.Types.ObjectId(id);
 
-		if (!tasks) {
-			res.status(400).json({ message: 'Cannot find task' })
-			throw new Error('Cannot find task')
-		}
+        const tasks = await Task.findById({ _id: thisId }).populate('advertId');
 
-		const taskWithRenamedAdvert = {
-			...tasks.toObject(),
-			advert: tasks.advertId,
-		}
+        if (!tasks) {
+            res.status(400).json({ message: 'Cannot find task' });
+            throw new Error('Cannot find task');
+        }
 
-		// Remove the original advert field if necessary
-		// delete taskWithRenamedAdvert.advertId
+        // Create a new object with the task details and renamed advert field
+        const taskWithRenamedAdvert = {
+            ...tasks.toObject(),
+            advert: tasks.advertId, // Include the advert object as "advert"
+        };
 
-		// res.status(200).json(taskWithRenamedAdvert)
+        // Remove the original advertId field from the response object
+        delete taskWithRenamedAdvert.advertId;
 
-		if (tasks) {
-			res.status(200).json(tasks)
-		}
-	} catch (error) {
-		res.status(500).json({ error })
-	}
-})
+        res.status(200).json(taskWithRenamedAdvert);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
 
 //Get user Tasks
 // http://localhost:6001/api/tasks
