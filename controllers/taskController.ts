@@ -139,9 +139,9 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
 		}
 
 		// Remove the original advert field if necessary
-		delete taskWithRenamedAdvert.advertId
+		// delete taskWithRenamedAdvert.advertId
 
-		res.status(200).json(taskWithRenamedAdvert)
+		// res.status(200).json(taskWithRenamedAdvert)
 
 		if (tasks) {
 			res.status(200).json(tasks)
