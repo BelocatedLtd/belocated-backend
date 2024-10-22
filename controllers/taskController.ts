@@ -513,9 +513,9 @@ console.log(task)
 	//     throw new Error("You are not assigned to moderate this task")
 	// }
 
-	if (advert.desiredROI === 0) {
-		throw new Error('Ad campaign is no longer running')
-	}
+	// if (advert.desiredROI === 0) {
+	// 	throw new Error('Ad campaign is no longer running')
+	// }
 
 	let updatedTask
 
