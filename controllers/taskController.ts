@@ -143,7 +143,7 @@ console.log(thisId)
         };
 
         // Remove the original advertId field from the response object
-        delete taskWithRenamedAdvert.advertId;
+        // delete taskWithRenamedAdvert.advertId;
 
         res.status(200).json(taskWithRenamedAdvert);
     } catch (error) {
