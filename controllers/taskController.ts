@@ -451,7 +451,7 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 	const { taskId, status, message } = req.body
 
-	const task = await Task.findById(taskId)
+		const task = await Task.findById(new ObjectId(taskId))
 console.log(task)
 	if (!task) {
 		throw new Error('Cannot find task')
