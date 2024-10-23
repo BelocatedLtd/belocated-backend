@@ -123,33 +123,43 @@ export const getTask = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-      console.log('id is : ',id)
-	 const thisId = new mongoose.Types.ObjectId(id);
-      console.log('objectid is: ',thisId)
-    try {
-       
-console.log(thisId)
-        const tasks = await Task.findById({ _id: thisId }).populate('advertId');
+	const { id } = req.params;
+	try {
+		const thisId = new mongoose.Types.ObjectId(id);
 
-        if (!tasks) {
-            res.status(400).json({ message: 'Cannot find task' });
-            throw new Error('Cannot find task');
-        }
+		const tasks = await Task.findById({ _id: thisId })
+			.populate({
+				path: 'advertId', // Populate advert document
+				populate: {
+					path: 'userId', // Nested populate for advertiser details
+					model: 'User',
+					select: 'fullname', // Get advertiser fullname
+				},
+			})
+			.populate({
+				path: 'taskPerformerId', // Populate task performer details
+				select: 'username fullname', // Fetch both username and fullname
+			});
 
-        // Create a new object with the task details and renamed advert field
-        const taskWithRenamedAdvert = {
-            ...tasks.toObject(),
-            advert: tasks.advertId, // Include the advert object as "advert"
-        };
+		if (!tasks) {
+			console.error('Task not found!');
+		} else {
+			// Restructure the response object
+			const taskWithRenamedAdvert = {
+				...tasks.toObject(), // Convert to plain object
+				advert: tasks.advertId, // Rename and include the advert object
+				taskPerformer: tasks.taskPerformerId, // Add task performer details
+			};
 
-        // Remove the original advertId field from the response object
-        // delete taskWithRenamedAdvert.advertId;
+			console.log('Advertiser Fullname:', taskWithRenamedAdvert.advert.userId.fullname);
+			console.log('Task Performer Username:', taskWithRenamedAdvert.taskPerformer.username);
+			console.log('Task Performer Fullname:', taskWithRenamedAdvert.taskPerformer.fullname);
 
-        res.status(200).json(taskWithRenamedAdvert);
+			res.status(200).json(taskWithRenamedAdvert);// Return the restructured object if needed
+		}
     } catch (error) {
-        res.status(500).json({ error });
-    }
+	res.status(500).json({ error });
+}
 });
 
 //Get user Tasks
