@@ -14,9 +14,10 @@ import Wallet from '../model/Wallet'
 import sendEMail from '../utils/sendEmail'
 import sendEmail from '../utils/sendEmailApi'
 
-const JWT_SECRET ='@@belocated2731223389@@';
+
+const JWT_SECRET = process.env.JWT_SECRET
 const generateToken = (id: Types.ObjectId) => {
-	const secret ='@@belocated2731223389@@';
+	const secret = process.env.JWT_SECRET
 	if (!secret) {
 		throw new Error('JWT_SECRET is not defined')
 	}
