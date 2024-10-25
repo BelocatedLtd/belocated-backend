@@ -429,9 +429,8 @@ export const submitTask = asyncHandler(async (req: Request, res: Response) => {
 			}
 
 			// Respond with success for paid task
-			res
-				.status(200)
-				.json("Task submitted successfully, wait for Admin's Approval")
+			res.status(200).json({ message: "Task submitted successfully, wait for Admin's Approval" });
+
 		}
 
 		// Decrease advert's desired ROI and increment the task count
