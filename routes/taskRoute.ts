@@ -16,6 +16,7 @@ import {
 	remainingCompletedTask,
 	getRemainingTasksByPlatform,
 	checkRemainingTask,
+	getAllSubmittedTask,
 } from '../controllers/taskController'
 import { protect } from '../middleware/authMiddleware'
 import { paginateSchema } from '../validate'
@@ -69,6 +70,7 @@ router.get('/:id', protect, getTaskById)
 router.get('/tasking/:id', protect, getTaskById)
 router.get('/remaining/:userId', protect, remainingCompletedTask);
 router.get('/approved/:userId', protect, remainingApprovedTasks);
+router.get('/submitted', protect, getAllSubmittedTask)
 router.get('/remaining-tasks/:userId/:platform', protect, getRemainingTasksByPlatform);
 router.get('/check/:advertId/:performerId', protect, checkRemainingTask);
 
