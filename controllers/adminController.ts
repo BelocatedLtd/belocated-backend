@@ -11,7 +11,7 @@ export const adminDashboard = asyncHandler(
 		try {
 			const totalUsers = await User.countDocuments()
 			const totalAdverts = await Advert.countDocuments()
-			const totalTasks = await Task.countDocuments()
+			const totalTasks = await Task.countDocuments({status:'Submitted'})
 			const totalTasksCompleted = await Task.countDocuments({
 				status: 'Completed',
 			})
@@ -51,7 +51,7 @@ export const getUserDetails = asyncHandler(
 			const user = await User.findById(id)
 			const wallet = await Wallet.findOne({ userId: id })
 			const userAdList = await Advert.find({ userId: id })
-			const userTasks = await Task.find({ taskPerformerId: id, status: 'Submitted', })
+			const userTasks = await Task.find({ taskPerformerId: id })
 			const userTrx = await Transaction.find({ userId: id })
 
 			res.status(200).json({
