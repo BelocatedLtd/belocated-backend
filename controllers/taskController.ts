@@ -724,6 +724,19 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	res.status(400).json(task)
 })
 
+export const getAllSubmittedTask = asyncHandler(async (req: Request, res: Response) => {
+	try {
+        const submittedTask = await Task.countDocuments({
+			status: 'Submitted',
+		});
+		res.json({	
+			submittedTask,
+		});
+	} catch (error) {
+		res.status(500).json({ message: 'Error fetching tasks' });
+	}
+});
+
 //>>> Delete Task
 export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
 	const { taskId } = req.params
