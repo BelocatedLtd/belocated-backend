@@ -51,7 +51,7 @@ export const getUserDetails = asyncHandler(
 			const user = await User.findById(id)
 			const wallet = await Wallet.findOne({ userId: id })
 			const userAdList = await Advert.find({ userId: id })
-			const userTasks = await Task.find({ taskPerformerId: id })
+			const userTasks = await Task.find({ taskPerformerId: id, status: 'Submitted', })
 			const userTrx = await Transaction.find({ userId: id })
 
 			res.status(200).json({
