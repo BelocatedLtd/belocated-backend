@@ -89,69 +89,39 @@ export const CreateNewTask = asyncHandler(
 
 
 //Get user Tasks
-// http://localhost:6001/api/tasks
-export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-	const { _id } = req.user as { _id: string };
-	let tasks;
-  
-	if (req.user.accountType !== 'Admin') {
-	  tasks = await Task.find({ taskPerformerId: _id })
-		.sort('-createdAt')
-		.populate({
-		  path: 'taskPerformerId',
-		  select: 'username email', // Fetch only the username and email
-		});
+// http://localhost:6001/api/tasks/task
+export const getTask = asyncHandler(async (req: Request, res: Response) => {
+	try {
+		const { page = 1, limit = 10 } = req.query
+
+		console.log('🚀 ~ getTask ~ req.user._id:', req.user._id.toString())
+		const tasks = await Task.find({
+			taskPerformerId: req.user._id.toString(),
+		})
+			.sort('-createdAt')
+			.skip((Number(page) - 1) * Number(limit))
+			.limit(Number(limit))
+
+		const totalTasks = await Task.countDocuments({
+			taskPerformerId: req.user._id.toString(),
+		})
+		const totalPages = Math.ceil(totalTasks / Number(limit))
+
+		if (!tasks || tasks.length === 0) {
+			res.status(400).json({ message: 'Cannot find task' })
+			return
+		}
+
+		res.status(200).json({
+			tasks,
+			totalTasks,
+			totalPages,
+			currentPage: Number(page),
+		})
+	} catch (error) {
+		res.status(500).json({ error })
 	}
-  
-	if (req.user.accountType === 'Admin') {
-	  const { page = 1, limit = 10, status = 'All' } = req.query;
-  
-	  if (status === 'All') {
-		tasks = await Task.find()
-		  .skip((Number(page) - 1) * Number(limit))
-		  .limit(Number(limit))
-		  .populate({
-			path: 'taskPerformerId',
-			select: 'username email', // Fetch only the username and email
-		  })
-		  .populate('advertiserId')
-		  .populate('advertId');
-	  } else {
-		tasks = await Task.find({ status })
-		  .skip((Number(page) - 1) * Number(limit))
-		  .limit(Number(limit))
-		  .populate({
-			path: 'taskPerformerId',
-			select: 'username email', // Fetch only the username and email
-		  })
-		  .populate('advertiserId')
-		  .populate('advertId');
-	  }
-  
-	  const totalTasks = await Task.countDocuments(
-		status === 'All' ? {} : { status }
-	  );
-	  const totalPages = Math.ceil(totalTasks / Number(limit));
-  
-	  if (!tasks || tasks.length === 0) {
-		res.status(400).json({ message: 'Cannot find any task' });
-		return;
-	  }
-  
-	  res.status(200).json({
-		tasks,
-		totalTasks,
-		totalPages,
-		currentPage: Number(page),
-	  });
-	  return;
-	}
-  
-	if (tasks) {
-	  res.status(200).json(tasks);
-	  return;
-	}
-  });
+})
 
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
 	const { id } = req.params;
