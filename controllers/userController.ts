@@ -612,6 +612,8 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 			{ username: { $regex: searchRegex } },
 			{ email: { $regex: searchRegex } },
 			{ fullname: { $regex: searchRegex } },
+			{ phone: { $regex: searchRegex } },
+			
 		],
 	}
 
