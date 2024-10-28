@@ -299,6 +299,7 @@ export const getTasksByAdvertId = asyncHandler(
 		if (status === 'All') {
 			tasks = await Task.find({
 				advertId: advertObjectId,
+				status: { $in: ['Submitted', 'Completed', 'Approved'] },
 			})
 				.skip((Number(page) - 1) * Number(limit))
 				.limit(Number(limit))
@@ -317,7 +318,7 @@ export const getTasksByAdvertId = asyncHandler(
 				.populate('taskPerformerId')
 		}
 
-		const totalTasks = await Task.countDocuments({ advertId: advertObjectId })
+		const totalTasks = await Task.countDocuments({ advertId: advertObjectId,status: { $in: ['Submitted', 'Completed', 'Approved'] }})
 		console.log('🚀 ~ totalTasks:', totalTasks)
 		const totalPages = Math.ceil(totalTasks / Number(limit))
 
