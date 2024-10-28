@@ -291,15 +291,13 @@ export const getTasksByUserId = asyncHandler(
 export const getTasksByAdvertId = asyncHandler(
 	async (req: Request, res: Response) => {
 		const { advertId } = req.params
-
-		
 		const advertObjectId = advertId
 
 		let tasks
 		if (status === 'All') {
 			tasks = await Task.find({
 				advertId: advertObjectId,
-				status: { $in: ['Submitted', 'Completed', 'Approved'] },
+				status: 'Submitted',
 			})
 				.sort('-createdAt')
 				.populate('advertiserId')
@@ -307,14 +305,17 @@ export const getTasksByAdvertId = asyncHandler(
 		} else {
 			tasks = await Task.find({
 				advertId: advertObjectId,
-				status,
+				status: 'Submitted',
 			})
 				.sort('-createdAt')
 				.populate('advertiserId')
 				.populate('taskPerformerId')
 		}
 
-		const totalTasks = await Task.countDocuments({ advertId: advertObjectId,status: { $in: ['Submitted', 'Completed', 'Approved'] }})
+		const totalTasks = await Task.countDocuments({
+			advertId: advertObjectId,
+			status: 'Submitted'
+		})
 		console.log('🚀 ~ totalTasks:', totalTasks)
 		
 
