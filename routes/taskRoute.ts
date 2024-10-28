@@ -51,9 +51,6 @@ router.get(
 router.get(
 	'/advert/:advertId',
 	protect,
-	celebrate({
-		query: paginateSchema,
-	}),
 	getTasksByAdvertId,
 )
 
