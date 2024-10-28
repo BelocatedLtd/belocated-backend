@@ -292,30 +292,17 @@ export const getTasksByAdvertId = asyncHandler(
 	async (req: Request, res: Response) => {
 		const { advertId } = req.params
 		const advertObjectId = advertId
-
-		let tasks
-		if (status === 'All') {
-			tasks = await Task.find({
+	
+			const tasks = await Task.find({
 				advertId: advertObjectId,
-				status: 'Submitted',
+				status:'Submitted'
 			})
 				.sort('-createdAt')
 				.populate('advertiserId')
 				.populate('taskPerformerId')
-		} else {
-			tasks = await Task.find({
-				advertId: advertObjectId,
-				status: 'Submitted',
-			})
-				.sort('-createdAt')
-				.populate('advertiserId')
-				.populate('taskPerformerId')
-		}
+	
 
-		const totalTasks = await Task.countDocuments({
-			advertId: advertObjectId,
-			status: 'Submitted'
-		})
+		const totalTasks = await Task.countDocuments({ advertId: advertObjectId, status:'Submitted' })
 		console.log('🚀 ~ totalTasks:', totalTasks)
 		
 
@@ -327,6 +314,7 @@ export const getTasksByAdvertId = asyncHandler(
 		res.status(200).json({
 			tasks,
 			totalTasks,
+			
 		})
 	},
 )
