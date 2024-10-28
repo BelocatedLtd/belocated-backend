@@ -48,11 +48,7 @@ router.get(
 	getTasksByUserId,
 )
 
-router.get(
-	'/advert/:advertId',
-	protect,
-	getTasksByAdvertId,
-)
+router.get('/advert/:advertId', protect, getTasksByAdvertId);
 
 // pagination
 router.get(
