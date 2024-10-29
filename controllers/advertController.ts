@@ -498,53 +498,55 @@ export const getAdvert = asyncHandler(async (req: Request, res: Response) => {
   
 // Get All Advert
 // http://localhost:6001/api/advert/all
-export const getAllAdvert = asyncHandler(
-	async (req: Request, res: Response) => {
-		try {
-			// Get page and limit from query parameters
-			const page = parseInt(req.query.page as string) || 1
-			const limit = parseInt(req.query.limit as string) || 10
+export const getAllAdvert = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
 
-			if (!page && !limit) {
-				const adverts = await Advert.find({status: "Running"})
-					.sort('-createdAt')
-					.populate('userId', 'fullname email')
+        const currentPage = page || 1;
+        const currentLimit = limit || 10;
+        const startIndex = (currentPage - 1) * currentLimit;
 
-				res.status(200).json({
-					adverts,
-					totalAdverts: adverts.length,
-				})
-			} else {
-				const currentPage = page || 1
-				const currentLimit = limit || 10
+        // Fetch all running adverts with pagination
+        const adverts = await Advert.find({ status: "Running" })
+            .sort('-createdAt')
+            .skip(startIndex)
+            .limit(currentLimit)
+            .populate('userId', 'fullname email');
 
-				const startIndex = (currentPage - 1) * currentLimit
+        const totalAdverts = await Advert.countDocuments({ status: "Running" });
+        const totalPages = Math.ceil(totalAdverts / currentLimit);
 
-				const totalAdverts = await Advert.countDocuments({status: "Running"})
+        // Fetch approved tasks and group them by advertId
+        const approvedTaskCounts = await Task.aggregate([
+            { $match: { status: "Approved" } }, // Filter approved tasks
+            { $group: { _id: "$advertId", count: { $sum: 1 } } } // Group by advertId and count
+        ]);
 
-				const adverts = await Advert.find({status: "Running"})
-					.sort('-createdAt')
-					.skip(startIndex)
-					.limit(currentLimit)
-					.populate('userId', 'fullname email')
+        // Map the approved task counts to their respective advertIds
+        const advertWithTaskCounts = adverts.map(advert => {
+            const approvedTasks = approvedTaskCounts.find(
+                task => task._id.toString() === advert._id.toString()
+            );
+            return {
+                ...advert.toObject(),
+                approvedTaskCount: approvedTasks ? approvedTasks.count : 0,
+            };
+        });
 
-				const totalPages = Math.ceil(totalAdverts / currentLimit)
-
-				res.status(200).json({
-					adverts,
-					page: currentPage,
-					totalPages,
-					totalAdverts,
-					hasNextPage: currentPage < totalPages,
-					hasPreviousPage: currentPage > 1,
-				})
-			}
-		} catch (error) {
-			console.log('🚀 ~ error:', error)
-			res.status(500).json({ error })
-		}
-	},
-)
+        res.status(200).json({
+            adverts: advertWithTaskCounts,
+            page: currentPage,
+            totalPages,
+            totalAdverts,
+            hasNextPage: currentPage < totalPages,
+            hasPreviousPage: currentPage > 1,
+        });
+    } catch (error) {
+        console.error('🚀 ~ error:', error);
+        res.status(500).json({ error });
+    }
+});
 
 //>>> Delete Advert
 export const deleteAdvert = asyncHandler(
