@@ -506,7 +506,7 @@ export const getAllAdvert = asyncHandler(
 			const limit = parseInt(req.query.limit as string) || 10
 
 			if (!page && !limit) {
-				const adverts = await Advert.find()
+				const adverts = await Advert.find({status: "Running"})
 					.sort('-createdAt')
 					.populate('userId', 'fullname email')
 
@@ -520,9 +520,9 @@ export const getAllAdvert = asyncHandler(
 
 				const startIndex = (currentPage - 1) * currentLimit
 
-				const totalAdverts = await Advert.countDocuments()
+				const totalAdverts = await Advert.countDocuments({status: "Running"})
 
-				const adverts = await Advert.find()
+				const adverts = await Advert.find({status: "Running"})
 					.sort('-createdAt')
 					.skip(startIndex)
 					.limit(currentLimit)
