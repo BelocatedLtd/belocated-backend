@@ -603,7 +603,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 	const limit = Number(req.query.limit) || 10
 	const search = (req.query.search as string) || ''
 	console.log('🚀 ~ getUsers ~ search:', search)
-	const searchRegex = new RegExp(search, 'i')
+	const searchRegex = new RegExp(search, 'i');
 
 	const currentPage = page
 
@@ -612,6 +612,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 			{ username: { $regex: searchRegex } },
 			{ email: { $regex: searchRegex } },
 			{ fullname: { $regex: searchRegex } },
+			 { phone: { $regex: searchRegex } },
 		],
 	}
 
