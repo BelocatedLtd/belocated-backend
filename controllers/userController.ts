@@ -612,9 +612,12 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 			{ username: { $regex: searchRegex } },
 			{ email: { $regex: searchRegex } },
 			{ fullname: { $regex: searchRegex } },
-			 { phone: { $regex: searchRegex } },
+			
 		],
 	}
+	 if (!isNaN(Number(search))) {
+        queryFilter.$or.push({ phone: Number(search) }); // Match phone numbers as exact values
+    }
 
 	const users = await User.find(queryFilter, { password: 0 })
 		.skip((page - 1) * limit)
