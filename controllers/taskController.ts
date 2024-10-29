@@ -166,57 +166,56 @@ export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
 //Get user Tasks
 // http://localhost:6001/api/tasks
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-	const { _id } = req.user as { _id: string }
-	let tasks
-
+	const { _id } = req.user as { _id: string };
+	let tasks;
+  
 	if (req.user.accountType !== 'Admin') {
-		tasks = await Task.find({ taskPerformerId: _id }).sort('-createdAt')
+	  tasks = await Task.find({ taskPerformerId: _id, status:"Submitted" })
+		.sort('-createdAt')
+		.populate({
+		  path: 'taskPerformerId',
+		  select: 'username email', // Fetch only the username and email
+		});
 	}
-
+  
 	if (req.user.accountType === 'Admin') {
-		const { page = 1, limit = 10, status = 'All' } = req.query
-
-		if (status === 'All') {
-			tasks = await Task.find()
-				.skip((Number(page) - 1) * Number(limit))
-				.limit(Number(limit))
-				.populate('taskPerformerId')
-				.populate('advertiserId')
-				.populate('advertId')
-		} else {
-			tasks = await Task.find({ status })
-				.skip((Number(page) - 1) * Number(limit))
-				.limit(Number(limit))
-				.populate('advertiserId')
-				.populate('taskPerformerId')
-				.populate('advertId')
-		}
-
-		const totalTasks = await Task.countDocuments(
-			status === 'All' ? {} : { status },
-		)
-		const totalPages = Math.ceil(totalTasks / Number(limit))
-
-		if (!tasks || tasks.length === 0) {
-			res.status(400).json({ message: 'Cannot find any task' })
-			return
-		}
-
-		res.status(200).json({
-			tasks,
-			totalTasks,
-			totalPages,
-			currentPage: Number(page),
-		})
-		return
+	  const { page = 1, limit = 10} = req.query;
+  
+	 
+		tasks = await Task.find({ status:"Submitted" })
+		  .skip((Number(page) - 1) * Number(limit))
+		  .limit(Number(limit))
+		  .populate({
+			path: 'taskPerformerId',
+			select: 'username email', // Fetch only the username and email
+		  })
+		  .populate('advertiserId')
+		  .populate('advertId');
+	  
+  
+	  const totalTasks = await Task.countDocuments({status:"Submitted"}
+	  );
+	  const totalPages = Math.ceil(totalTasks / Number(limit));
+  
+	  if (!tasks || tasks.length === 0) {
+		res.status(400).json({ message: 'Cannot find any task' });
+		return;
+	  }
+  
+	  res.status(200).json({
+		tasks,
+		totalTasks,
+		totalPages,
+		currentPage: Number(page),
+	  });
+	  return;
 	}
-
+  
 	if (tasks) {
-		res.status(200).json(tasks)
-		return
+	  res.status(200).json(tasks);
+	  return;
 	}
-})
-
+  });
 export const getTasksByUserId = asyncHandler(
 	async (req: Request, res: Response) => {
 		const { userId } = req.params
