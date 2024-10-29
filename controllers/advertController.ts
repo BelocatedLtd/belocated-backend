@@ -517,25 +517,43 @@ export const getAllAdvert = asyncHandler(async (req: Request, res: Response) => 
         const totalAdverts = await Advert.countDocuments({ status: "Running" });
         const totalPages = Math.ceil(totalAdverts / currentLimit);
 
-        // Fetch approved tasks and group them by advertId
-        const approvedTaskCounts = await Task.aggregate([
-            { $match: { status: "Approved" } }, // Filter approved tasks
-            { $group: { _id: "$advertId", count: { $sum: 1 } } } // Group by advertId and count
+        // Fetch approved and submitted tasks, group them by advertId
+        const taskCounts = await Task.aggregate([
+            {
+                $match: {
+                    status: { $in: ["Approved", "Submitted"] }
+                }
+            },
+            {
+                $group: {
+                    _id: { advertId: "$advertId", status: "$status" },
+                    count: { $sum: 1 }
+                }
+            }
         ]);
 
-        // Map the approved task counts to their respective advertIds
-        const advertWithTaskCounts = adverts.map(advert => {
-            const approvedTasks = approvedTaskCounts.find(
-                task => task._id.toString() === advert._id.toString()
-            );
+        // Organize task counts by advertId for easier lookup
+        const taskCountMap = taskCounts.reduce((acc, { _id, count }) => {
+            const { advertId, status } = _id;
+            if (!acc[advertId]) acc[advertId] = { approvedTaskCount: 0, submittedTaskCount: 0 };
+            if (status === "Approved") acc[advertId].approvedTaskCount = count;
+            if (status === "Submitted") acc[advertId].submittedTaskCount = count;
+            return acc;
+        }, {});
+
+        // Map the task counts to their respective adverts
+        const advertsWithTaskCounts = adverts.map(advert => {
+            const { approvedTaskCount = 0, submittedTaskCount = 0 } =
+                taskCountMap[advert._id.toString()] || {};
             return {
                 ...advert.toObject(),
-                approvedTaskCount: approvedTasks ? approvedTasks.count : 0,
+                approvedTaskCount,
+                submittedTaskCount
             };
         });
 
         res.status(200).json({
-            adverts: advertWithTaskCounts,
+            adverts: advertsWithTaskCounts,
             page: currentPage,
             totalPages,
             totalAdverts,
