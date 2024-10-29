@@ -607,7 +607,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 	const currentPage = page
 
-	const queryFilter = {
+	const queryFilter: any = {
 		$or: [
 			{ username: { $regex: searchRegex } },
 			{ email: { $regex: searchRegex } },
