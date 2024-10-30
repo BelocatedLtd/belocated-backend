@@ -179,12 +179,7 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
 	}
   
 	if (req.user.accountType === 'Admin') {
-	  const { page = 1, limit = 10} = req.query;
-  
-	 
 		tasks = await Task.find({ status:"Submitted" })
-		  .skip((Number(page) - 1) * Number(limit))
-		  .limit(Number(limit))
 		  .populate({
 			path: 'taskPerformerId',
 			select: 'username email', // Fetch only the username and email
@@ -195,8 +190,6 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   
 	  const totalTasks = await Task.countDocuments({status:"Submitted"}
 	  );
-	  const totalPages = Math.ceil(totalTasks / Number(limit));
-  
 	  if (!tasks || tasks.length === 0) {
 		res.status(400).json({ message: 'Cannot find any task' });
 		return;
@@ -205,8 +198,6 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
 	  res.status(200).json({
 		tasks,
 		totalTasks,
-		totalPages,
-		currentPage: Number(page),
 	  });
 	  return;
 	}
