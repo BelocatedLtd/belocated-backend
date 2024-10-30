@@ -806,7 +806,7 @@ const approvedTasks = await Task.countDocuments({
              status:'Submitted',
         });
 
-	    const recmp = approvedTasks - completedTasks;
+	    const recmp = approvedTasks + completedTasks;
 
         // Return the remaining task count
         res.json({
