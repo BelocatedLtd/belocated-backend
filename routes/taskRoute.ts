@@ -34,9 +34,6 @@ router.post('/reject', protect, rejectTask)
 router.get(
 	'/',
 	protect,
-	celebrate({
-		query: paginateSchema,
-	}),
 	getTasks,
 )
 router.get(
