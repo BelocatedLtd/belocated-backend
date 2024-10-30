@@ -766,13 +766,13 @@ console.log(totalTasks);
             taskPerformerId: userId,
             status:'Submitted',
         });
-	    
+	    const remp = completedTasks + approvedTasks;
 
         // Return the remaining task count
         res.json({
             totalTasks,
             approvedTasks,
-             remainingTaskstoApprove: completedTasks - approvedTasks,
+             remainingTaskstoApprove: remp - approvedTasks,
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tasks' });
@@ -794,17 +794,25 @@ export const remainingCompletedTask = asyncHandler(async (req: Request, res: Res
 			  ],
 		});
 console.log(totalTasks);
+
+const approvedTasks = await Task.countDocuments({
+            taskPerformerId: userId,
+            status: 'Approved',
+        });
+	    
         // Fetch the number of tasks the user has completed (status = 'Approved')
         const completedTasks = await Task.countDocuments({
             taskPerformerId: userId,
              status:'Submitted',
         });
 
+	    const recmp = approvedTasks - completedTasks;
+
         // Return the remaining task count
         res.json({
            totalTasks,
            completedTasks,
-           remainingTaskToComplete: totalTasks - completedTasks,
+           remainingTaskToComplete: totalTasks - recmp,
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tasks' });
