@@ -143,10 +143,11 @@ export const registerUser = asyncHandler(
 				if (!referralExists) {
 					await Referral.create({
 						referrerId: referrer._id,
-						referredUserId: null,
+						referredUserId: _id,
 						referredEmail: email,
 						pointsEarned: 0,
 						status: 'Pending',
+						referredName: username,
 					});
 				}
 			}
