@@ -130,27 +130,24 @@ export const registerUser = asyncHandler(
 			} else {
 			  console.log('Token not found or invalid');
 			}
-		  } else if (referralUsername) {
-			const referredUser = await User.findOne({ username: referralUsername });
-			if (referredUser) {
-			  await Referral.findOneAndUpdate(
+} else if (referralUsername) {
+			const referredUser = await User.findOne({ username: referralUsername })
+			const referral = await Referral.findOneAndUpdate(
 				{ referredEmail: email },
 				{
-				  referredUserId: _id,
-				  referredName: username,
-				  status: 'Pending',
+					referredUserId: _id,
+					referredName: username,
+					status: 'Pending',
 				},
 				{
-				  new: true,
-				  runValidators: true,
-				  upsert: true, // ensures document creation if not found
-				}
-			  );
+					new: true,
+					runValidators: true,
+				},
+			)
+		
 			} else {
 			  console.log('Referral username not found');
 			}
-		  }
-	  
 		  res.status(200).json(userData);
 		}
 	  );
