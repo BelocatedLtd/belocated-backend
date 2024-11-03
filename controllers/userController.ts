@@ -908,24 +908,30 @@ export const updateUserBankDetails = asyncHandler(
 			}
 
 			if (updatedUser.isKycDone) {
-				const referral = await Referral.findOne({ referredUserId: userId })
-
+				const referral = await Referral.findOne({ referredUserId: userId });
+			
 				if (referral && referral.status !== 'Completed') {
-					referral.status = 'Completed'
-					referral.pointsEarned += 10
-					await referral.save()
-
-					const referrer = await User.findById(referral.referrerId)
-					console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer)
+					// Update referral status and points
+					referral.status = 'Completed';
+					referral.pointsEarned += 10;
+					await referral.save();
+			
+					// Find referrer and update their points and referral array
+					const referrer = await User.findById(referral.referrerId);
+					console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer);
 					if (referrer) {
-						referrer.referralPoints += 10
-						await referrer.save()
+						referrer.referralPoints += 10;
+			
+						// Add referred user's userId to the referrer's referrals array
+						if (!referrer.referrals.includes(userId)) {
+							referrer.referrals.push(userId);
+						}
+						await referrer.save();
 					}
 				}
-
-				const { password, ...userData } = updatedUser.toObject()
-
-				res.status(200).json({ ...userData, id: userData._id })
+			
+				const { password, ...userData } = updatedUser.toObject();
+				res.status(200).json({ ...userData, id: userData._id });
 			}
 			//}
 		} catch (error) {
