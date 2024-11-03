@@ -104,47 +104,56 @@ export const registerUser = asyncHandler(
 		}
 
 		if (referralToken) {
+			// Hash the referral token
 			const hashedToken = crypto
-				.createHash('sha256')
-				.update(referralToken)
-				.digest('hex')
-
-			const token = await Token.findOne({ referralToken: hashedToken })
+			  .createHash('sha256')
+			  .update(referralToken)
+			  .digest('hex');
+	  
+			const token = await Token.findOne({ referralToken: hashedToken });
 			if (token) {
-				const referrerId = token.userId
-				const referrer = await User.findById(referrerId)
-				const referral = await Referral.findOneAndUpdate(
-					{ referredEmail: email },
-					{
-						referredUserId: _id,
-						referredName: username,
-						status: 'Pending',
-					},
-					{
-						new: true,
-						runValidators: true,
-					},
-				)
-			}
-		} else if (referralUsername) {
-			const referredUser = await User.findOne({ username: referralUsername })
-			const referral = await Referral.findOneAndUpdate(
+			  const referrerId = token.userId;
+	  
+			  await Referral.findOneAndUpdate(
 				{ referredEmail: email },
 				{
-					referredUserId: _id,
-					referredName: username,
-					status: 'Pending',
+				  referredUserId: _id,
+				  referredName: username,
+				  status: 'Pending',
 				},
 				{
-					new: true,
-					runValidators: true,
+				  new: true,
+				  runValidators: true,
+				  upsert: true, // ensures document creation if not found
+				}
+			  );
+			} else {
+			  console.log('Token not found or invalid');
+			}
+		  } else if (referralUsername) {
+			const referredUser = await User.findOne({ username: referralUsername });
+			if (referredUser) {
+			  await Referral.findOneAndUpdate(
+				{ referredEmail: email },
+				{
+				  referredUserId: _id,
+				  referredName: username,
+				  status: 'Pending',
 				},
-			)
+				{
+				  new: true,
+				  runValidators: true,
+				  upsert: true, // ensures document creation if not found
+				}
+			  );
+			} else {
+			  console.log('Referral username not found');
+			}
+		  }
+	  
+		  res.status(200).json(userData);
 		}
-
-		res.status(200).json(userData)
-	},
-)
+	  );
 
 //>>>> Register User For Ref Bonus
 // http://localhost:6001/api/user/refregister
