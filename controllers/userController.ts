@@ -1104,7 +1104,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
     <p>Your verification link is:</p>
 
-    <a href=${verificationLink} clicktracking=off>${verificationLink}</a>
+        <a href=${verificationLink} clicktracking=off>${verificationLink.slice(0,20)}...</a>
 
     <p>Regards,</p>
     <p>Belocated Team</p>
@@ -1728,7 +1728,7 @@ export const sendReferralEmail = asyncHandler(
         <h2>Hello,</h2>
         <p>${referrer.username} has invited you to join BeLocated!</p>
         <p>To get started, please click the link below to register:</p>
-        <a href=${referralLink} clicktracking=off>${referralLink}</a>
+        <a href=${referralLink} clicktracking=off>${referralLink.slice(0, 20)}...</a>
         <p>This link is valid for one week.</p>
         <p>Regards,</p>
         <p>BeLocated Team</p>
