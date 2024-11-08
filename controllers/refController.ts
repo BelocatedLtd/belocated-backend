@@ -145,10 +145,13 @@ export const getReferralDashboardData = asyncHandler(
 			return
 		}
 
+			const pointsToNairaConversionRate = 50;
+		const totalEarning = Math.floor(user.referralPoints / 10) * pointsToNairaConversionRate;
+
 		const refDashboardData = {
 			totalPoints: user.referralPoints,
 			referredUsers: referrals.length,
-			totalEarning: 0,
+			totalEarning: totalEarning,
 			challengesWon: 0,
 		}
 
