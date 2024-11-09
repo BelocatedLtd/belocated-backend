@@ -119,7 +119,7 @@ export const registerUser = asyncHandler(
 				{
 				  referredUserId: _id,
 				  referredName: username,
-				  status: 'Pending',
+				  status: 'Registered',
 				},
 				{
 				  new: true,
