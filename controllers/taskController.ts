@@ -281,49 +281,47 @@ export const getTasksByAdvertId = asyncHandler(
 
 // Submit Task
 // http://localhost:6001/api/tasks/submit
-export const submitTask = asyncHandler(async (req, res) => { 
+
+
+export const submitTask = async (req: Request, res: Response): Promise<void> => { 
   try {
     const { taskId, userSocialName } = req.body;
 
-    // Get task, advert, user, and wallet details
     const task = await Task.findById(taskId);
     if (!task) {
-      return res.status(404).json({ message: 'Cannot find task' });
+      res.status(404).json({ message: 'Cannot find task' });
+      return;
     }
 
     const advert = await Advert.findById(task.advertId);
     if (!advert) {
-      return res.status(404).json({ message: 'Cannot find advert' });
+      res.status(404).json({ message: 'Cannot find advert' });
+      return;
     }
 
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({ message: 'Cannot find user' });
+      res.status(404).json({ message: 'Cannot find user' });
+      return;
     }
 
     const wallet = await Wallet.findOne({ userId: req.user._id });
     if (!wallet) {
-      return res.status(404).json({ message: 'Cannot find user Wallet to update' });
+      res.status(404).json({ message: 'Cannot find user Wallet to update' });
+      return;
     }
 
-    // Check if the ad campaign is still active
     if (advert.desiredROI === 0) {
-      return res.status(400).json({ message: 'Ad campaign is no longer active' });
+      res.status(400).json({ message: 'Ad campaign is no longer active' });
+      return;
     }
 
-    // Check if the task has already been submitted
     if (task.status === 'Submitted') {
-      return res.status(400).json({ 
+      res.status(400).json({
         message: 'You have already submitted this task. Please wait for approval.'
       });
+      return;
     }
-
-    // Cloudinary configuration
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
 
     // Upload screenshots if provided
     let uploadedImages = [];
@@ -339,7 +337,6 @@ export const submitTask = asyncHandler(async (req, res) => {
       }
     }
 
-    // Update task with submission details
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
       {
@@ -350,22 +347,18 @@ export const submitTask = asyncHandler(async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Calculate the start of the current week (Sunday 12pm)
     const startOfWeek = new Date();
     startOfWeek.setHours(12, 0, 0, 0);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
-    // Count approved tasks for the current week
     const approvedTasksThisWeek = await Task.countDocuments({
       taskPerformerId: req.user._id,
       status: 'Approved',
       createdAt: { $gte: startOfWeek, $lte: new Date() },
     });
 
-    // Determine if this task should be free (4th or 9th task of the week)
     let isFreeTask = false;
     if ([4, 9].includes(approvedTasksThisWeek + 1)) {
-      // Check if user has completed their two free tasks for the week
       const freeTasksThisWeek = await Task.countDocuments({
         taskPerformerId: req.user._id,
         isFreeTask: true,
@@ -373,25 +366,19 @@ export const submitTask = asyncHandler(async (req, res) => {
         createdAt: { $gte: startOfWeek, $lte: new Date() },
       });
 
-      // Only mark as free if less than two free tasks are completed
       if (freeTasksThisWeek < 2) {
         isFreeTask = true;
       }
     }
 
     if (isFreeTask) {
-      // Mark task as free
       await Task.findByIdAndUpdate(taskId, { isFreeTask: true }, { new: true });
 
-      // Decrement user's free task count
       user.freeTaskCount -= 1;
       await user.save();
 
-      return res.status(200).json({ 
-        message: 'Task submitted as a free task, awaiting admin approval.' 
-      });
+      res.status(200).json({ message: 'Task submitted as a free task, awaiting admin approval.' });
     } else {
-      // Add earnings to user's pending balance for a paid task
       const updatedUserWallet = await Wallet.updateOne(
         { userId: req.user._id },
         { $inc: { pendingBalance: task.toEarn } }
@@ -401,12 +388,9 @@ export const submitTask = asyncHandler(async (req, res) => {
         throw new Error('Failed to update user pending balance');
       }
 
-      return res.status(200).json({ 
-        message: 'Task submitted successfully, awaiting admin approval.' 
-      });
+      res.status(200).json({ message: 'Task submitted successfully, awaiting admin approval.' });
     }
 
-    // Decrease advert's desired ROI and increment task count
     advert.desiredROI -= 1;
     advert.tasks += 1;
     await advert.save();
@@ -415,11 +399,16 @@ export const submitTask = asyncHandler(async (req, res) => {
       advert.status = 'Completed';
       await advert.save();
     }
-  } catch (error) {
-    console.error('Error submitting task:', error);
-    res.status(500).json({ message: error.message || 'An unknown error occurred' });
+} catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error submitting task:', error.message);
+      res.status(500).json({ message: error.message });
+    } else {
+      console.error('Unknown error submitting task:', error);
+      res.status(500).json({ message: 'An unknown error occurred' });
+    }
   }
-});
+};
 
 
 // Admin Approve Submitted Tasks and Pay user
