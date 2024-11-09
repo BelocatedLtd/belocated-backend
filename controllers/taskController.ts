@@ -416,7 +416,7 @@ export const submitTask = asyncHandler(
       res.status(500).json({ message: 'An unknown error occurred' });
     }
   }
-};
+});
 
 
 // Admin Approve Submitted Tasks and Pay user
