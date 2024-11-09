@@ -283,7 +283,7 @@ export const getTasksByAdvertId = asyncHandler(
 // http://localhost:6001/api/tasks/submit
 
 
-export const submitTask = async (req: Request, res: Response): Promise<void> => { 
+export const submitTask = asyncHandler(req: Request, res: Response) => { 
   try {
     const { taskId, userSocialName } = req.body;
 
@@ -322,6 +322,13 @@ export const submitTask = async (req: Request, res: Response): Promise<void> => 
       });
       return;
     }
+	  	// Cloudinary configuration
+		cloudinary.config({
+			cloud_name: process.env.CLOUDINARY_NAME,
+			api_key: process.env.CLOUDINARY_API_KEY,
+			api_secret: process.env.CLOUDINARY_API_SECRET,
+		})
+
 
     // Upload screenshots if provided
     let uploadedImages = [];
