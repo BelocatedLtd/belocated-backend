@@ -283,7 +283,8 @@ export const getTasksByAdvertId = asyncHandler(
 // http://localhost:6001/api/tasks/submit
 
 
-export const submitTask = asyncHandler(req: Request, res: Response) => { 
+export const submitTask = asyncHandler(
+	async (req: Request, res: Response) => {
   try {
     const { taskId, userSocialName } = req.body;
 
