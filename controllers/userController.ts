@@ -119,7 +119,7 @@ export const registerUser = asyncHandler(
 				{
 				  referredUserId: _id,
 				  referredName: username,
-				  status: 'Registered',
+				  status: 'Pending',
 				},
 				{
 				  new: true,
@@ -146,7 +146,7 @@ export const registerUser = asyncHandler(
 						referredUserId: _id,
 						referredEmail: email,
 						pointsEarned: 0,
-						status: 'Registered',
+						status: 'Pending',
 						referredName: username,
 					});
 				}
