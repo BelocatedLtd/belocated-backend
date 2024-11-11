@@ -601,112 +601,78 @@ export const deleteAdvert = asyncHandler(
 	},
 )
 export const getQualifiedAdverts = asyncHandler(
-	async (req: Request, res: Response) => {
-		const { _id, location, community, gender } = req.user
-		const { platformName } = req.params
+    async (req: Request, res: Response) => {
+        const { _id, location, community, gender } = req.user;
+        const { platformName } = req.params;
 
-		try {
-			// Fetch all adverts for the specified platform, sorted by creation date in descending order
-			const adverts = await Advert.find({
-				platform: platformName,
-				status: 'Running',
-				$and: [
-					{ $or: [{ state: location }, { state: 'All' }] },
-					{ $or: [{ lga: community }, { lga: 'All' }] },
-					{ $or: [{ gender: gender }, { gender: 'All' }] },
-				  ],
-			}).sort('-createdAt')
+        try {
+            // Fetch all adverts for the specified platform and apply user-based filters
+            const adverts = await Advert.find({
+                platform: platformName,
+                status: 'Running',
+                $and: [
+                    { $or: [{ state: location }, { state: 'All' }] },
+                    { $or: [{ lga: community }, { lga: 'All' }] },
+                    { $or: [{ gender: gender }, { gender: 'All' }] },
+                ],
+            }).sort('-createdAt');
 
-			if (!adverts.length) {
-				throw new Error('No adverts found')
-			}
+            if (!adverts.length) {
+                throw new Error('No adverts found');
+            }
 
-			// Retrieve tasks associated with the user
-			const userTasks = await Task.find({ taskPerformerId: _id?.toString() }).select(
-				'advertId',
-			)
-			const performedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
-			console.log('🚀 ~ getQualifiedAdverts ~ userTasks:', userTasks.length)
+            // Get the IDs of tasks the user has already performed on this platform
+            const userTasks = await Task.find({
+                taskPerformerId: _id?.toString(),
+                platform: platformName,
+                status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
+            }).select('advertId');
 
-				// Fetch completed task IDs by the user on the specified platform
-		  // Check for submitted tasks in the Task collection
-				  const completedOrSubmittedTasks = await Task.find({
-					taskPerformerId: _id?.toString(),
-					platform: platformName,
-					status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
-				  }).select('advertId'); // Extract only advertId
-			  
-				  // Extract the advertIds of completed or submitted tasks
-				  const completedTaskIds = completedOrSubmittedTasks.map(task => task.advertId);
-			  
-				  // Fetch all adverts on this platform that are NOT completed/submitted by the user
-				  const availableAdverts = await Advert.find({
-					platform: platformName,
-					  status:'Running', 
-					_id: { $nin: completedTaskIds }, 
-				       $and: [
-					{ $or: [{ state: location }, { state: 'All' }] },
-					{ $or: [{ lga: community }, { lga: 'All' }] },
-					{ $or: [{ gender: gender }, { gender: 'All' }] },
-				  ],// Exclude completed/submitted tasks
-				  }).select('_id'); // Select only the advert IDs
-			  
-				  // Calculate the number of remaining tasks
-				  const remainingTasksCount = availableAdverts.length;
-			
-			// Group adverts by service type
-			const advertsByServiceType: Record<
-				string,
-				{ adverts: IAdvert[]; count: number }
-			> = {}
-			adverts.forEach((advert) => {
-				const serviceType = advert.service || 'Undefined' // Handle undefined serviceType
-				if (!advertsByServiceType[serviceType]) {
-					advertsByServiceType[serviceType] = { adverts: [], count: 0 }
-				}
-				advertsByServiceType[serviceType].adverts.push(advert as any)
-				advertsByServiceType[serviceType].count++
-			})
+            const completedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
 
-			// Filter and select one advert per service type
-			const selectedAdverts = []
-			for (const serviceType in advertsByServiceType) {
-				const { adverts: serviceAdverts } = advertsByServiceType[serviceType]
-				
-				const filteredAdverts = serviceAdverts.filter((advert) => {
-					const locationMatch =
-						advert.state === location || advert.state === 'All'
-					const communityMatch =
-						advert.lga === community || advert.lga === 'All'
-					const genderMatch =
-						advert.gender === gender || advert.gender === 'All'
-					
-					const notAlreadyPerformed = !performedTaskIds.has(advert._id.toString());
+            // Group adverts by service type with a count of available adverts per service type
+            const advertsByServiceType: Record<
+                string,
+                { adverts: IAdvert[]; availableTasksCount: number }
+            > = {};
 
-					return (
-						locationMatch && communityMatch && genderMatch && notAlreadyPerformed
-					)
-				})
+            adverts.forEach((advert) => {
+                const serviceType = advert.service || 'Undefined';
 
-				if (filteredAdverts.length > 0) {
-					const filteredAdvert = filteredAdverts[0]
-					selectedAdverts.push({
-						...filteredAdvert._doc,
-						availableTasks: remainingTasksCount, // Count only the filtered adverts
-					})
-				}
-			}
+                if (!advertsByServiceType[serviceType]) {
+                    advertsByServiceType[serviceType] = { adverts: [], availableTasksCount: 0 };
+                }
 
-			// Respond with the selected adverts including the task counts
-			res.status(200).json(selectedAdverts)
-		} catch (error) {
-			// Handle any errors that occur during the process
-			res.status(500).json({ error })
-		}
-	},
-)
+                // Check if the advert has not been completed or submitted by the user
+                const isAvailable = !completedTaskIds.has(advert._id.toString());
 
+                if (isAvailable) {
+                    advertsByServiceType[serviceType].adverts.push(advert as any);
+                    advertsByServiceType[serviceType].availableTasksCount++;
+                }
+            });
 
+            // Select one advert per service type and add the available tasks count for that service type
+            const selectedAdverts = [];
+            for (const serviceType in advertsByServiceType) {
+                const { adverts: serviceAdverts, availableTasksCount } = advertsByServiceType[serviceType];
+
+                if (serviceAdverts.length > 0) {
+                    const selectedAdvert = {
+                        ...serviceAdverts[0]._doc,
+                        availableTasks: availableTasksCount,  // Count only for this specific service type
+                    };
+                    selectedAdverts.push(selectedAdvert);
+                }
+            }
+
+            // Respond with the selected adverts including the task counts for each service type
+            res.status(200).json(selectedAdverts);
+        } catch (error) {
+            res.status(500).json({ error });
+        }
+    },
+);
 
 
 // Handle task submission and prevent duplicate tasks
