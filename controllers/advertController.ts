@@ -719,11 +719,11 @@ export const submitTask = asyncHandler (async (req: Request, res: Response) => {
         const existingTask = await Task.findOne({ advertId, taskPerformerId: performerId }).exec();
 
         if (existingTask) {
-            return res.status(400).json({ message: 'Task already performed. Please select another task.' });
+           res.status(400).json({ message: 'Task already performed. Please select another task.' });
         }
 
         // If no existing task, you can proceed with task creation or other logic here
-        return res.status(200).json({ message: 'Task is available for performance.' });
+        res.status(200).json({ message: 'Task is available for performance.' });
     } catch (error) {
         res.status(500).json({ error: 'An error occurred while checking the task.' });
     }
