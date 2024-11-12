@@ -773,7 +773,7 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 			// Step 3: Get all tasks performed by the user with relevant statuses.
 			const userTasks = await Task.find({
 				taskPerformerId: _id?.toString(),
-				status: { $in: ['Submitted', 'Completed', 'Approved'] },
+				status: { $in: ['Submitted', 'Completed', 'Approved', 'Awaiting Submission'] },
 			}).select('advertId');
 
 			// Step 4: Create a count of tasks performed for each advert.
