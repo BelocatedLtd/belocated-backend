@@ -625,7 +625,7 @@ export const getQualifiedAdverts = asyncHandler(
             const userTasks = await Task.find({
                 taskPerformerId: _id?.toString(),
                 platform: platformName,
-                status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
+                status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected', 'Awaiting Submission'] },
             }).select('advertId');
 
             const completedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
@@ -752,76 +752,83 @@ export const submitTask = asyncHandler (async (req: Request, res: Response) => {
 
 export const getTotalTasksByAllPlatforms = asyncHandler(
 	async (req: Request, res: Response) => {
-	  const { _id, location, community, gender } = req.user;
-  
-	  try {
-		// Step 1: Fetch eligible adverts based on user criteria.
-		const eligibleAdverts = await Advert.find({
-		  status: 'Running',
-		  $and: [
-			{ $or: [{ state: location }, { state: 'All' }] },
-			{ $or: [{ lga: community }, { lga: 'All' }] },
-			{ $or: [{ gender: gender }, { gender: 'All' }] },
-		  ],
-		}).sort('-createdAt');
-  
-		// Step 2: Return empty object if no eligible adverts are found.
-		if (!eligibleAdverts.length) {
-		 res.status(200).json({});
+		const { _id, location, community, gender } = req.user;
+
+		try {
+			// Step 1: Fetch eligible adverts based on user criteria.
+			const eligibleAdverts = await Advert.find({
+				status: 'Running',
+				$and: [
+					{ $or: [{ state: location }, { state: 'All' }] },
+					{ $or: [{ lga: community }, { lga: 'All' }] },
+					{ $or: [{ gender: gender }, { gender: 'All' }] },
+				],
+			}).sort('-createdAt');
+
+			// Step 2: Return empty object if no eligible adverts are found.
+			if (!eligibleAdverts.length) {
+				res.status(200).json({});
+			}
+
+			// Step 3: Get all tasks performed by the user with relevant statuses.
+			const userTasks = await Task.find({
+				taskPerformerId: _id?.toString(),
+				status: { $in: ['Submitted', 'Completed', 'Approved'] },
+			}).select('advertId');
+
+			// Step 4: Create a count of tasks performed for each advert.
+			// Define the accumulator type as Record<string, number>
+			const performedTaskCount = userTasks.reduce<Record<string, number>>((acc, task) => {
+				const advertId = task.advertId?.toString();
+				if (advertId) {
+					acc[advertId] = (acc[advertId] || 0) + 1;
+				}
+				return acc;
+			}, {});
+
+			// Step 5: Initialize a platform task counter.
+			const platformTaskCounts: Record<
+				string,
+				{ totalTasks: number; remainingTasks: number }
+			> = {};
+
+			// Step 6: Iterate over eligible adverts to populate platform task counts.
+			// Step 6: Create a set to track unique adverts counted for each platform
+			const platformAdvertSet = new Map(); // e.g., { "Platform1": Set<advertId>, "Platform2": Set<advertId> }
+
+			eligibleAdverts.forEach((advert) => {
+				const platformName = advert.platform;
+				const advertIdString = advert._id.toString();
+
+				// Initialize platform entry in both map and counts if it doesn’t exist
+				if (!platformAdvertSet.has(platformName)) {
+					platformAdvertSet.set(platformName, new Set());
+					platformTaskCounts[platformName] = { totalTasks: 0, remainingTasks: 0 };
+				}
+
+				// Only increment totalTasks if the advert hasn't been counted yet
+				const platformAdverts = platformAdvertSet.get(platformName);
+				if (!platformAdverts.has(advertIdString)) {
+					platformAdverts.add(advertIdString); // Track this advert as counted
+					platformTaskCounts[platformName].totalTasks += 1; // Increment total tasks for this platform
+				}
+
+				// Calculate performed tasks for this advert
+				const performedCount = performedTaskCount[advertIdString] || 0;
+
+				// Calculate remaining tasks
+				platformTaskCounts[platformName].remainingTasks =
+					platformTaskCounts[platformName].totalTasks - performedCount;
+			});
+
+			// Step 7: Send the response with the platform task counts.
+			res.status(200).json(platformTaskCounts);
+		} catch (error) {
+			// Step 8: Handle any errors that occur.
+			res.status(500).json({ error });
 		}
-  
-		// Step 3: Get all tasks performed by the user with relevant statuses.
-		const userTasks = await Task.find({
-		  taskPerformerId: _id?.toString(),
-		  status: { $in: ['Submitted', 'Completed', 'Approved'] },
-		}).select('advertId');
-  
-		// Step 4: Create a count of tasks performed for each advert.
-		// Define the accumulator type as Record<string, number>
-		const performedTaskCount = userTasks.reduce<Record<string, number>>((acc, task) => {
-		  const advertId = task.advertId?.toString();
-		  if (advertId) {
-			acc[advertId] = (acc[advertId] || 0) + 1;
-		  }
-		  return acc;
-		}, {});
-  
-		// Step 5: Initialize a platform task counter.
-		const platformTaskCounts: Record<
-		  string,
-		  { totalTasks: number; remainingTasks: number }
-		> = {};
-  
-		// Step 6: Iterate over eligible adverts to populate platform task counts.
-		eligibleAdverts.forEach((advert) => {
-		  const platformName = advert.platform;
-		  const advertIdString = advert._id.toString();
-  
-		  // Initialize platform entry if it doesn't exist.
-		  if (!platformTaskCounts[platformName]) {
-			platformTaskCounts[platformName] = { totalTasks: 0, remainingTasks: 0 };
-		  }
-  
-		  // Increment total tasks for the platform.
-		  platformTaskCounts[platformName].totalTasks += 1; // Each advert represents one task
-  
-		  // Calculate performed tasks for this advert.
-		  const performedCount = performedTaskCount[advertIdString] || 0;
-  
-		  // Calculate remaining tasks using the existing total tasks.
-		  platformTaskCounts[platformName].remainingTasks =
-			platformTaskCounts[platformName].totalTasks - performedCount;
-		});
-  
-		// Step 7: Send the response with the platform task counts.
-		res.status(200).json(platformTaskCounts);
-	  } catch (error) {
-		// Step 8: Handle any errors that occur.
-		res.status(500).json({ error });
-	  }
 	}
-  );
-  
+);
 
 
 
