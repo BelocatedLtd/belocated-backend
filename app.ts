@@ -44,7 +44,6 @@ const io = new Server(server, {
 
 dotenv.config()
 app.use(express.json())
-export { io }; 
 const corsOptions = {
     origin: ['https://www.belocated.ng','https://belocated.ng','https://urchin-app-nbzqm.ondigitalocean.app'],
     credentials: true, // This allows credentials (cookies) to be sent with the request
@@ -113,6 +112,7 @@ server.prependListener('request', (req: Request, res: Response) => {
 	res.setHeader('Access-Control-Allow-Origin', '*')
 })
 
+export { server, io };
 /*  MONGOOSE SETUP */
 const PORT = process.env.PORT || 7001
 mongoose
