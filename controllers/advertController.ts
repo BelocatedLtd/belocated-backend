@@ -771,7 +771,7 @@ export const getTotalTasksByAllPlatforms = asyncHandler(async (req: Request, res
         // Fetch user's completed tasks across all platforms
         const userTasks = await Task.find({
             taskPerformerId: _id?.toString(),
-            status: { $in: ['Submitted', 'Completed', 'Approved', 'Awaiting Submission'] }
+            status: { $in: ['Submitted', 'Completed', 'Approved', 'Awaiting Submission', 'Rejected'] }
         }).select('advertId');
 
         // Use Set to track completed advert IDs
