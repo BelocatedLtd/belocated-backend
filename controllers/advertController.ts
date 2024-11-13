@@ -754,66 +754,55 @@ export const getTotalTasksByAllPlatforms = asyncHandler(async (req: Request, res
     const { _id, location, community, gender } = req.user;
 
     try {
-        // Step 1: Use aggregation to filter eligible adverts and exclude performed tasks
-        const remainingAdverts = await Advert.aggregate([
-            {
-                // Match adverts based on user's location, community, and gender
-                $match: {
-                    status: 'Running',
-                    $and: [
-                        { $or: [{ state: location }, { state: 'All' }] },
-                        { $or: [{ lga: community }, { lga: 'All' }] },
-                        { $or: [{ gender: gender }, { gender: 'All' }] }
-                    ]
-                }
-            },
-            {
-                // Lookup tasks to check if the user has performed them on each advert
-                $lookup: {
-                    from: 'tasks',
-                    let: { advertId: '$_id' },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: { $eq: ['$advertId', '$$advertId'] },
-                                taskPerformerId: _id?.toString(),
-                                status: { $in: ['Submitted', 'Completed', 'Approved', 'Awaiting Submission'] }
-                            }
-                        },
-                        { $project: { _id: 1 } } // Only need the ID if a task exists
-                    ],
-                    as: 'userTasks'
-                }
-            },
-            {
-                // Filter out adverts where userTasks are not empty (i.e., already performed by the user)
-                $match: {
-                    userTasks: { $size: 0 } // Keep only adverts with no matching tasks
-                }
-            },
-            {
-                // Group remaining adverts by platform
-                $group: {
-                    _id: '$platform',
-                    remainingAdverts: { $sum: 1 } // Count adverts per platform
-                }
+        // Fetch eligible adverts based on user criteria
+        const adverts = await Advert.find({
+            status: 'Running',
+            $and: [
+                { $or: [{ state: location }, { state: 'All' }] },
+                { $or: [{ lga: community }, { lga: 'All' }] },
+                { $or: [{ gender: gender }, { gender: 'All' }] },
+            ]
+        }).sort('-createdAt');
+
+        if (!adverts.length) {
+             res.status(200).json({}); // No eligible adverts
+        }
+
+        // Fetch user's completed tasks across all platforms
+        const userTasks = await Task.find({
+            taskPerformerId: _id?.toString(),
+            status: { $in: ['Submitted', 'Completed', 'Approved', 'Awaiting Submission'] }
+        }).select('advertId');
+
+        // Use Set to track completed advert IDs
+        const completedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
+
+        // Group adverts by platform and count remaining tasks
+        const platformTaskCounts: Record<string, { totalTasks: number; remainingTasks: number }> = {};
+
+        adverts.forEach(advert => {
+            const platformName = advert.platform || 'Unknown';
+
+            // Initialize platform if it doesn't exist
+            if (!platformTaskCounts[platformName]) {
+                platformTaskCounts[platformName] = { totalTasks: 0, remainingTasks: 0 };
             }
-        ]);
 
-        // Step 2: Format the response as an object with platform names as keys
-        const platformAdverts = remainingAdverts.reduce((acc, platformData) => {
-            acc[platformData._id] = platformData.remainingAdverts;
-            return acc;
-        }, {});
+            // Count each advert as a total task for the platform
+            platformTaskCounts[platformName].totalTasks += 1;
 
-        // Step 3: Send the response
-        res.status(200).json(platformAdverts);
+            // Count as remaining if the advert hasn't been completed by the user
+            if (!completedTaskIds.has(advert._id.toString())) {
+                platformTaskCounts[platformName].remainingTasks += 1;
+            }
+        });
+
+        // Send response with total and remaining tasks for each platform
+        res.status(200).json(platformTaskCounts);
     } catch (error) {
-        // Handle any errors
         res.status(500).json({ error });
     }
 });
-
 
 // get advert by id
 export const getAdvertById = asyncHandler(
