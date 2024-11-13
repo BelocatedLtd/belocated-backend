@@ -765,9 +765,10 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 				],
 			}).sort('-createdAt');
 
-			// Step 2: If there are no eligible adverts, return an empty result.
+			// Step 2: If there are no eligible adverts, send an empty result.
 			if (!eligibleAdverts.length) {
-				 res.status(200).json({});
+				res.status(200).json({});
+				return;  // Add this to prevent further code execution
 			}
 
 			// Step 3: Count the tasks performed by the user for each advert.
@@ -802,7 +803,7 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 					const performedCount = performedTaskCount[advertIdString] || 0;
 					acc[platformName].remainingTasks += Math.max(1 - performedCount, 0); // Count only if tasks are remaining
 
-					acc;
+					return acc;
 				},
 				{}
 			);
@@ -815,7 +816,6 @@ export const getTotalTasksByAllPlatforms = asyncHandler(
 		}
 	}
 );
-
 
 
 // get advert by id
