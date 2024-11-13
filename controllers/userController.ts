@@ -941,6 +941,7 @@ export const updateUserBankDetails = asyncHandler(
 				  
 						  // Emit the activity event to all connected clients
 						  io.emit('sendActivity', emitData);
+						console.log(emitData);
 					}
 				}
 			
