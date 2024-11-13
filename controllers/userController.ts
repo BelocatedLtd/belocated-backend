@@ -939,8 +939,9 @@ export const updateUserBankDetails = asyncHandler(
 						  };
 				  
 						  // Emit the activity event to all connected clients
-						  io.emit('sendActivity', emitData);
+						  io.emit('recievedActivity', emitData);
 						console.log(emitData);
+							alert(emitData);
 						}
 						
 						await referrer.save();
