@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { Request, Response } from 'express'
+import { io } from '../app';
 import asyncHandler from 'express-async-handler'
 import jwt from 'jsonwebtoken'
 import { Types } from 'mongoose'
@@ -933,6 +934,13 @@ export const updateUserBankDetails = asyncHandler(
 							referrer.referrals.push(userId);
 						}
 						await referrer.save();
+						const emitData = {
+							userId: referrer._id,
+							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
+						  };
+				  
+						  // Emit the activity event to all connected clients
+						  io.emit('sendActivity', emitData);
 					}
 				}
 			
