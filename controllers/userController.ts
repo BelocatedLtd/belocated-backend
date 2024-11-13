@@ -35,10 +35,15 @@ export const registerUser = asyncHandler(
 			throw new Error('Please fill in all required fields')
 		}
 
-		const emailExists = await User.findOne({ email: email })
-		if (emailExists) {
-			throw new Error('Email has already been registered, please login')
+		const usernameOrEmailExists = await User.findOne({
+			$or: [{ username }, { email }],
+		})
+
+		if (usernameOrEmailExists) {
+		  res.status(409).json({ message: 'Username or Email has already been registered by another user' });
 		}
+
+
 
 		let user
 
