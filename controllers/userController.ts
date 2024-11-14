@@ -9,6 +9,7 @@ import Advert from '../model/Advert'
 import RefChallenge from '../model/RefChallenge'
 import Referral from '../model/Referral'
 import Task from '../model/Task'
+import { saveActivity } from '../controllers/feedController'
 import Token from '../model/Token'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
@@ -921,6 +922,8 @@ export const updateUserBankDetails = asyncHandler(
 					// Update referral status and points
 					referral.status = 'Completed';
 					referral.pointsEarned += 10;
+
+					
 					await referral.save();
 			
 					// Find referrer and update their points and referral array
@@ -933,20 +936,22 @@ export const updateUserBankDetails = asyncHandler(
 						if (!referrer.referrals.includes(userId)) {
 							referrer.referrals.push(userId);
 
-							const emitData = {
-							userId: referrer._id,
-							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
-						  };
-				  
-						  // Emit the activity event to all connected clients
-						  io.emit('recievedActivity', emitData);
-						console.log(emitData);
-							alert(emitData);
+							
 						}
 						
 						await referrer.save();
 						
 					}
+
+					const emitData = {
+							userId: referrer._id,
+							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
+						  };
+				  
+						  // Emit the activity event to all connected clients
+						  io.emit('sendActivity', emitData);
+						console.log(emitData);
+							alert(emitData);
 				}
 			
 				const { password, ...userData } = updatedUser.toObject();
