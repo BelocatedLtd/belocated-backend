@@ -132,6 +132,41 @@ export const getAllUserReferrals = asyncHandler(
 		res.status(200).json(referrals)
 	},
 )
+export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id; // Assumes you have user authentication set up
+    const user = await User.findById(userId);
+	const wallet = await Wallet.findOne({ userId: userId });
+
+
+    if (!user) {
+       res.status(404).json({ message: 'User not found' })
+	   return;
+    }
+	if (!wallet) {
+		res.status(404).json({ message: 'Wallet not found for user' });
+		return;
+	  }
+
+	const pointsToNairaConversionRate = 100;
+    const totalEarning = Math.floor(user.referralPoints / 10) * pointsToNairaConversionRate;
+
+    if (totalEarning >= 100) {
+      wallet.totalEarning += totalEarning; // Transfer referral earnings to wallet
+      user.referralPoints = 0; // Reset referral points
+
+      await user.save();
+      res.status(200).json({
+        message: 'Withdrawal successful',
+        walletBalance: wallet.totalEarning,
+      });
+    } else {
+      res.status(400).json({ message: 'Insufficient referral earnings' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 export const getReferralDashboardData = asyncHandler(
 	async (req: Request, res: Response) => {
