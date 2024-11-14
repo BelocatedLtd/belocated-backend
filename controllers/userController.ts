@@ -918,6 +918,7 @@ export const updateUserBankDetails = asyncHandler(
 			if (updatedUser.isKycDone) {
 				const referral = await Referral.findOne({ referredUserId: userId });
 			
+			
 				if (referral && referral.status !== 'Completed') {
 					// Update referral status and points
 					referral.status = 'Completed';
@@ -927,7 +928,9 @@ export const updateUserBankDetails = asyncHandler(
 					await referral.save();
 			
 					// Find referrer and update their points and referral array
+					
 					const referrer = await User.findById(referral.referrerId);
+					
 					console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer);
 					if (referrer) {
 						referrer.referralPoints += 10;
@@ -937,7 +940,7 @@ export const updateUserBankDetails = asyncHandler(
 							referrer.referrals.push(userId);
                                                 const emitData = {
 							userId:  referrer._id.toString(),
-							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
+							action: `@${referrer.username} has earned ₦100 from referring ${referral.referredName}`,
 						  };
 				  
 						  // Emit the activity event to all connected clients
