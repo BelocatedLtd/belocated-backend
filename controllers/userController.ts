@@ -936,7 +936,7 @@ export const updateUserBankDetails = asyncHandler(
 						if (!referrer.referrals.includes(userId)) {
 							referrer.referrals.push(userId);
                                                 const emitData = {
-							userId: referrer._id,
+							userId:  referrer._id.toString(),
 							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
 						  };
 				  
