@@ -185,7 +185,7 @@ export const getReferralDashboardData = asyncHandler(
 
 		const refDashboardData = {
 			totalPoints: user.referralPoints,
-			referredUsers: referrals.length,
+			referredUsers: user.referrals.length,
 			totalEarning: totalEarning,
 			challengesWon: 0,
 		}
