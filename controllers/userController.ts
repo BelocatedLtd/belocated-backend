@@ -935,23 +935,22 @@ export const updateUserBankDetails = asyncHandler(
 						// Add referred user's userId to the referrer's referrals array
 						if (!referrer.referrals.includes(userId)) {
 							referrer.referrals.push(userId);
-
-							
-						}
-						
-						await referrer.save();
-						
-					}
-
-					const emitData = {
+                                                const emitData = {
 							userId: referrer._id,
 							action: `@${referrer.username} has earned ₦100 from referring ${userId}`,
 						  };
 				  
 						  // Emit the activity event to all connected clients
 						  io.emit('sendActivity', emitData);
+					       saveActivity(emitData)
 						console.log(emitData);
 							alert(emitData);
+							
+						}
+						
+						await referrer.save();
+						
+					}
 				}
 			
 				const { password, ...userData } = updatedUser.toObject();
