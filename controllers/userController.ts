@@ -933,27 +933,24 @@ export const updateUserBankDetails = asyncHandler(
 					
 					console.log('🚀 ~ updateUserBankDetails ~ referrer:', referrer);
 					if (referrer) {
-						referrer.referralPoints += 10;
-			
-						// Add referred user's userId to the referrer's referrals array
-						if (!referrer.referrals.includes(userId)) {
-							referrer.referrals.push(userId);
-                                                const emitData = {
-							userId:  referrer._id.toString(),
-							action: `@${referrer.username} has earned ₦100 from referring ${referral.referredName}`,
-						  };
-				  
-						  // Emit the activity event to all connected clients
-						  io.emit('sendActivity', emitData);
-					       saveActivity(emitData)
-						console.log(emitData);
-							alert(emitData);
-							
+							referrer.referralPoints += 10;
+				
+							// Add referred user's userId to the referrer's referrals array
+							if (!referrer.referrals.includes(userId)) {
+								referrer.referrals.push(userId);
+							}
+							await referrer.save();
+
+							const emitData = {
+								userId:  referrer._id.toString(),
+								action: `@${referrer.username} has earned ₦100 from referring ${referral.referredName}`,
+							  };
+					  
+							  // Emit the activity event to all connected clients
+							  io.emit('sendActivity', emitData);
+							   saveActivity(emitData)
+							console.log(emitData);
 						}
-						
-						await referrer.save();
-						
-					}
 				}
 			
 				const { password, ...userData } = updatedUser.toObject();
