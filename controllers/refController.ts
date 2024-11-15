@@ -133,23 +133,22 @@ export const getAllUserReferrals = asyncHandler(
 	},
 )
 export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: Response) => {
-	const userId = req.user._id; 
-  
-   // Assumes you have user authentication set up
+  try {
+    const userId = req.user._id; // Assumes you have user authentication set up
     const user = await User.findById(userId);
-	const wallet = await Wallet.findOne({ userId: userId });
-
+    const wallet = await Wallet.findOne({ userId: userId });
 
     if (!user) {
-       res.status(404).json({ message: 'User not found' })
-	   return;
+      res.status(404).json({ message: 'User not found' });
+      return;
     }
-	if (!wallet) {
-		res.status(404).json({ message: 'Wallet not found for user' });
-		return;
-	  }
 
-	const pointsToNairaConversionRate = 100;
+    if (!wallet) {
+      res.status(404).json({ message: 'Wallet not found for user' });
+      return;
+    }
+
+    const pointsToNairaConversionRate = 100;
     const totalEarning = Math.floor(user.referralPoints / 10) * pointsToNairaConversionRate;
 
     if (totalEarning >= 100) {
@@ -157,6 +156,8 @@ export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: R
       user.referralPoints = 0; // Reset referral points
 
       await user.save();
+      await wallet.save(); // Save wallet after updating
+
       res.status(200).json({
         message: 'Withdrawal successful',
         walletBalance: wallet.totalEarning,
@@ -164,7 +165,10 @@ export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: R
     } else {
       res.status(400).json({ message: 'Insufficient referral earnings' });
     }
-  
+  } catch (error) {
+    console.error('Error during withdrawal:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
 });
 
 export const getReferralDashboardData = asyncHandler(
