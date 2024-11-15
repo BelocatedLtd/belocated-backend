@@ -136,7 +136,10 @@ export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: R
   try {
     const userId = req.user._id; // Assumes you have user authentication set up
     const user = await User.findById(userId);
-    const wallet = await Wallet.findOne({ userId: userId });
+
+	  const wUserID = userId.toString();
+		const wallet = await Wallet.findOne({ userId: wUserID });
+   
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
