@@ -133,8 +133,9 @@ export const getAllUserReferrals = asyncHandler(
 	},
 )
 export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const userId = req.user._id; // Assumes you have user authentication set up
+	const userId = req.user._id; 
+  
+   // Assumes you have user authentication set up
     const user = await User.findById(userId);
 	const wallet = await Wallet.findOne({ userId: userId });
 
@@ -163,9 +164,7 @@ export const withdrawReferralEarnings = asyncHandler(async (req: Request, res: R
     } else {
       res.status(400).json({ message: 'Insufficient referral earnings' });
     }
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
-  }
+  
 });
 
 export const getReferralDashboardData = asyncHandler(
