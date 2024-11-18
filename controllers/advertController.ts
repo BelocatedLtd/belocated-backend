@@ -19,6 +19,7 @@ export const createAdvert = asyncHandler(
 			platform,
 			service,
 			adTitle,
+			TD,
 			desiredROI,
 			costPerTask,
 			earnPerTask,
@@ -37,6 +38,7 @@ export const createAdvert = asyncHandler(
 			!platform ||
 			!service ||
 			!adTitle ||
+			!TD ||
 			!desiredROI ||
 			!costPerTask ||
 			!earnPerTask ||
@@ -125,6 +127,7 @@ export const createAdvert = asyncHandler(
 				platform,
 				service,
 				adTitle,
+				TD,
 				desiredROI,
 				costPerTask,
 				earnPerTask,
@@ -250,6 +253,7 @@ export const initializeAdvert = asyncHandler(
 				platform,
 				service,
 				adTitle,
+				TD,
 				desiredROI,
 				costPerTask,
 				earnPerTask,
@@ -266,6 +270,7 @@ export const initializeAdvert = asyncHandler(
 				!platform ||
 				!service ||
 				!adTitle ||
+				!TD ||
 				!desiredROI ||
 				!costPerTask ||
 				!earnPerTask ||
@@ -338,6 +343,7 @@ export const initializeAdvert = asyncHandler(
 				platform,
 				service,
 				adTitle,
+				TD,
 				desiredROI,
 				costPerTask,
 				earnPerTask,
