@@ -19,6 +19,10 @@ const advertSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		TD: {
+			type: String,
+			required: true,
+		},
 		desiredROI: {
 			type: Number,
 			required: true,
