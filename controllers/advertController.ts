@@ -32,7 +32,7 @@ export const createAdvert = asyncHandler(
 			paymentMethod,
 			paymentRef,
 		} = req.body
-
+console.log(req.body);
 		// Validation
 		if (
 			!platform ||
