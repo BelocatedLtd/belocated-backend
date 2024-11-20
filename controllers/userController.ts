@@ -1117,7 +1117,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 			const message = `
    <img src="https://belocated.ng/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fhomebanner.51c3a4cc.png&w=1200&q=75" alt="belocatedlogo"/>
     <h2>Hello, ${user.username}</h2>
-    <p>Welcome to BeLocated!</p>
+    <p style="text-align:center;">Welcome to BeLocated!</p>
     <p>We are excited to have you join the BeLocated family.</p>
     <p>To get you started, you would have to verify your email by clicking the link below.</p>
     <p>Note that the reset link is valid for 30minutes</p>
@@ -1127,8 +1127,23 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
     <p>Your verification link is:</p>
 
-        <a href=${verificationLink} clicktracking=off>${verificationLink.slice(0,20)}...</a>
-
+        <a href=${verificationLink} >${verificationLink.slice(0,20)}...</a>
+    <a
+  href=${verificationLink}
+  clicktracking=off
+  style="
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #1d4ed8;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    text-decoration: none;
+  "
+>
+  ClICK TO VERIFY
+</a>
     <p>Regards,</p>
     <p>Belocated Team</p>
     `
