@@ -1115,6 +1115,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 			//Send Verification Email
 			const message = `
+   <img src="https://belocated.ng/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fhomebanner.51c3a4cc.png&w=1200&q=75" alt="belocatedlogo"/>
     <h2>Hello, ${user.username}</h2>
     <p>Welcome to BeLocated!</p>
     <p>We are excited to have you join the BeLocated family.</p>
