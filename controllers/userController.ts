@@ -1115,7 +1115,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 			//Send Verification Email
 			const message = `
-   <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" height="250px" alt="belocatedlogo"/>
+   <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo"  style="height: 250px;" />
     <h2>Hello, ${user.username}</h2>
     <p style="text-align:center; font-size:20px;">Welcome to BeLocated!🚀</p>
     <p>We are excited to have you join the BeLocated family.</p>
@@ -1228,7 +1228,7 @@ export const verifyEmailPasswordChange = asyncHandler(
 				if (saveTokenToDB) {
 					//Send Verification Email
 					const message = `
-      <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" height="250px" alt="belocatedlogo"/>
+      <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo" style="height: 250px;"/>
     <h2>Hello, ${user.username}</h2>
     <p>A request for a sensitive change was made on your Belocated account. 
     To make sure you initiated this action, here is your verification code.</p>
@@ -1348,7 +1348,7 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 
 				//Send Welcome Email
 				const message = `
-     <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" height="250px" alt="belocatedlogo"/>
+     <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo" style="height: 250px;"/>
  <h2>Hello, ${userRef.username}</h2>
  <p>We are so happy to inform you that you've recieved 1 Point for referring a user to the Belocated platform.</p>
  <p>When your accumulated points get to the required threshold, they can be converted to money and added to your regular wallet for withdrawal via bank transfer or airtime, or you can use the funds to run a promotion on Belocated</p>
@@ -1443,7 +1443,7 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 
 			//Send Welcome Email
 			const message = `
-    <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" height="250px" alt="belocatedlogo"/>
+    <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo" style="height: 250px;"/>
  <h2>Hello, ${updatedUserDetails.username}</h2>
  <p>We are so happy you are here because it means you believe in the brand and what it stands for.</p>
  <p>BeLocated was created just for you - giving you an opportuinity to publicize your brand on your terms and earn on your terms.</p>
@@ -1763,7 +1763,7 @@ export const sendReferralEmail = asyncHandler(
 
 		// Construct the email content
 		const message = `
-    <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" height="250px" alt="belocatedlogo"/>
+    <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo" style="height: 250px;"/>
         <h2>Hello,</h2>
         <p>${referrer.username} has invited you to join BeLocated!</p>
         <p>To get started, please click the link below to register:</p>
