@@ -421,151 +421,79 @@ export const submitTask = asyncHandler(
 
 // Admin Approve Submitted Tasks and Pay user
 export const approveTask = asyncHandler(async (req: Request, res: Response) => {
-	const { taskId, status, message } = req.body
+    const { taskId, status, message } = req.body;
 
-		const task = await Task.findById(new ObjectId(taskId))
-console.log(task)
-	if (!task) {
-		throw new Error('Cannot find task')
-	}
+    // Validate input data
+    if (!taskId || !status) {
+        res.status(400);
+        throw new Error('Task ID and status are required.');
+    }
 
-	const userIdString = req.user._id.toString()
+    const task = await Task.findById(taskId);
+    if (!task) {
+        res.status(404);
+        throw new Error('Task not found.');
+    }
 
-	//Check if user is an admin
-	if (
-		req.user.accountType !== 'Admin' &&
-		req.user.accountType !== 'Super Admin' &&
-		userIdString !== task.advertiserId
-	) {
-		throw new Error('User Not Authorized')
-	}
+    const userIdString = req.user._id.toString();
 
-	//const task = await Task.findById(taskId)
-	const advert = await Advert.findById(task?.advertId)
-	const taskPerformer = await User.findById(task?.taskPerformerId)
-	const wallet = await Wallet.findOne({ userId: task?.taskPerformerId })
-	const advertiser = await User.findById(task.advertiserId)
-	const advertserWallet = await Wallet.findOne({ userId: task?.advertiserId })
+    // Authorization checks
+    if (
+        req.user.accountType !== 'Admin' &&
+        req.user.accountType !== 'Super Admin' &&
+        userIdString !== task.advertiserId
+    ) {
+        res.status(403);
+        throw new Error('User not authorized.');
+    }
 
-	if (!task) {
-		throw new Error('Cannot find task')
-	}
+    const advert = await Advert.findById(task.advertId);
+    const taskPerformer = await User.findById(task.taskPerformerId);
+    const wallet = await Wallet.findOne({ userId: task.taskPerformerId });
 
-	if (task.status === 'Approved') {
-		throw new Error(
-			'This task has already being approved, you can only be paid once for an approved Task, please perform another task',
-		)
-	}
+    if (!advert || !taskPerformer || !wallet) {
+        res.status(500);
+        throw new Error('Failed to retrieve necessary data for task approval.');
+    }
 
-	if (!wallet) {
-		throw new Error('Cannot find user Wallet for payment')
-	}
+    if (task.status === 'Approved') {
+        res.status(400);
+        throw new Error('This task has already being approved, you can only be paid once for an approved Task, please perform another task.');
+    }
 
-	if (!taskPerformer) {
-		throw new Error('Cannot find task performer details')
-	}
+    // Update task status
+    task.status = status;
+    task.message = message;
+    await task.save();
 
-	if (!advertserWallet) {
-		throw new Error('Cannot find user Wallet Advertisers for payment retrieval')
-	}
+    if (advert.isFree === false) {
+        // Update wallet for paid tasks
+        wallet.pendingBalance -= task.toEarn;
+        wallet.value += task.toEarn;
+        wallet.totalEarning += task.toEarn;
 
-	if (!advertiser) {
-		throw new Error('Cannot find Advertiser')
-	}
-
-	if (!advert) {
-		throw new Error('Cannot find the ad for this task')
-	}
-
-	// Check if admin is the moderator asigned to the advert for this task
-	//Check if user is an admin
-	// if (advert.tasksModerator && req.user._id !== advert.tasksModerator) {
-	//     res.status(400).json({message: "You are not assigned to moderate this task"});
-	//     throw new Error("You are not assigned to moderate this task")
-	// }
-
-	// if (advert.desiredROI === 0) {
-	// 	throw new Error('Ad campaign is no longer running')
-	// }
-
-	let updatedTask
-
-	if (status === 'Partial Approval') {
-		//Update task status after user submit screenshot
-		task.status = status
-		task.message = message
-
-		//save the update on task model
-		updatedTask = await task.save()
-	}
-
-	if (status === 'Approved') {
-		//Update task status after user submit screenshot
-		task.status = 'Approved'
-
-		//save the update on task model
-		updatedTask = await task.save()
-	}
-
-	if (!updatedTask) {
-		throw new Error('Failed to approve task')
-	}
-
-	// When advert is a paid advert. Payment should be approved
-	if (advert.isFree === false) {
-		// Update Task performer's Wallets
-		wallet.pendingBalance -= task.toEarn
-		wallet.value += task.toEarn
-		wallet.totalEarning += task.toEarn
-
-		//save the update on user wallet
-		const updatedTaskPerformerWallet = await wallet.save()
-
-		if (!updatedTaskPerformerWallet) {
-			throw new Error('Failed to update user wallet')
-		}
-	}
-
-	// When advert is free
-	// User freetask count should be subtracted by 1 and if its zero, an email should be sent.
-	if (advert.isFree === true) {
-		//User has completed the free task count for the week - Send email to the user
-		if (taskPerformer.freeTaskCount === 0 && status === 'Approved') {
-			//Send Free Task Completed Email
-			const message = `
+        if (wallet.pendingBalance < 0) {
+            res.status(500);
+            throw new Error('Wallet balance inconsistency detected.');
+        }
+        await wallet.save();
+    } else if (advert.isFree === true && taskPerformer.freeTaskCount === 0) {
+        const emailMessage = `
             <h2>Congratulations ${taskPerformer?.username}!</h2>
-            <p>You have successfully completed your two free task for the week</p>
-            <p>Kindly return to your dashboard, refresh and click on earn to access paid tasks for this week.</p>
-            <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
-            <label>Link to Telegram group:</label><a href="https://t.me/beloacted">https://t.me/beloacted</a>
-            <label>WhatsApp:</label><a href="https://wa.me/2347031935276">https://wa.me/2347031935276</a>
-            <label>Email:</label><p>cs@belocated.ng</p>
+            <p>You have completed your free tasks for this week.</p>`;
+        await sendEMail(
+            'Free Task Completed!',
+            emailMessage,
+            taskPerformer.email,
+            'noreply@noreply.com'
+        );
+    }
 
-            <p>Regards,</p>
-            <p>Belocated Team</p>
-            `
-			const subject = 'Free Task Completed!'
-			const send_to = taskPerformer?.email
-			const reply_to = 'noreply@noreply.com'
+    advert.taskPerformers.push(taskPerformer._id);
+    await advert.save();
 
-			//Finally sending email
-			const emailSent = await sendEMail(subject, message, send_to, reply_to)
-
-			if (!emailSent) {
-				res.status(500).json('Email sending failed')
-				throw new Error('Email sending failed')
-			}
-		}
-	}
-
-	//Update the list of taskperformers.
-	advert.taskPerformers.push(taskPerformer._id)
-
-	await advert.save()
-
-	res.status(200).json(updatedTask)
-})
-
+    res.status(200).json(task);
+});
 // Admin Reject Submitted Tasks and Pay user
 export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const { taskId, message } = req.body
