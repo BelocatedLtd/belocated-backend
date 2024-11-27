@@ -349,7 +349,7 @@ export const withdrawWallet = asyncHandler(
 			throw new Error('Some required fields are empty')
 		}
 
-		const user = await User.findById(req.user._id)
+		const user = await User.findById(userId)
 		if (!user) {
 			throw new Error('User not found')
 		}
