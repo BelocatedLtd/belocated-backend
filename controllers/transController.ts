@@ -406,7 +406,7 @@ export const withdrawWallet = asyncHandler(
 						chargedAmount: withdrawAmount,
 						trxId: `wd-${userId}`,
 						paymentRef: withdrawalRequest._id,
-						trxType: `Withdraw by - ${withdrawalMethod}`,
+						trxType: `${withdrawalMethod}`,
 						status: 'Pending Approval',
 					})
 
