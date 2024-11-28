@@ -125,6 +125,10 @@ const userSchema = new mongoose.Schema(
 				ref: 'Referral',
 			},
 		],
+		canAccessEarn: {
+			type: Boolean,
+			default: false
+		},
 	},
 	{
 		timestamps: true,
