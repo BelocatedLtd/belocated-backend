@@ -20,6 +20,7 @@ import {
 	verifyEmailPasswordChange,
 	verifyOldPassword,
 	verifyUser,
+	checkCanAccessEarn,
 } from '../controllers/userController'
 import { protect } from '../middleware/authMiddleware'
 
@@ -55,5 +56,6 @@ router.patch('/emailverify/:token', verifyUser) //Send phone verification OTP
 router.patch('/confirmemailOTP/:OTP', confirmEmailOTP) // Confirm Phone verification OTP
 
 router.post('/manage/:userId', protect, manageUser)
+router.get('/can-access-earn', protect, checkCanAccessEarn);
 
 export default router
