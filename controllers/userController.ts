@@ -649,7 +649,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 			const adsCreated = await Advert.countDocuments({ userId: user._id })
 			const taskOngoing = await Task.countDocuments({
 				taskPerformerId: user._id,
-				status: { $nin: ['Approved', 'Completed'] },
+				status: { $nin: ['Submitted', 'Awaiting Submission'] },
 			})
 			const taskCompleted = await Task.countDocuments({
 				taskPerformerId: user._id,
