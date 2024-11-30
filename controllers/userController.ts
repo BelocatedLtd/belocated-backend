@@ -646,13 +646,13 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
 	const usersWithStats = await Promise.all(
 		users.map(async (user) => {
-			const adsCreated = await Advert.countDocuments({ userId: user._id })
+			const adsCreated = await Advert.countDocuments({ userId: user._id.toString() })
 			const taskOngoing = await Task.countDocuments({
-				taskPerformerId: user._id,
+				taskPerformerId: user._id.toString(),
 				status: { $nin: ['Submitted', 'Awaiting Submission'] },
 			})
 			const taskCompleted = await Task.countDocuments({
-				taskPerformerId: user._id,
+				taskPerformerId: user._id.toString(),
 				status: { $in: ['Completed', 'Approved'] },
 			})
 			return { ...user.toObject(), adsCreated, taskOngoing, taskCompleted }
