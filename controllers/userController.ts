@@ -1862,3 +1862,28 @@ export const getDashboardData = asyncHandler(
 		res.status(200).json(dashboardData)
 	},
 )
+export const checkCanAccessEarn = asyncHandler(
+	async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id; // Assuming req.user is populated by auth middleware
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await User.findById(userId).select('canAccessEarn');
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      canAccessEarn: user.canAccessEarn,
+    });
+  } catch (error) {
+    console.error('Error in checkCanAccessEarn:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+},
+)
