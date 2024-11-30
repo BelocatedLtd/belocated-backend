@@ -13,9 +13,9 @@ export const adminDashboard = asyncHandler(
 			const totalAdverts = await Advert.countDocuments()
 			const totalTasks = await Task.countDocuments({status:'Submitted'})
 			const totalTasksCompleted = await Task.countDocuments({
-				status: 'Completed',
+				status: 'Approved',
 			})
-			const totalTasksOngoing = await Task.countDocuments({ status: 'Ongoing' })
+			const totalTasksOngoing = await Task.countDocuments({ status: { $nin: ['Awaiting Submission', 'Submitted'] }, })
 			const totalTasksCancelled = await Task.countDocuments({
 				status: 'Cancelled',
 			})
