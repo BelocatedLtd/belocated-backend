@@ -130,16 +130,21 @@ export const fundUserWallet = asyncHandler(
 
 			if (updatedUserWallet) {
 				//Create New Transaction
-				const transaction = await Transaction.create({
-					userId,
-					email,
-					date,
-					chargedAmount,
-					trxId,
-					paymentRef,
-					trxType: 'wallet_funding',
-					status,
-				})
+				const transaction = await Transaction.findOneAndUpdate(
+  { paymentRef }, // Find by unique payment reference
+  {
+    $set: {
+      userId,
+      email,
+      date,
+      chargedAmount,
+      trxId,
+      trxType: 'wallet_funding',
+      status,
+    },
+  },
+  { new: true, upsert: true } // Create if not found
+)
 
 				if (transaction) {
 					const updatedWallet = await Wallet.findOne({ userId: req.user._id })
