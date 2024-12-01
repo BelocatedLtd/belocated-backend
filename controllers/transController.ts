@@ -117,6 +117,11 @@ export const fundUserWallet = asyncHandler(
 					runValidators: true,
 				},
 			)
+			 const user = await User.findByIdAndUpdate(
+      { userId: req.user._id },
+      { canAccessEarn: true },
+      { new: true } // Return the updated document
+    );
 
 			if (!updatedUserWallet) {
 				res.status(401).json({ message: 'Faild to fund wallet, contact Admin' })
