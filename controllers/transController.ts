@@ -108,19 +108,23 @@ export const fundUserWallet = asyncHandler(async (req: Request, res: Response) =
     // Update or Create Transaction
     const transaction = await Transaction.findOneAndUpdate(
       { paymentRef }, // Unique payment reference
-      {
-        $set: {
-          userId,
-          email,
-          date,
-          chargedAmount,
-          trxId,
-          trxType: 'wallet_funding',
-          status: status,
-        },
-      },
+     {
+    $set: {
+      userId: userId, // Explicit if needed
+      email: email,   // Explicit if needed
+      date: date,     // Explicit if needed
+      chargedAmount: chargedAmount, // Explicit if needed
+      trxId: trxId,   // Explicit if needed
+      trxType: 'wallet_funding',
+      status: status, // Explicitly include status
+    },
+  },
       { new: true, upsert: true }
     );
+
+	  if (!transaction) {
+  throw new Error('Failed to save transaction');
+}
 
     // Update User
 	  if(chargedAmount >= 200){
