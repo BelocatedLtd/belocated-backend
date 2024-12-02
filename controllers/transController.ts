@@ -94,7 +94,7 @@ export const fundUserWallet = asyncHandler(
 
 		try {
 			// Getting user wallet
-			const wallet = await Wallet.findOne({ userId: req.user._id })
+			const wallet = await Wallet.findOne({ userId: req.user._id.toString() })
 			if (!wallet) {
 				res.status(400).json({ message: 'Wallet not found' })
 				throw new Error('wallet not found')
@@ -108,7 +108,7 @@ export const fundUserWallet = asyncHandler(
 
 			// Update User wallet
 			const updatedUserWallet = await Wallet.updateOne(
-				{ userId: req.user._id },
+				{ userId: req.user._id.toString() },
 				{
 					$inc: { value: chargedAmount },
 				},
@@ -118,7 +118,7 @@ export const fundUserWallet = asyncHandler(
 				},
 			)
 			 const user = await User.findByIdAndUpdate(
-      { userId: req.user._id },
+      { userId: req.user._id.toString() },
       { canAccessEarn: true },
       { new: true } // Return the updated document
     );
@@ -147,7 +147,7 @@ export const fundUserWallet = asyncHandler(
 )
 
 				if (transaction) {
-					const updatedWallet = await Wallet.findOne({ userId: req.user._id })
+					const updatedWallet = await Wallet.findOne({ userId: req.user._id.toString() })
 					res.status(201).json(updatedWallet)
 				}
 			}
