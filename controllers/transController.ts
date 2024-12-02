@@ -70,92 +70,70 @@ export const getSingleUserWallet = asyncHandler(
 )
 
 //Fund User Wallet
-export const fundUserWallet = asyncHandler(
-	async (req: Request, res: Response) => {
-		const { userId, email, date, chargedAmount, trxId, paymentRef, status } =
-			req.body
+export const fundUserWallet = asyncHandler(async (req: Request, res: Response) => {
+  const { userId, email, date, chargedAmount, trxId, paymentRef, status } = req.body;
 
-		// Validation
-		if (!userId || !chargedAmount || !trxId || !paymentRef) {
-			res.status(400).json({ message: 'Some required fields are missing!' })
-			throw new Error('Some required fields are empty')
-		}
+  // Validation
+  if (!userId || !chargedAmount || !trxId || !paymentRef) {
+    res.status(400).json({ message: 'Some required fields are missing!' });
+    throw new Error('Some required fields are empty');
+  }
 
-		// Validation
-		//  if ( status ==! "Approved Successful" ) {
-		//     res.status(400).json('This payment has not being approved');
-		//     throw new Error("This payment has not being approved")
-		//  }
+  try {
+    // Fetch Wallet
+    const wallet = await Wallet.findOne({ userId: req.user._id.toString() });
+    if (!wallet) {
+      res.status(400).json({ message: 'Wallet not found' });
+      throw new Error('Wallet not found');
+    }
 
-		// Match userId from req.body with server logged in user
-		//  if (userId !== req.user._id) {
-		//     res.status(401).json("User not authorized 1")
-		// }
+    // Match wallet with user
+    if (wallet.userId !== userId) {
+      res.status(401).json({ message: 'User not authorized' });
+      throw new Error('User not authorized');
+    }
 
-		try {
-			// Getting user wallet
-			const wallet = await Wallet.findOne({ userId: req.user._id.toString() })
-			if (!wallet) {
-				res.status(400).json({ message: 'Wallet not found' })
-				throw new Error('wallet not found')
-			}
-
-			// Match existing wallet to the loggedin user
-			if (wallet.userId !== userId) {
-				res.status(401).json({ message: 'User not authorized 2' })
-				throw new Error('User not authorized 2')
-			}
-
-			// Update User wallet
-			const updatedUserWallet = await Wallet.updateOne(
-				{ userId: req.user._id.toString() },
-				{
-					$inc: { value: chargedAmount },
-				},
-				{
-					new: true,
-					runValidators: true,
-				},
-			)
-			 const user = await User.findByIdAndUpdate(
+    // Update Wallet
+    const updatedWallet = await Wallet.findOneAndUpdate(
       { userId: req.user._id.toString() },
-      { canAccessEarn: true },
-      { new: true } // Return the updated document
+      { $inc: { value: chargedAmount } },
+      { new: true, runValidators: true }
     );
 
-			if (!updatedUserWallet) {
-				res.status(401).json({ message: 'Faild to fund wallet, contact Admin' })
-				throw new Error('Faild to fund wallet, contact Admin')
-			}
+    if (!updatedWallet) {
+      res.status(401).json({ message: 'Failed to fund wallet, contact Admin' });
+      throw new Error('Failed to fund wallet, contact Admin');
+    }
 
-			if (updatedUserWallet) {
-				//Create New Transaction
-				const transaction = await Transaction.findOneAndUpdate(
-  { paymentRef }, // Find by unique payment reference
-  {
-    $set: {
-      userId,
-      email,
-      date,
-      chargedAmount,
-      trxId,
-      trxType: 'wallet_funding',
-      status,
-    },
-  },
-  { new: true, upsert: true } // Create if not found
-)
+    // Update or Create Transaction
+    const transaction = await Transaction.findOneAndUpdate(
+      { paymentRef }, // Unique payment reference
+      {
+        $set: {
+          userId,
+          email,
+          date,
+          chargedAmount,
+          trxId,
+          trxType: 'wallet_funding',
+          status,
+        },
+      },
+      { new: true, upsert: true }
+    );
 
-				if (transaction) {
-					const updatedWallet = await Wallet.findOne({ userId: req.user._id.toString() })
-					res.status(201).json(updatedWallet)
-				}
-			}
-		} catch (error) {
-			res.status(500).json({ error })
-		}
-	},
-)
+    // Update User
+    const user = await User.findOneAndUpdate(
+      { _id: req.user._id.toString() }, // Query by _id
+      { canAccessEarn: true },
+      { new: true }
+    );
+
+    res.status(201).json(updatedWallet);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
 
 export const initializeTransaction = asyncHandler(
 	async (req: Request, res: Response) => {
