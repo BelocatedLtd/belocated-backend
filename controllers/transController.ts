@@ -116,7 +116,7 @@ export const fundUserWallet = asyncHandler(async (req: Request, res: Response) =
       chargedAmount: chargedAmount, // Explicit if needed
       trxId: trxId,   // Explicit if needed
       trxType: 'wallet_funding',
-      status: status, // Explicitly include status
+      status: 'Success', // Explicitly include status
     },
   },
       { new: true, upsert: true }
