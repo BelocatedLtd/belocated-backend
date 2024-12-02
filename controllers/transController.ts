@@ -123,11 +123,13 @@ export const fundUserWallet = asyncHandler(async (req: Request, res: Response) =
     );
 
     // Update User
+	  if(chargedAmount >= 200){
     const user = await User.findOneAndUpdate(
       { _id: req.user._id.toString() }, // Query by _id
       { canAccessEarn: true },
       { new: true }
     );
+	  }
 
     res.status(201).json(updatedWallet);
   } catch (error) {
