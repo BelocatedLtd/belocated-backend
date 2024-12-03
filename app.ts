@@ -28,7 +28,7 @@ import userRoute from './routes/userRoute'
 const app: Application = express()
 
 const server = http.createServer(app)
-export const io = new Server(server, {
+const io = new Server(server, {
 	path: '/socket.io',
 	// cors: {
 	//     origin: true,
