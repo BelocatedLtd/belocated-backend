@@ -431,8 +431,8 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 
     const task = await Task.findById(taskId);
     if (!task) {
-        res.status(404);
-        throw new Error('Task not found.');
+        res.status(404).json({message:'Task not found'});
+        return;
     }
 
     const userIdString = req.user._id.toString();
@@ -442,22 +442,21 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
         req.user.accountType !== 'Super Admin' &&
         userIdString !== task.advertiserId
     ) {
-        res.status(403);
-        throw new Error('User not authorized.');
-    }
-
+        res.status(403).json({message:'User not authorized'});
+        return;
+    }   
     const advert = await Advert.findById(task.advertId);
     const taskPerformer = await User.findById(task.taskPerformerId);
     const wallet = await Wallet.findOne({ userId: task.taskPerformerId });
 
     if (!advert || !taskPerformer || !wallet) {
-        res.status(500);
-        throw new Error('Failed to retrieve necessary data for task approval.');
+        res.status(500).json({message: 'Failed to retrieve necessary data for task approval.'});
+        return;
     }
 
     if (task.status === 'Approved') {
-        res.status(400);
-        throw new Error('Task already approved.');
+        res.status(400).json({message:'Task already been approved'}) 
+        return;
     }
 
     try {
@@ -466,8 +465,8 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
         await task.save();
     } catch (error) {
         console.error('Task Save Error:', error);
-        res.status(500);
-        throw new Error('Failed to save task.');
+        res.status(500).json({message:'Failed to save task'});
+        return;
     }
 
     if (advert.isFree === false) {
@@ -477,14 +476,14 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             wallet.totalEarning += task.toEarn;
 
             if (wallet.pendingBalance < 0) {
-                res.status(500);
-                throw new Error('Wallet balance inconsistency detected.');
+                res.status(500).json({message:'wallet balance inconsistency detected'});
+                return;
             }
             await wallet.save();
         } catch (error) {
             console.error('Wallet Save Error:', error);
-            res.status(500);
-            throw new Error('Failed to update wallet.');
+            res.status(500).json({message:'Failed to update wallet'});
+            return;
         }
     } else if (advert.isFree === true && taskPerformer.freeTaskCount === 0) {
         try {
@@ -499,8 +498,8 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             );
         } catch (error) {
             console.error('Email Sending Error:', error);
-            res.status(500);
-            throw new Error('Failed to send email.');
+            res.status(500).json({message:'Faied to send email'});
+            return;
         }
     }
 
@@ -509,8 +508,8 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
         await advert.save();
     } catch (error) {
         console.error('Advert Save Error:', error);
-        res.status(500);
-        throw new Error('Failed to update advert.');
+        res.status(500).json({message:'Failed to update advert.'});
+        return;
     }
 
     try {
