@@ -8,7 +8,7 @@ import User from '../model/User'
 import Wallet from '../model/Wallet'
 import sendEMail from '../utils/sendEmail'
 import { ObjectId } from 'mongodb';
-import  io from '../app.ts'
+import  { io } from '../app.ts'
 
 // import cloudinary from "../utils/cloudinary";
 //import { fileSizeFormatter } from "../utils/fileUpload";
