@@ -423,7 +423,6 @@ export const submitTask = asyncHandler(
 export const approveTask = asyncHandler(async (req: Request, res: Response) => {
     const { taskId, status, message } = req.body;
 
-    // Validate input data
     if (!taskId || !status) {
         res.status(400);
         throw new Error('Task ID and status are required.');
@@ -437,7 +436,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 
     const userIdString = req.user._id.toString();
 
-    // Authorization checks
     if (
         req.user.accountType !== 'Admin' &&
         req.user.accountType !== 'Super Admin' &&
@@ -458,42 +456,77 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
 
     if (task.status === 'Approved') {
         res.status(400);
-        throw new Error('This task has already being approved, you can only be paid once for an approved Task, please perform another task.');
+        throw new Error('Task already approved.');
     }
 
-    // Update task status
-    task.status = status;
-    task.message = message;
-    await task.save();
+    try {
+        task.status = status;
+        task.message = message;
+        await task.save();
+    } catch (error) {
+        console.error('Task Save Error:', error);
+        res.status(500);
+        throw new Error('Failed to save task.');
+    }
 
     if (advert.isFree === false) {
-        // Update wallet for paid tasks
-        wallet.pendingBalance -= task.toEarn;
-        wallet.value += task.toEarn;
-        wallet.totalEarning += task.toEarn;
+        try {
+            wallet.pendingBalance -= task.toEarn;
+            wallet.value += task.toEarn;
+            wallet.totalEarning += task.toEarn;
 
-        if (wallet.pendingBalance < 0) {
+            if (wallet.pendingBalance < 0) {
+                res.status(500);
+                throw new Error('Wallet balance inconsistency detected.');
+            }
+            await wallet.save();
+        } catch (error) {
+            console.error('Wallet Save Error:', error);
             res.status(500);
-            throw new Error('Wallet balance inconsistency detected.');
+            throw new Error('Failed to update wallet.');
         }
-        await wallet.save();
     } else if (advert.isFree === true && taskPerformer.freeTaskCount === 0) {
-        const emailMessage = `
-            <h2>Congratulations ${taskPerformer?.username}!</h2>
-            <p>You have completed your free tasks for this week.</p>`;
-        await sendEMail(
-            'Free Task Completed!',
-            emailMessage,
-            taskPerformer.email,
-            'noreply@noreply.com'
-        );
+        try {
+            const emailMessage = `
+                <h2>Congratulations ${taskPerformer?.username}!</h2>
+                <p>You have completed your free tasks for this week.</p>`;
+            await sendEMail(
+                'Free Task Completed!',
+                emailMessage,
+                taskPerformer.email,
+                'noreply@noreply.com'
+            );
+        } catch (error) {
+            console.error('Email Sending Error:', error);
+            res.status(500);
+            throw new Error('Failed to send email.');
+        }
     }
 
-    advert.taskPerformers.push(taskPerformer._id);
-    await advert.save();
+    try {
+        advert.taskPerformers.push(taskPerformer._id);
+        await advert.save();
+    } catch (error) {
+        console.error('Advert Save Error:', error);
+        res.status(500);
+        throw new Error('Failed to update advert.');
+    }
+
+    try {
+        if (status === 'Approved') {
+            io.emit('taskApproved', {
+                taskId: task._id,
+                userId: task.taskPerformerId,
+                message: 'Your task has been approved!',
+            });
+        }
+    } catch (error) {
+        console.error('WebSocket Emit Error:', error);
+    }
 
     res.status(200).json(task);
 });
+
 // Admin Reject Submitted Tasks and Pay user
 export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const { taskId, message } = req.body
