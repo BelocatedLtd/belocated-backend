@@ -1178,7 +1178,7 @@ export const verifyEmailPasswordChange = asyncHandler(
 			console.log('🚀 ~ verifyEmailPasswordChange ~ user:', user)
 
 			if (!user) {
-				res.status(404).json(message:'No user found')
+				res.status(404).json({message:'No user found'})
 				return;
 			}
 
