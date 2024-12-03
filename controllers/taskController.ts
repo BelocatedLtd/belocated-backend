@@ -502,17 +502,7 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             return;
         }
     }
-
-    try {
-        advert.taskPerformers.push(taskPerformer._id);
-        await advert.save();
-    } catch (error) {
-        console.error('Advert Save Error:', error);
-        res.status(500).json({message:'Failed to update advert.'});
-        return;
-    }
-
-    try {
+try {
         if (status === 'Approved') {
             io.emit('taskApproved', {
                 taskId: task._id,
@@ -523,6 +513,18 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
     } catch (error) {
         console.error('WebSocket Emit Error:', error);
     }
+	
+
+    try {
+        advert.taskPerformers.push(taskPerformer._id);
+        await advert.save();
+    } catch (error) {
+        console.error('Advert Save Error:', error);
+        res.status(500).json({message:'Failed to update advert.'});
+        return;
+    }
+
+    
 
     res.status(200).json(task);
 });
