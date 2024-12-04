@@ -282,8 +282,8 @@ console.log(payload);
 			console.log('🚀 ~ handleFlutterwaveWebhook ~ transaction:', transaction)
 
 			if (!transaction) {
-				res.status(404)
-				throw new Error('Transaction not found')
+				res.status(404).json({message:'Transaction not found'});
+				return;
 			}
 
 			// Update the transaction status
