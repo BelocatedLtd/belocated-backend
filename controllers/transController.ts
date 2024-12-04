@@ -273,7 +273,7 @@ export const handleFlutterwaveWebhook = asyncHandler(
 			res.status(401).end()
 		}
 		const payload = req.body
-
+console.log(payload);
 		const { txRef, amount, customer, status } = payload
 
 		try {
