@@ -46,7 +46,8 @@ dotenv.config()
 app.use(express.json())
 const corsOptions = {
     origin: ['https://www.belocated.ng','https://belocated.ng','https://urchin-app-nbzqm.ondigitalocean.app','https://api.flutterwave.com','https://www.flutterwave.com'],
-    credentials: true, // This allows credentials (cookies) to be sent with the request
+    credentials: true, 
+	allowedHeaders: '*'// This allows credentials (cookies) to be sent with the request
   };
   
   app.use(cors(corsOptions));
