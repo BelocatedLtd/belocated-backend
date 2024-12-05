@@ -1871,13 +1871,17 @@ export const checkCanAccessEarn = asyncHandler(
       return;
     }
 
-	  const wallet = await Wallet.findOne({ userId: userId.toString(); })
-		 if(wallet.value >= 200){
-			   const user = await User.findOneAndUpdate(
+	  const wallet = await Wallet.findOne({ userId: userId.toString() })
+	  if (!wallet) {
+		res.status(404).json({ success: false, message: 'Wallet not found' });
+		return;
+	  }
+	   if(wallet.value >= 200){
+              const user = await User.findOneAndUpdate(
 			  { _id: req.user._id}, // Query by _id
 			  { canAccessEarn: true },
 			  { new: true }
-								);
+				);
 		 }
 
     const user = await User.findById(userId).select('canAccessEarn');
@@ -1885,9 +1889,7 @@ export const checkCanAccessEarn = asyncHandler(
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
-	  
 	 
-
     res.status(200).json({
       success: true,
       canAccessEarn: user.canAccessEarn,
