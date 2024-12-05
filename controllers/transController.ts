@@ -332,6 +332,106 @@ console.log(payload);
 	},
 )
 
+
+export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Response) => {
+    const payload = req.body;
+    const signature = req.headers['x-korapay-signature'];
+
+    // Get the secret key from the environment variables
+    const secretKey = process.env.KORA_PAY_SECKEY;
+
+    // Ensure secretKey is defined
+    if (!secretKey) {
+        res.status(500).send('Webhook secret key is missing');
+        return;
+    }
+
+    // Verify the webhook signature (Korapay sends a signature for security)
+    const hash = crypto.createHmac('sha256', secretKey)
+        .update(JSON.stringify(payload.data)) // Assuming payload.data is the transaction data
+        .digest('hex');
+
+    if (hash !== signature) {
+        res.status(401).send('Invalid signature');
+        return;
+    }
+
+    // Process the payment status
+    const { event, data } = payload;
+
+    if (event === 'transfer.success' || event === 'charge.success') {
+        const { status, reference, amount, customer } = data;
+
+        if (status === 'success') {
+            // Handle successful payment logic
+            console.log('Payment successful:', reference, amount);
+            try {
+                // Find the transaction using the payment reference
+                const transaction = await Transaction.findOne({ paymentRef: reference });
+
+                if (!transaction) {
+                    res.status(404).json({ message: 'Transaction not found' });
+                    return;
+                }
+
+                // Update the transaction status
+                transaction.status = status;
+                await transaction.save();
+
+                if (transaction.trxType === 'wallet_funding') {
+                    if (status === 'successful') {
+                        // Wallet funding logic
+                        const wallet = await Wallet.findOne({ userId: transaction.userId });
+                        if (!wallet) {
+                            throw new Error('Wallet not found');
+                        }
+
+                        wallet.value += amount;
+                        wallet.totalEarning += amount;
+                        await wallet.save();
+
+                        res.status(200).json({ message: 'Wallet funded successfully' });
+                    } else {
+                        res.status(400).json({ message: 'Transaction not successful' });
+                    }
+                } else if (transaction.trxType === 'advert_payment') {
+                    // Advert payment logic
+                    const advertId = transaction.trxId.split('ad_p')[1];
+
+                    if (!advertId) {
+                        throw new Error('Invalid transaction ID format');
+                    }
+
+                    const advert = await Advert.findById(advertId);
+
+                    if (!advert) {
+                        throw new Error('Advert not found');
+                    }
+
+                    if (status === 'successful') {
+                        advert.status = 'Running'; // Update advert status
+                        await advert.save();
+                        res.status(200).json({ message: 'Advert payment successful' });
+                    } else {
+                        res.status(400).json({ message: 'Advert payment failed' });
+                    }
+                }
+            } catch (error) {
+                res.status(500).json({ error });
+            }
+        } else {
+            res.status(400).json({ message: 'Payment failed' });
+        }
+    } else {
+        res.status(400).send('Unhandled event');
+        return;
+    }
+
+    res.status(200).send('Webhook received');
+});
+
+
+
 //Withdraw User Wallet
 export const withdrawWallet = asyncHandler(
 	async (req: Request, res: Response) => {
