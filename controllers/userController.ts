@@ -1865,17 +1865,28 @@ export const getDashboardData = asyncHandler(
 export const checkCanAccessEarn = asyncHandler(
 	async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id; // Assuming req.user is populated by auth middleware
+    const userId = req.user?._id; // Assuming req.user is populated by auth middleware
     if (!userId) {
       res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
+
+	  const wallet = await Wallet.findOne({ userId: userId.toString(); })
+		 if(wallet.value >= 200){
+			   const user = await User.findOneAndUpdate(
+			  { _id: req.user._id}, // Query by _id
+			  { canAccessEarn: true },
+			  { new: true }
+								);
+		 }
 
     const user = await User.findById(userId).select('canAccessEarn');
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
+	  
+	 
 
     res.status(200).json({
       success: true,
