@@ -14,6 +14,7 @@ import {
 	handlePaystackWebhook,
 	initializeTransaction,
 	withdrawWallet,
+	handleKoraPayWebhook,
 } from '../controllers/transController'
 import { protect } from '../middleware/authMiddleware'
 
@@ -40,6 +41,7 @@ router.delete(
 router.post('/initialize-transaction', initializeTransaction)
 router.post('/paystack-webhook', handlePaystackWebhook)
 router.post('/flutterwave-webhook', handleFlutterwaveWebhook)
+router.post('/korapay-webhook', handleKoraPayWebhook)
 
 router.get('/userall', protect, getUserTransactions)
 router.get('/all', protect, getTransactions)
