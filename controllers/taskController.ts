@@ -642,6 +642,18 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	//save the update on user model
 	const updatedAdvert = await advert.save()
 
+				       try {
+        if (task.status === 'Rejected') {
+            io.emit('taskApproved', {
+                taskId: task._id,
+                userId: task.taskPerformerId,
+                message: 'Your task has been Rejected',
+            });
+        }
+    } catch (error) {
+        console.error('WebSocket Emit Error:', error);
+    }
+
 	if (!updatedAdvert) {
 		throw new Error('Failed to failed task')
 	}
