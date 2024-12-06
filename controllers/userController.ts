@@ -1115,35 +1115,41 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 			//Send Verification Email
 			const message = `
-   <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="belocatedlogo"  style="height: 250px;" />
-    <h2>Hello, ${user.username}</h2>
-    <p style="text-align:center; font-size:20px;">Welcome to BeLocated!🚀</p>
-    <p>We are excited to have you join the BeLocated family.</p>
-    <p>To get you started, you would have to verify your email by clicking the link below.</p>
-    <p>Note that the reset link is valid for 30minutes</p>
-    <p>Once you are verified you can proceed to login and access all our earning and publicity packages.</p>
+   <html>
+     <body style="font-family: Arial, sans-serif; color: #333;">
+       <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="Belocated logo" style="height: 250px;" />
+       
+       <h2>Hello, ${user.username}</h2>
+       <p style="text-align:center; font-size:20px;">Welcome to BeLocated! 🚀</p>
 
-    <p>We are here to serve you so contact us on any of our social media pages with any question you may have</p>
+       <p>We are excited to have you join the BeLocated family.</p>
+       
+       <p>To get started, please verify your email by clicking the link below:</p>
+       <p><strong>Note:</strong> The verification link is valid for 30 minutes.</p>
+       
+       <p>Once verified, you will be able to log in and access our full range of earning and publicity packages.</p>
+       
+       <p>If you have any questions, feel free to contact us on our social media pages. We are here to assist you!</p>
+       
+       <p>
+         <a href="${verificationLink}" style="
+           display: inline-block;
+           padding: 12px 24px;
+           background-color: #1d4ed8;
+           color: #ffffff;
+           font-size: 16px;
+           font-weight: bold;
+           border-radius: 8px;
+           text-decoration: none;
+         ">Click to Verify</a>
+       </p>
+       
+       <p>Best regards,</p>
+       <p>The BeLocated Team</p>
+     </body>
+   </html>
+`;
 
-    <a
-  href=${verificationLink}
-  clicktracking=off
-  style="
-    display: inline-block;
-    padding: 12px 24px;
-    background-color: #1d4ed8;
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 8px;
-    text-decoration: none;
-  "
->
-  ClICK TO VERIFY
-</a>
-    <p>Regards,</p>
-    <p>Belocated Team</p>
-    `
 			const subject = 'Verification Email'
 			const send_to = email
 			const reply_to = 'noreply@noreply.com'
