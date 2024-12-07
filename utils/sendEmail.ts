@@ -9,9 +9,9 @@ dotenv.config()
 // const API_KEY = process.env.MAILGUN_API_KEY;
 // const DOMAIN = 'mail.belocated.ng';
 
-const HOST = process.env.ZEPTO_HOST
-const USER = process.env.ZEPTO_USER
-const PASS = process.env.ZEPTO_PASS
+const HOST = process.env.EMAIL_HOST
+const USER = process.env.EMAIL_USER
+const PASS = process.env.EMAIL_PASS
 
 console.log('🚀 ~ HOST:', { HOST, USER, PASS })
 
@@ -45,7 +45,7 @@ var transport = nodemailer.createTransport({
 //     }
 // }
 
-const sendEMail = async (subject: string, message: string, send_to: string, reply_to: string) => {
+const sendEmail = async (subject: string, message: string, send_to: string, reply_to: string) => {
 	var mailOptions = {
 		from:'"Belocated" <cs@belocated.ng>',
 		to: send_to,
@@ -61,4 +61,4 @@ const sendEMail = async (subject: string, message: string, send_to: string, repl
 	}
 }
 
-export default sendEMail
+export default sendEmail
