@@ -876,7 +876,8 @@ export const updateUserBankDetails = asyncHandler(
 			const user = await User.findById(req.user._id)
 
 			if (!user) {
-				throw new Error('User not found')
+				
+				res.status(404).json({ message: 'User not Found' })
 			}
 
 			// Check if new bankAccountName && Account Number has already being registered by another user
@@ -884,7 +885,9 @@ export const updateUserBankDetails = asyncHandler(
 				const existingUser = await User.findOne({ bankAccountNumber })
 
 				if (existingUser) {
-					throw new Error('Bank Details already in use')
+					
+					res.status(409).json({ message: 'Bank Details already in use' })
+					
 				}
 			}
 
@@ -912,7 +915,8 @@ export const updateUserBankDetails = asyncHandler(
 			)
 
 			if (!updatedUser) {
-				throw new Error('Failed to updated user bank account details')
+				
+				res.status(417).json({ message: 'Failed to update user bank account details' })
 			}
 
 			if (updatedUser.isKycDone) {
