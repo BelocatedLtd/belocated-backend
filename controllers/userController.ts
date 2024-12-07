@@ -1120,35 +1120,11 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 			const message = `
    <html>
      <body style="font-family: Arial, sans-serif; color: #333;">
-       <img src="https://belocatedltd.github.io/belocatedImage/homebanner.png" alt="logo" style="height: 250px;" />
-       
        <h2>Hello, ${user.username}</h2>
-       <p style="text-align:center; font-size:20px;">Welcome to BeLocated!</p>
-
-       <p>We are excited to have you join the BeLocated family.</p>
-       
-       <p>To get started, please verify your email by clicking the link below:</p>
-       <p><strong>Note:</strong> The verification is valid for 30 minutes.</p>
-       
-       <p>Once verified, you will be able to log in and access our full range of earning and publicity packages.</p>
-       
-       <p>If you have any questions, feel free to contact us on our social media pages. We are here to assist you!</p>
-       
-       <p>
-         <a href="${verificationLink}" style="
-           display: inline-block;
-           padding: 12px 24px;
-           background-color: #1d4ed8;
-           color: #ffffff;
-           font-size: 16px;
-           font-weight: bold;
-           border-radius: 8px;
-           text-decoration: none;
-         ">Verification</a>
-       </p>
-       
-       <p>Best regards,</p>
-       <p>The BeLocated Team</p>
+         <a href="${verificationLink}">
+	  <img src="https://belocatedltd.github.io/belocatedImage/vef.jpg" alt="logo"/>
+  
+  </a>
      </body>
    </html>
 `;
