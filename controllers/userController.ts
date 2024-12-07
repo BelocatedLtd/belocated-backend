@@ -13,8 +13,8 @@ import { saveActivity } from '../controllers/feedController'
 import Token from '../model/Token'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
-import sendEMail from '../utils/sendEmail'
-import sendEmail from '../utils/sendEmailApi'
+import sendEmail from '../utils/sendEmail'
+//import sendEmail from '../utils/sendEmailApi'
 
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -1250,7 +1250,7 @@ export const verifyEmailPasswordChange = asyncHandler(
 					const reply_to = 'noreply@noreply.com'
 
 					//Finally sending email
-					const emailSent = await sendEMail(subject, message, send_to, reply_to)
+					const emailSent = await sendEmail(subject, message, send_to, reply_to)
 
 					if (!emailSent) {
 						res.status(500).json('Password change verification failed')
