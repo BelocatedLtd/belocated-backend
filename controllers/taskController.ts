@@ -490,7 +490,7 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             const emailMessage = `
                 <h2>Congratulations ${taskPerformer?.username}!</h2>
                 <p>You have completed your free tasks for this week.</p>`;
-            await sendEMail(
+            await sendEmail(
                 'Free Task Completed!',
                 emailMessage,
                 taskPerformer.email,
