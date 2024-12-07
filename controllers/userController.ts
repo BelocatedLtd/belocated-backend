@@ -1118,24 +1118,28 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 			//Send Verification Email
 			const message = `
-   <html>
-     <body style="font-family: Arial, sans-serif; color: #333;">
-       <h2>Hello, ${user.username}</h2>
-         <a href="${verificationLink}">
-	  <img src="https://belocatedltd.github.io/belocatedImage/vef.jpg" alt="logo"/>
-  
-  </a>
-     </body>
-   </html>
+<html>
+  <body style="font-family: Arial, sans-serif; color: #333;">
+    <h2>Hello, ${user.username}</h2>
+    <p>Please verify your email by clicking the link below:</p>
+    <a href="${verificationLink}">
+      <img src="https://belocatedltd.github.io/belocatedImage/vef.jpg" alt="Verify Email" style="max-width: 100%; height: auto;"/>
+    </a>
+    <p>Thank you for choosing BeLocated!</p>
+  </body>
+</html>
 `;
 
-			const subject = 'Verification Email'
+const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
+
+
+			const subject = 'Email Verification'
 			const send_to = email
-			const reply_to = 'noreply@noreply.com'
+			const reply_to = 'noreply@belocated.ng';
 
 			//Finally sending email
 			//const emailSent = await sendEMail(subject, message, send_to, reply_to)
-			const response = await sendEmail(subject, message, send_to, user.username)
+			const response = await sendEmail(subject, message, send_to, reply_to, plainText)
 
 			if (!response) {
 				res.status(500).json('Email verification failed')
@@ -1224,12 +1228,14 @@ export const verifyEmailPasswordChange = asyncHandler(
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
+					const plainText=`Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
 					const subject = 'Verify Sensitive Change'
 					const send_to = user.email
-					const reply_to = 'noreply@noreply.com'
+					const reply_to = 'noreply@belocated.ng';
 
 					//Finally sending email
-					const emailSent = await sendEmail(subject, message, send_to, reply_to)
+					const emailSent = await sendEmail(subject, message, send_to, reply_to, plainText)
+					
 
 					if (!emailSent) {
 						res.status(500).json('Password change verification failed')
@@ -1358,17 +1364,13 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
  <p>Best Regards</p>
  <p>CEO BELOCATED</p>
  `
+				const plainText=`Hello, ${userRef.username}. You just Earned A referral Point`;
 				const subject = 'Congratulations, you Just Earned a Referral Point!'
 				const send_to = userRef.email
-				const reply_to = 'noreply@noreply.com'
+				const reply_to = 'noreply@belocated.ng'
 
 				//Finally sending email
-				const emailSent = await sendEmail(
-					subject,
-					message,
-					send_to,
-					userRef.username,
-				)
+				const emailSent =await sendEmail(subject, message, send_to, reply_to, plainText)
 
 				if (!emailSent) {
 					throw new Error('Failed to send referral bonus email')
@@ -1457,7 +1459,7 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 
  <p>For any other question, kindly join our telegram group, send an email or send a WhatsApp message to chat with a customer rep.</p>
 
- <label>Link to Telegram group:</label>
+ <label>Telegram group:</label>
  <a href="https://t.me/belocated">https://t.me/belocated<a/>
  <br/>
 
@@ -1473,17 +1475,13 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
  <p>Best Regards</p>
  <p>CEO BELOCATED</p>
  `
+			const plainText ="We welcome you"
 			const subject = 'Welcome Note from the CEO'
 			const send_to = updatedUserDetails.email
-			const reply_to = 'noreply@noreply.com'
+			const reply_to = 'noreply@belocated.ng'
 
 			//Finally sending email
-			const emailSent = await sendEmail(
-				subject,
-				message,
-				send_to,
-				updatedUserDetails.username,
-			)
+			const emailSent = await await sendEmail(subject, message, send_to, reply_to, plainText)
 
 			if (!emailSent) {
 				res.status(500).json('Failed to send welcome email')
@@ -1773,12 +1771,13 @@ export const sendReferralEmail = asyncHandler(
         <p>Regards,</p>
         <p>BeLocated Team</p>
     `
+		const plainText="Please Join"
 		const subject = 'Join BeLocated - Referral Invitation'
 		const send_to = email
-		const reply_to = 'noreply@noreply.com'
+		const reply_to = 'noreply@belocated.ng'
 
 		// Send the referral email
-		const response = await sendEmail(subject, message, send_to, reply_to)
+		const response = await sendEmail(subject, message, send_to, reply_to, plainText)
 
 		if (!response) {
 			res.status(500).json('Failed to send referral email')
