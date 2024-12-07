@@ -6,7 +6,7 @@ import Advert from '../model/Advert'
 import Task from '../model/Task'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
-import sendEMail from '../utils/sendEmail'
+import sendEmail from '../utils/sendEmail'
 import { ObjectId } from 'mongodb';
 import  { io } from '../app'
 
