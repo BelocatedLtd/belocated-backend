@@ -644,12 +644,14 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 
 				       try {
         if (task.status === 'Rejected') {
-            io.emit('taskApproved', {
-                taskId: task._id,
-                userId: task.taskPerformerId,
-                message: 'Your task has been Rejected',
-            });
+          if (status === 'Rejected') {
+    io.emit('taskRejected', {
+        taskId: task._id,
+        userId: task.taskPerformerId,
+        message: 'Your task has been rejected!',
+    });
         }
+	}
     } catch (error) {
         console.error('WebSocket Emit Error:', error);
     }
