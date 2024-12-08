@@ -494,7 +494,8 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
                 'Free Task Completed!',
                 emailMessage,
                 taskPerformer.email,
-                'noreply@noreply.com'
+                'noreply@noreply.com',
+				'Congratulations'
             );
         } catch (error) {
             console.error('Email Sending Error:', error);
