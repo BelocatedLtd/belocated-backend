@@ -504,13 +504,12 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
         }
     }
 try {
-        if (status === 'Approved') {
-            io.emit('taskApproved', {
-                taskId: task._id,
-                userId: task.taskPerformerId,
-                message: 'Your task has been approved!',
-            });
-        }
+      if (status === 'Approved' || status === 'Rejected') {
+	io.emit('taskNotification', {
+		message: `Task has been ${status.toLowerCase()}!`,
+	});
+}
+
     } catch (error) {
         console.error('WebSocket Emit Error:', error);
     }
@@ -558,6 +557,7 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	if (task.status === 'Rejected') {
+		res.status(409).json({message:'This task has already being rejected, read the admins message and follow the instructions'})
 		throw new Error(
 			'This task has already being rejected, read the admins message and follow the instructions',
 		)
@@ -644,15 +644,12 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedAdvert = await advert.save()
 
 				       try {
-        if (task.status === 'Rejected') {
-          if (status === 'Rejected') {
-    io.emit('taskRejected', {
-        taskId: task._id,
-        userId: task.taskPerformerId,
-        message: 'Your task has been rejected!',
-    });
-        }
-	}
+       if (task.status === 'Approved' || task.status === 'Rejected') {
+	io.emit('taskNotification', {
+		message: `Task has been ${task.status.toLowerCase()}!`,
+	});
+}
+
     } catch (error) {
         console.error('WebSocket Emit Error:', error);
     }
