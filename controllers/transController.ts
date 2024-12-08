@@ -431,7 +431,7 @@ export const handleFlutterwaveWebhook = asyncHandler(
 	});
 
 
-export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Response) => {
+/*export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
     const signature = req.headers['x-korapay-signature'];
 
@@ -497,8 +497,10 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 								  }
 
                         res.status(200).json({ message: 'Wallet funded successfully' });
+			    return;
                     } else {
                         res.status(400).json({ message: 'Transaction not successful' });
+			    return;
                     }
                 } else if (transaction.trxType === 'advert_payment') {
                     // Advert payment logic
@@ -536,7 +538,7 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
     res.status(200).send('Webhook received');
 });
 
-
+*/
 
 //Withdraw User Wallet
 export const withdrawWallet = asyncHandler(
