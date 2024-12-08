@@ -477,7 +477,7 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
                 await transaction.save();
 
                 if (transaction.trxType === 'wallet_funding') {
-                    if (status === 'successful') {
+                    if (status === 'success') {
                         // Wallet funding logic
                         const wallet = await Wallet.findOne({ userId: transaction.userId });
                         if (!wallet) {
