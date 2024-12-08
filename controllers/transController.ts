@@ -335,101 +335,123 @@ export const handlePaystackWebhook = asyncHandler(
 
 
 export const handleFlutterwaveWebhook = asyncHandler(
-	async (req: Request, res: Response) => {
-		const secretHash = process.env.FLW_SECRET_HASH
-		
-		const signature = req.headers["verif-hash"];
-		if (!signature || (signature !== secretHash)) {
-			// This request isn't from Flutterwave; discard
-			res.status(401).end();
-		}
-		const payload = req.body;
-		// It's a good idea to log all received events.
-		console.log(payload);
+    async (req: Request, res: Response) => {
+        const secretHash = process.env.FLW_SECRET_HASH;
 
-		const { event, data } = payload;
+        // Validate webhook signature
+        const signature = req.headers["verif-hash"];
+        if (!signature || signature !== secretHash) {
+            console.warn("Invalid signature from Flutterwave webhook");
+            res.status(401).end();
+		return;
+        }
 
-		if (event === 'charge.completed' || event === 'charge.successful') {
+        const payload = req.body;
+        console.log("Received Flutterwave payload:", payload);
 
-			const { status, tx_ref, amount, customer } = data;
-	
-			if (status === 'successful') {
-				// Handle successful payment logic
-				console.log('Payment successful:', tx_ref, amount);
-				try {
-					// Find the transaction using the payment reference
-					const transaction = await Transaction.findOne({ paymentRef: tx_ref });
-	
-					if (!transaction) {
-						res.status(404).json({ message: 'Transaction not found' });
-						return;
-					}
-	
-					// Update the transaction status
-					transaction.status = status;
-					await transaction.save();
-	
-					if (transaction.trxType === 'wallet_funding') {
-						if (status === 'successful') {
-							// Wallet funding logic
-							const wallet = await Wallet.findOne({ userId: transaction.userId });
-							if (!wallet) {
-								throw new Error('Wallet not found');
-							}
-	
-							wallet.value += amount;
-							wallet.totalEarning += amount;
-							await wallet.save();
+        const { event, data } = payload;
 
-							if(amount >= 200 || wallet.value >= 200){
-								const user = await User.findOneAndUpdate(
-								  { _id: req.user._id}, // Query by _id
-								  { canAccessEarn: true },
-								  { new: true }
-								);
-								  }
-							
-	
-							res.status(200).json({ message: 'Wallet funded successfully' });
-						} else {
-							res.status(400).json({ message: 'Transaction not successful' });
-						}
-					} else if (transaction.trxType === 'advert_payment') {
-						// Advert payment logic
-						const advertId = transaction.trxId.split('ad_p')[1];
-	
-						if (!advertId) {
-							throw new Error('Invalid transaction ID format');
-						}
-	
-						const advert = await Advert.findById(advertId);
-	
-						if (!advert) {
-							throw new Error('Advert not found');
-						}
-	
-						if (status === 'successful') {
-							advert.status = 'Running'; // Update advert status
-							await advert.save();
-							res.status(200).json({ message: 'Advert payment successful' });
-						} else {
-							res.status(400).json({ message: 'Advert payment failed' });
-						}
-					}
-				} catch (error) {
-					res.status(500).json({ error });
-				}
-			} else {
-				res.status(400).json({ message: 'Payment failed' });
+        // Handle successful charge events
+        if (event === "charge.completed" || event === "charge.successful") {
+            const { status, tx_ref, amount, customer } = data;
+
+            if (status === "successful") {
+                console.log("Successful payment:", { tx_ref, amount });
+
+                try {
+                    // Find the transaction using the payment reference
+                    const transaction = await Transaction.findOne({ paymentRef: tx_ref });
+
+                    if (!transaction) {
+                        console.error(`Transaction not found for reference: ${tx_ref}`);
+                        res.status(404).json({ message: "Transaction not found" });
+                 return;
+		    }
+
+                    // Check if transaction is already processed
+                    if (transaction.status === "successful") {
+                        console.log(`Transaction already processed: ${tx_ref}`);
+                        res.status(200).json({ message: "Transaction already processed" });
+                   return;
+		    }
+
+                    // Update the transaction status
+                    transaction.status = status;
+                    await transaction.save();
+
+                    // Handle wallet funding
+                    if (transaction.trxType === "wallet_funding") {
+                        const wallet = await Wallet.findOne({ userId: transaction.userId });
+
+                        if (!wallet) {
+                            throw new Error("Wallet not found");
+                        }
+
+                        wallet.value += amount;
+                        wallet.totalEarning += amount;
+                        await wallet.save();
+
+                        // Update user's earning eligibility if criteria met
+                        if (amount >= 200 || wallet.value >= 200) {
+                            await User.findOneAndUpdate(
+                                { _id: transaction.userId },
+                                { canAccessEarn: true },
+                                { new: true }
+                            );
+                        }
+
+                        console.log(`Wallet funded successfully for user: ${transaction.userId}`);
+                        
+			   res.status(200).json({ message: "Wallet funded successfully" });
+                 return;
+		    }
+
+                    // Handle advert payment
+                    if (transaction.trxType === "advert_payment") {
+                        const advertId = transaction.trxId.split("ad_p")[1];
+
+                        if (!advertId) {
+                            console.error(`Invalid transaction ID format: ${transaction.trxId}`);
+                            res.status(400).json({ message: "Invalid transaction ID format" });
+                       return;
 			}
-		} else {
-			res.status(400).send('Unhandled event');
-			return;
-		}
-	
-		res.status(200).send('Webhook received');
-	});
 
+                        const advert = await Advert.findById(advertId);
+
+                        if (!advert) {
+                            console.error(`Advert not found for ID: ${advertId}`);
+                            res.status(404).json({ message: "Advert not found" });
+                       return;
+			}
+
+                        if (status === "successful") {
+                            advert.status = "Running"; // Update advert status
+                            await advert.save();
+                            console.log(`Advert payment successful for ID: ${advertId}`);
+                            res.status(200).json({ message: "Advert payment successful" });
+                       return;
+			} else {
+                            console.warn(`Advert payment failed for ID: ${advertId}`);
+                             res.status(400).json({ message: "Advert payment failed" });
+                       return;
+			}
+                    }
+                } catch (error) {
+                    console.error("Error processing payment:", error);
+                    res.status(500).json({ message: "An error occurred while processing the payment", error: error.message });
+         return;
+		}
+            } else {
+                console.warn("Payment status not successful:", status);
+                res.status(400).json({ message: "Payment failed" });
+		    return;
+            }
+        }
+
+        console.warn("Unhandled event:", event);
+        res.status(400).send("Unhandled event");
+    }
+);
 
 export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body;
