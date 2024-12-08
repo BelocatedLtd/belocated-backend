@@ -504,7 +504,7 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
         }
     }
 try {
-      if (status === 'Approved' || status === 'Rejected') {
+      if (status === 'Approved') {
 	io.emit('taskNotification', {
 		message: `Task has been ${status.toLowerCase()}!`,
 	});
@@ -644,7 +644,7 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedAdvert = await advert.save()
 
 				       try {
-       if (task.status === 'Approved' || task.status === 'Rejected') {
+       if (task.status === 'Rejected') {
 	io.emit('taskNotification', {
 		message: `Task has been ${task.status.toLowerCase()}!`,
 	});
