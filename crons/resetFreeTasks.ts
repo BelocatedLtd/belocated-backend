@@ -5,7 +5,7 @@ import Wallet from '../model/Wallet.js'
 import sendEMail from '../utils/sendEmail.js'
 
 const subject = 'Your Belocated Weekly Update'
-const reply_to = 'noreply@noreply.com'
+const reply_to = 'noreply@belocated.ng'
 
 const sendWeeklyEmail = async () => {
 	const users = await User.find()
@@ -41,9 +41,10 @@ const sendWeeklyEmail = async () => {
             <p>Regards,</p>
             <p>Belocated Team</p>
             `
+			const plainText='Earn More'
 
 			// Send the email
-			await sendEMail(subject, message, user.email, reply_to)
+			await sendEMail(subject, message, user.email, reply_to, plainText)
 
 			// Delay for 1 minute
 			await new Promise((resolve) => setTimeout(resolve, 60000)) // 60000 milliseconds = 1 minute
