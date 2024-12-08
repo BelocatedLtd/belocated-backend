@@ -464,9 +464,16 @@ export const handleFlutterwaveWebhook = asyncHandler(
             // Handle successful payment logic
             console.log('Payment successful:', reference, amount);
             try {
-                // Find the transaction using the payment reference
-                const transaction = await Transaction.findOne({ paymentRef: reference });
 
+
+
+     const transaction = await Transaction.findOne({ paymentRef: reference });
+if (transaction && transaction.status === 'success') {
+    res.status(200).send('Transaction already processed');
+    return;
+}
+                // Find the transaction using the payment reference
+                
                 if (!transaction) {
                     res.status(404).json({ message: 'Transaction not found' });
                     return;
@@ -482,6 +489,7 @@ export const handleFlutterwaveWebhook = asyncHandler(
                         const wallet = await Wallet.findOne({ userId: transaction.userId });
                         if (!wallet) {
                             throw new Error('Wallet not found');
+return
                         }
 
                         wallet.value += amount;
