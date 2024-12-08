@@ -3,7 +3,7 @@ import sendEMail from "../utils/sendEmail.js";
 
 
 const subject = 'Your Belocated Weekly Update';
-const reply_to = "noreply@noreply.com";
+const reply_to = "noreply@belocated.ng";
 
 const sendResetEmail = async() => {
     const users = await User.find();
