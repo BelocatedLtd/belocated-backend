@@ -531,19 +531,21 @@ try {
 
 // Admin Reject Submitted Tasks and Pay user
 export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
-	const { taskId, message } = req.body
+	const { taskId, status, message } = req.body
 
 	//Check if user is an admin
 	if (
 		req.user.accountType !== 'Admin' &&
 		req.user.accountType !== 'Super Admin'
 	) {
+		res.status(403).json({message:'User Not Authorized'})
 		throw new Error('User Not Authorized')
 	}
 
 	const task = await Task.findById(taskId)
 
 	if (!task) {
+		res.status(404).json({message:'Cannot Find Task'})
 		throw new Error('Cannot find task')
 	}
 
@@ -553,17 +555,18 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const advertserWallet = await Wallet.find({ userId: task.advertiserId })
 
 	if (!task) {
+		res.status(404).json({message:'Cannot Find Task'})
 		throw new Error('Cannot find task')
 	}
 
-	if (task.status === 'Rejected') {
+	if (status === 'Rejected') {
 		res.status(409).json({message:'This task has already being rejected, read the admins message and follow the instructions'})
 		throw new Error(
 			'This task has already being rejected, read the admins message and follow the instructions',
 		)
 	}
 
-	if (task.status === 'Approved') {
+	if (status === 'Approved') {
 		throw new Error(
 			'This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin',
 		)
@@ -644,9 +647,9 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedAdvert = await advert.save()
 
 				       try {
-       if (task.status === 'Rejected') {
+       if (status === 'Rejected') {
 	io.emit('taskNotification', {
-		message: `Task has been ${task.status.toLowerCase()}!`,
+		message: `Task has been ${status.toLowerCase()}!`,
 	});
 }
 
