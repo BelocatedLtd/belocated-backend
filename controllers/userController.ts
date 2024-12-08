@@ -1228,7 +1228,7 @@ export const verifyEmailPasswordChange = asyncHandler(
     <p>Regards...</p>
     <p>Belocated Team</p>
     `
-					const plainText=`Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
+					const plainText=`Hello, ${user.username}. Please verify your mail ${verificationToken}`;
 					const subject = 'Verify Sensitive Change'
 					const send_to = user.email
 					const reply_to = 'noreply@belocated.ng';
