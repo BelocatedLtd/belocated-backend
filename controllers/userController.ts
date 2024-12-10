@@ -1197,7 +1197,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             <p>To get started, you need to verify your email by clicking the button below. Please note that the verification link is valid for 30 minutes.</p>
 
             <!-- Verify Button -->
-            <a href="${verification_link}" class="verify-button">Click to Verify</a>
+            <a href="${verificationLink}" class="verify-button">Click to Verify</a>
 
             <p>Once you are verified, you can log in and access all our earning and publicity packages.</p>
             <p>We are here to serve you, so contact us on any of our social media pages with any questions you may have.</p>
