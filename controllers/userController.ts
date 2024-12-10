@@ -1117,18 +1117,103 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 			const verificationLink = `${frontendUrl}/verified?token=${verificationToken}`
 
 			//Send Verification Email
-			const message = `
+			const message = `<!DOCTYPE html>
 <html>
-  <body style="font-family: Arial, sans-serif; color: #333;">
-    <h2>Hello, ${user.username}</h2>
-    <p>Please verify your email by clicking the link below:</p>
-    <a href="${verificationLink}">
-      <img src="https://belocatedltd.github.io/belocatedImage/vef.jpg" alt="Verify Email" style="max-width: 100%; height: auto;"/>
-    </a>
-    <p>Thank you for choosing BeLocated!</p>
-  </body>
-</html>
-`;
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to BeLocated</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('images/back.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: #333;
+        }
+    
+        .header-image {
+            width: 100%;
+            height: auto;
+        }
+        .content{
+            padding: 15px;
+            color:black;
+        }
+        .content h2 {
+            color: white;
+            text-align: left;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+
+        }
+        .content p {
+            line-height: 1.6;
+            margin: 10px 0;
+            font-family: Arial, Helvetica, sans-serif;
+           font-size:20px ;
+        }
+        .verify-button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            text-align: center;
+            padding: 10px 20px;
+            background-color: #0056b3;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+        }
+        .verify-button:hover {
+            background-color: #003f8a;
+        }
+       
+        .location-icon {
+            text-align: right;
+            margin-top: 10px;
+        }
+        .location-icon img {
+            width: 100px;
+            height: auto;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Content Section -->
+        <div class="content">
+            <i><h2>Welcome to <br>BeLocated!</h2></i>
+            <h2>Hello, ${user.username}</h2>
+            <p>We are excited to have you join the BeLocated family.</p>
+            <p>To get started, you need to verify your email by clicking the button below. Please note that the verification link is valid for 30 minutes.</p>
+
+            <!-- Verify Button -->
+            <a href="${verification_link}" class="verify-button">Click to Verify</a>
+
+            <p>Once you are verified, you can log in and access all our earning and publicity packages.</p>
+            <p>We are here to serve you, so contact us on any of our social media pages with any questions you may have.</p>
+
+            <!-- Location Icon -->
+            <div class="location-icon">
+                <img src="images/3.png" alt="Location Icon">
+            </div>
+        </div>
+        <div class="footer">
+            Regards, <br>
+            BeLocated Team
+        </div>
+    </div>
+</body>
+</html>`;
 
 const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
 
