@@ -1128,7 +1128,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-image: url('images/back.jpg');
+            background-image: url('https://belocatedltd.github.io/belocatedimage/back.jpg');
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
@@ -1204,7 +1204,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
             <!-- Location Icon -->
             <div class="location-icon">
-                <img src="images/3.png" alt="Location Icon">
+                <img src="https://belocatedltd.github.io/belocatedimage/loca.jpg" alt="Location Icon">
             </div>
         </div>
         <div class="footer">
