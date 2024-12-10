@@ -438,7 +438,7 @@ export const handleFlutterwaveWebhook = asyncHandler(
                     }
                 } catch (error) {
                     console.error("Error processing payment:", error);
-                    res.status(500).json({ message: "An error occurred while processing the payment", error: error.message });
+                    res.status(500).json({ message: "An error occurred while processing the payment", error});
          return;
 		}
             } else {
