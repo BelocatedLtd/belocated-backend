@@ -1137,18 +1137,17 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom, #5c2e91 0%, #003f8a 15%, #000000 30%, #ffffff;
             z-index: -1;
             object-fit: cover;
         }
-        .email-container {
+        /* .email-container {
             max-width: 600px;
             margin: 20px auto;
             background-color: rgba(255, 255, 255, 0.9);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
+        } */
         .content {
             padding: 20px;
 	    color:black;
@@ -1170,7 +1169,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             background-color: #0056b3;
             color: #fff;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 50px;
             font-weight: bold;
         }
         .verify-button:hover {
@@ -1187,26 +1186,26 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
         .footer {
             text-align: left;
             padding: 10px;
-            background-color: #f9f9f9;
-            font-size: 12px;
+           
+            font-size: 18px;
             color: #666;
         }
     </style>
 </head>
 <body>
-    <!-- Background Image 
-    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image"> -->
+    <!-- Background Image -->
+    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image">
 
     <div class="email-container">
         <!-- Content Section -->
         <div class="content">
-	<h3>Hello, ${user.username}
-         <i><h2>Welcome to BeLocated!</h2></i>
+	<h3 style="color:rgb(202, 184, 184)">Hello, ${user.username}</h3>
+         <i><h2>Welcome to <br> BeLocated!</h2></i>
             <p>We are excited to have you join the BeLocated family.</p>
             <p>To get started, you need to verify your email by clicking the button below. Please note that the verification link is valid for 30 minutes.</p>
 
             <!-- Verify Button -->
-            <a href="{{verificationLink}}" class="verify-button">Click to Verify</a>
+            <a href="${verificationLink}" class="verify-button">Click to Verify</a>
 
             <p>Once you are verified, you can log in and access all our earning and publicity packages.</p>
             <p>We are here to serve you, so contact us on any of our social media pages with any questions you may have.</p>
@@ -1224,8 +1223,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
         </div>
     </div>
 </body>
-</html>
-`;
+</html>`;
 
 const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
 
