@@ -1212,7 +1212,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
             <!-- Location Icon -->
             <div class="location-icon">
-                <img src="https://belocatedltd.github.io/belocatedImage/loca.jpg" alt="Location Icon">
+                <img src="https://belocatedltd.github.io/belocatedImage/loca.png" alt="Location Icon">
             </div>
         </div>
 
