@@ -1133,6 +1133,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
         }
         .background-image {
             position: absolute;
+	     background: linear-gradient(to top, #5a83e490 70%, #6d94d2 50%,  #5a83e490 30%, #03174490);
             top: 0;
             left: 0;
             width: 100%;
@@ -1193,8 +1194,8 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     </style>
 </head>
 <body>
-    <!-- Background Image -->
-    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image">
+    <!-- Background Image 
+    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image">-->
 
     <div class="email-container">
         <!-- Content Section -->
