@@ -1195,7 +1195,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 </head>
 <body>
     <!-- Background Image -->
-    <div class="background-image"></div>
+    <div class="background-image" style="background: linear-gradient(to top, #5a83e490 70%, #6d94d2 50%,  #5a83e490 30%, #03174490);"></div>
 
     <div class="email-container">
         <!-- Content Section -->
