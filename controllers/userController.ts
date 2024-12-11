@@ -1194,8 +1194,8 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     </style>
 </head>
 <body>
-    <!-- Background Image 
-    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image">-->
+    <!-- Background Image -->
+    <div class="background-image"></div>
 
     <div class="email-container">
         <!-- Content Section -->
