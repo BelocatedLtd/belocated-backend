@@ -1128,32 +1128,37 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-image: url('https://belocatedltd.github.io/belocatedImage/back.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
             color: #333;
+            position: relative;
         }
-    
-        .header-image {
+        .background-image {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: auto;
+            height: 100%;
+            z-index: -1;
+            object-fit: cover;
         }
-        .content{
-            padding: 15px;
-            color:black;
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            padding: 20px;
+	    color:black;
         }
         .content h2 {
             color: white;
             text-align: left;
-            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-
         }
         .content p {
             line-height: 1.6;
             margin: 10px 0;
-            font-family: Arial, Helvetica, sans-serif;
-           font-size:20px ;
         }
         .verify-button {
             display: block;
@@ -1164,40 +1169,43 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             background-color: #0056b3;
             color: #fff;
             text-decoration: none;
-            border-radius: 50px;
+            border-radius: 5px;
             font-weight: bold;
         }
         .verify-button:hover {
             background-color: #003f8a;
         }
-       
         .location-icon {
             text-align: right;
-            margin-top: 10px;
+            margin-top: 20px;
         }
         .location-icon img {
             width: 100px;
             height: auto;
         }
         .footer {
-            text-align: center;
+            text-align: left;
             padding: 10px;
+            background-color: #f9f9f9;
             font-size: 12px;
             color: #666;
         }
     </style>
 </head>
 <body>
+    <!-- Background Image -->
+    <img src="https://belocatedltd.github.io/belocatedImage/back.jpg" alt="Background" class="background-image">
+
     <div class="email-container">
         <!-- Content Section -->
         <div class="content">
-            <i><h2>Welcome to <br>BeLocated!</h2></i>
-            <h2>Hello, ${user.username}</h2>
+	<h3>Hello, ${user.username}
+         <i><h2>Welcome to BeLocated!</h2></i>
             <p>We are excited to have you join the BeLocated family.</p>
             <p>To get started, you need to verify your email by clicking the button below. Please note that the verification link is valid for 30 minutes.</p>
 
             <!-- Verify Button -->
-            <a href="${verificationLink}" class="verify-button">Click to Verify</a>
+            <a href="{{verificationLink}}" class="verify-button">Click to Verify</a>
 
             <p>Once you are verified, you can log in and access all our earning and publicity packages.</p>
             <p>We are here to serve you, so contact us on any of our social media pages with any questions you may have.</p>
@@ -1207,13 +1215,16 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
                 <img src="https://belocatedltd.github.io/belocatedImage/loca.jpg" alt="Location Icon">
             </div>
         </div>
+
+        <!-- Footer -->
         <div class="footer">
             Regards, <br>
             BeLocated Team
         </div>
     </div>
 </body>
-</html>`;
+</html>
+`;
 
 const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
 
