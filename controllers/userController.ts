@@ -1133,7 +1133,6 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
         }
         .background-image {
             position: absolute;
-	     background: linear-gradient(to top, #5a83e490 70%, #6d94d2 50%,  #5a83e490 30%, #03174490);
             top: 0;
             left: 0;
             width: 100%;
@@ -1189,13 +1188,13 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             padding: 10px;
            
             font-size: 18px;
-            color: #666;
+            color: red;
         }
     </style>
 </head>
 <body>
     <!-- Background Image -->
-    <div class="background-image" style="background: linear-gradient(to top, #5a83e490 70%, #6d94d2 50%,  #5a83e490 30%, #03174490);"></div>
+    <div class="background-image" style="background-color: #5a83e490;"></div>
 
     <div class="email-container">
         <!-- Content Section -->
