@@ -1119,110 +1119,100 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 			//Send Verification Email
 			const message = `<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to BeLocated</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verification Email</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            position: relative;
-        }
-        .background-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            object-fit: cover;
-        }
-        /* .email-container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        } */
-        .content {
-            padding: 20px;
-	    color:black;
-        }
-        .content h2 {
-            color: white;
-            text-align: left;
-        }
-        .content p {
-            line-height: 1.6;
-            margin: 10px 0;
-        }
-        .verify-button {
-            display: block;
-            width: 200px;
-            margin: 20px auto;
-            text-align: center;
-            padding: 10px 20px;
-            background-color: #0056b3;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-        }
-        .verify-button:hover {
-            background-color: #003f8a;
-        }
-        .location-icon {
-            text-align: right;
-            margin-top: 20px;
-        }
-        .location-icon img {
-            width: 100px;
-            height: auto;
-        }
-        .footer {
-            text-align: left;
-            padding: 10px;
-           
-            font-size: 18px;
-            color: red;
-        }
+      /* Fallback styles for email clients that support <style> tags */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #4c63d8; /* Fallback solid color */
+      }
     </style>
-</head>
-<body>
-    <!-- Background Image -->
-    <div class="background-image" style="background-color: #5a83e490;"></div>
-
-    <div class="email-container">
-        <!-- Content Section -->
-        <div class="content">
-	<h3 style="color:rgb(202, 184, 184)">Hello, ${user.username}</h3>
-         <i><h2>Welcome to <br> BeLocated!</h2></i>
-            <p>We are excited to have you join the BeLocated family.</p>
-            <p>To get started, you need to verify your email by clicking the button below. Please note that the verification link is valid for 30 minutes.</p>
-
-            <!-- Verify Button -->
-            <a href="${verificationLink}" class="verify-button">Click to Verify</a>
-
-            <p>Once you are verified, you can log in and access all our earning and publicity packages.</p>
-            <p>We are here to serve you, so contact us on any of our social media pages with any questions you may have.</p>
-
-            <!-- Location Icon -->
-            <div class="location-icon">
-                <img src="https://belocatedltd.github.io/belocatedImage/loca.png" alt="Location Icon">
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            Regards, <br>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #4c63d8, #6a8cff);
+      background-color: #4c63d8; /* Fallback solid color */
+    "
+  >
+    <!-- Email Container -->
+    <table
+      width="100%"
+      border="0"
+      cellspacing="0"
+      cellpadding="0"
+      style="
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      "
+    >
+      <tr>
+        <td style="padding: 20px; text-align: center">
+<h3>Hello, ${user.username}</h3>
+          <!-- Header -->
+          <h1 style="font-size: 24px; color: #4c63d8; margin: 0">
+            Welcome to BeLocated!
+          </h1>
+          <!-- Message Content -->
+          <p style="font-size: 16px; color: #333333; margin: 10px 0">
+            We are excited to have you join the BeLocated family.
+          </p>
+          <p style="font-size: 14px; color: #333333; margin: 10px 0">
+            To get you started, you would have to verify your email by clicking
+            the link below.
+          </p>
+          <p
+            style="
+              font-size: 14px;
+              color: #333333;
+              font-style: italic;
+              margin: 10px 0;
+            "
+          >
+            Note that the reset link is valid for 30 minutes.
+          </p>
+          <p style="font-size: 14px; color: #333333; margin: 10px 0">
+            Once you are verified, you can proceed to log in and access all our
+            earning and publicity packages.
+          </p>
+          <!-- Verification Button -->
+          <a
+            href="${verificationLink}"
+            style="
+              display: inline-block;
+              margin: 20px auto;
+              padding: 10px 20px;
+              background-color: #4c63d8;
+              color: #ffffff;
+              text-decoration: none;
+              border-radius: 5px;
+              font-size: 14px;
+              font-weight: bold;
+            "
+            >CLICK TO VERIFY</a
+          >
+          <!-- Footer -->
+          <p style="font-size: 14px; color: #333333; margin-top: 20px">
+            We are here to serve you, so contact us on any of our social media
+            pages with any questions you may have.
+          </p>
+          <p style="font-size: 14px; color: #333333; margin: 0">Regards,</p>
+          <p style="font-size: 14px; color: #4c63d8; margin: 0">
             BeLocated Team
-        </div>
-    </div>
-</body>
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>`;
 
 const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
