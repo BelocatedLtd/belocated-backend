@@ -1,32 +1,32 @@
-import Advert from '../model/Advert.js'
-import Task from '../model/Task.js'
-import User from '../model/User.js'
-import Wallet from '../model/Wallet.js'
-import sendEMail from '../utils/sendEmail.js'
+import User from "../model/User.js"
+import mongoose from "mongoose";
+import sendEMail from "../utils/sendEmail.js";
+import Wallet from "../model/Wallet.js";
+import Task from "../model/Task.js";
+import Advert from "../model/Advert.js";
 
-const subject = 'Your Belocated Weekly Update'
-const reply_to = 'noreply@belocated.ng'
 
-const sendWeeklyEmail = async () => {
-	const users = await User.find()
-	const tasks = await Task.find()
-	const ads = await Advert.find()
-	const wallets = await Wallet.find()
+const subject = 'Your Belocated Weekly Update';
+const reply_to = "noreply@noreply.com";
 
-	const runningAds = await ads?.filter((ad) => ad?.status === 'Running')
+const sendWeeklyEmail = async() => {
+    const users = await User.find();
+    const tasks = await Task.find();
+    const ads = await Advert.find();
+    const wallets = await Wallet.find();
 
-	for (const user of users) {
-		try {
-			//const user = await User.findById("64c05449dbf0c02a5691427e");
-			//const user = users.find(u => u._id == "64c05449dbf0c02a5691427e")
-			const userEarned = wallets?.find(
-				(wallet) => wallet?.userId?.toString() === user?._id?.toString(),
-			)?.totalEarning
-			const userTaskCount = tasks?.filter(
-				(task) => task?.taskPerformerId?.toString() === user?._id?.toString(),
-			)
+    const runningAds = await ads?.filter(ad => ad?.status === "Running")
+    
+    
+        for (const user of users) { 
 
-			const message = `
+            try {
+            //const user = await User.findById("64c05449dbf0c02a5691427e");
+            //const user = users.find(u => u._id == "64c05449dbf0c02a5691427e")
+            const userEarned = wallets?.find(wallet => wallet?.userId == user?._id.toString())?.totalEarning
+            const userTaskCount = tasks?.filter(task => task?.taskPerformerId == user?._id )
+
+            const message = `
             <p>Hi ${user?.username}</p> 
             <p>We are happy you are part of our Belocated Family.</p>
             <p>So far, you've earned  ₦${userEarned} doing ${userTaskCount?.length} tasks.</p>
@@ -41,19 +41,19 @@ const sendWeeklyEmail = async () => {
             <p>Regards,</p>
             <p>Belocated Team</p>
             `
-			const plainText='Earn More'
 
-			// Send the email
-			await sendEMail(subject, message, user.email, reply_to, plainText)
+                 // Send the email
+                await sendEMail(subject, message, user.email, reply_to)
 
-			// Delay for 1 minute
-			await new Promise((resolve) => setTimeout(resolve, 60000)) // 60000 milliseconds = 1 minute
+                // Delay for 1 minute
+                await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
 
-			//console.log(message)
-		} catch (error) {
-			console.error(`Error sending email`, error)
-		}
-	}
+                //console.log(message)
+
+            } catch (error) {
+                console.error(`Error sending email`, error);
+            }
+       }
 }
 
 //sendWeeklyEmail()
