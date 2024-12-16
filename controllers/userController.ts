@@ -13,8 +13,8 @@ import { saveActivity } from '../controllers/feedController'
 import Token from '../model/Token'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
-import sendEmail from '../utils/sendEmail'
-//import sendEmail from '../utils/sendEmailApi'
+import sendEMail from '../utils/sendEmail'
+import sendEmail from '../utils/sendEmailApi'
 
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -1130,6 +1130,10 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
         padding: 0;
         background-color: #4c63d8; /* Fallback solid color */
       }
+      .location-icon img {
+            width: 100px;
+            height: auto;
+        }
     </style>
   </head>
   <body
@@ -1156,8 +1160,8 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
       "
     >
       <tr>
-        <td style="padding: 20px; text-align: center">
-<h3>Hello, ${user.username}</h3>
+        <td style="padding: 20px; text-align: center; ">
+<h3 style="font-size: 24px;">Hello, ${user.username}</h3>
           <!-- Header -->
           <h1 style="font-size: 24px; color: #4c63d8; margin: 0">
             Welcome to BeLocated!
@@ -1205,6 +1209,9 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
             We are here to serve you, so contact us on any of our social media
             pages with any questions you may have.
           </p>
+          <div class="location-icon">
+            <img src="https://belocatedltd.github.io/belocatedImage/loca.png" alt="Location Icon">
+        </div>
           <p style="font-size: 14px; color: #333333; margin: 0">Regards,</p>
           <p style="font-size: 14px; color: #4c63d8; margin: 0">
             BeLocated Team
@@ -1215,7 +1222,7 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   </body>
 </html>`;
 
-const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
+//const plainText = `Hello, ${user.username}. Please verify your email by clicking the following link: ${verificationLink}`;
 
 
 			const subject = 'Email Verification'
@@ -1224,8 +1231,7 @@ const plainText = `Hello, ${user.username}. Please verify your email by clicking
 
 			//Finally sending email
 			//const emailSent = await sendEMail(subject, message, send_to, reply_to)
-			const response = await sendEmail(subject, message, send_to, reply_to, plainText)
-
+			const response = await sendEmail(subject, message, send_to, user.username)
 			if (!response) {
 				res.status(500).json('Email verification failed')
 				throw new Error('Email verification failed')
@@ -1319,7 +1325,8 @@ export const verifyEmailPasswordChange = asyncHandler(
 					const reply_to = 'noreply@belocated.ng';
 
 					//Finally sending email
-					const emailSent = await sendEmail(subject, message, send_to, reply_to, plainText)
+					const emailSent = await sendEMail(subject, message, send_to, reply_to)
+					
 					
 
 					if (!emailSent) {
@@ -1455,7 +1462,12 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 				const reply_to = 'noreply@belocated.ng'
 
 				//Finally sending email
-				const emailSent =await sendEmail(subject, message, send_to, reply_to, plainText)
+				const emailSent = await sendEmail(
+					subject,
+					message,
+					send_to,
+					userRef.username,
+				)
 
 				if (!emailSent) {
 					throw new Error('Failed to send referral bonus email')
@@ -1566,7 +1578,12 @@ export const verifyUser = asyncHandler(async (req: Request, res: Response) => {
 			const reply_to = 'noreply@belocated.ng'
 
 			//Finally sending email
-			const emailSent = await await sendEmail(subject, message, send_to, reply_to, plainText)
+			const emailSent = await sendEmail(
+				subject,
+				message,
+				send_to,
+				updatedUserDetails.username,
+			)
 
 			if (!emailSent) {
 				res.status(500).json('Failed to send welcome email')
@@ -1862,7 +1879,7 @@ export const sendReferralEmail = asyncHandler(
 		const reply_to = 'noreply@belocated.ng'
 
 		// Send the referral email
-		const response = await sendEmail(subject, message, send_to, reply_to, plainText)
+		const response = await sendEmail(subject, message, send_to, reply_to)
 
 		if (!response) {
 			res.status(500).json('Failed to send referral email')
