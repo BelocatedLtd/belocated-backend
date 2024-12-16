@@ -2,7 +2,7 @@ import { SendMailClient } from 'zeptomail'
 
 const url = 'api.zeptomail.com/'
 const token =
-	'Zoho-enczapikey wSsVR61w+UKmDfx/zzX7Ib1skVpUU1ikRxh9iwHwvyStH/uQpcczkELJVA6kG6MYRGU4R2EUpbMtmEpVg2YKiYkozw1SXiiF9mqRe1U4J3x17qnvhDzNX2xVlBGBJYgMww5tnWdkFMoq+g=='
+	'Zoho-enczapikey wSsVR61+/ULyWvt/yTGrLu85mQgBVAukQ0943gSlvn/+HvvL/MduxUDOBQenTqBOGDRsRjdBoL4hnR4FgDtY2dt+wlBUWiiF9mqRe1U4J3x17qnvhDzMWW9dkRWOKYgKxQ1okmhgG8oi+g=='
 
 let client = new SendMailClient({ url, token })
 
