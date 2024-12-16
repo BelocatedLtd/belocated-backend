@@ -495,7 +495,6 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
                 emailMessage,
                 taskPerformer.email,
                 'noreply@noreply.com',
-				'Congratulations'
             );
         } catch (error) {
             console.error('Email Sending Error:', error);
@@ -531,7 +530,7 @@ try {
 
 // Admin Reject Submitted Tasks and Pay user
 export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
-	const { taskId, status, message } = req.body
+	const { taskId, message } = req.body
 
 	//Check if user is an admin
 	if (
@@ -559,14 +558,14 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 		throw new Error('Cannot find task')
 	}
 
-	if (status === 'Rejected') {
+	if (task.status === 'Rejected') {
 		res.status(409).json({message:'This task has already being rejected, read the admins message and follow the instructions'})
 		throw new Error(
 			'This task has already being rejected, read the admins message and follow the instructions',
 		)
 	}
 
-	if (status === 'Approved') {
+	if (task.status === 'Approved') {
 		throw new Error(
 			'This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin',
 		)
@@ -647,9 +646,9 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const updatedAdvert = await advert.save()
 
 				       try {
-       if (status === 'Rejected') {
+       if (task.status === 'Rejected') {
 	io.emit('taskNotification', {
-		message: `Task has been ${status.toLowerCase()}!`,
+		message: `Task has been ${task.status.toLowerCase()}!`,
 	});
 }
 
