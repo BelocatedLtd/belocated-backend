@@ -25,11 +25,10 @@ const sendResetEmail = async() => {
             <p>Regards,</p>
             <p>Belocated Team</p>
             `
-            const plainText ='You have a lot to do'
 
             try {
                  // Send the email
-                await sendEMail(subject, message, user.email, reply_to, plainText)
+                await sendEMail(subject, message, user.email, reply_to)
 
                 // Delay for 1 minute
                 await new Promise(resolve => setTimeout(resolve, 60000)); // 60000 milliseconds = 1 minute
