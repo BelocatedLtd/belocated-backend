@@ -537,14 +537,12 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 		req.user.accountType !== 'Admin' &&
 		req.user.accountType !== 'Super Admin'
 	) {
-		res.status(403).json({message:'User Not Authorized'})
 		throw new Error('User Not Authorized')
 	}
 
 	const task = await Task.findById(taskId)
 
 	if (!task) {
-		res.status(404).json({message:'Cannot Find Task'})
 		throw new Error('Cannot find task')
 	}
 
@@ -554,12 +552,10 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	const advertserWallet = await Wallet.find({ userId: task.advertiserId })
 
 	if (!task) {
-		res.status(404).json({message:'Cannot Find Task'})
 		throw new Error('Cannot find task')
 	}
 
 	if (task.status === 'Rejected') {
-		res.status(409).json({message:'This task has already being rejected, read the admins message and follow the instructions'})
 		throw new Error(
 			'This task has already being rejected, read the admins message and follow the instructions',
 		)
@@ -645,24 +641,12 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	//save the update on user model
 	const updatedAdvert = await advert.save()
 
-				       try {
-       if (task.status === 'Rejected') {
-	io.emit('taskNotification', {
-		message: `Task has been ${task.status.toLowerCase()}!`,
-	});
-}
-
-    } catch (error) {
-        console.error('WebSocket Emit Error:', error);
-    }
-
 	if (!updatedAdvert) {
 		throw new Error('Failed to failed task')
 	}
 
 	res.status(400).json(task)
 })
-
 export const getAllSubmittedTask = asyncHandler(async (req: Request, res: Response) => {
 	try {
         const submittedTask = await Task.countDocuments({
