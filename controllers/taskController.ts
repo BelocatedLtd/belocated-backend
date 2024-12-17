@@ -530,123 +530,77 @@ try {
 
 // Admin Reject Submitted Tasks and Pay user
 export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
-	const { taskId, message } = req.body
+	const { taskId, message } = req.body;
 
-	//Check if user is an admin
+	// Ensure user is an admin
 	if (
 		req.user.accountType !== 'Admin' &&
 		req.user.accountType !== 'Super Admin'
 	) {
-		throw new Error('User Not Authorized')
+		throw new Error('User Not Authorized');
 	}
 
-	const task = await Task.findById(taskId)
-
+	// Fetch task
+	const task = await Task.findOne(taskId);
 	if (!task) {
-		throw new Error('Cannot find task')
+		throw new Error('Cannot find task');
 	}
 
-	const advert = await Advert.findById(task.advertId)
-	const wallet = await Wallet.findOne({ userId: task.taskPerformerId })
-	const taskPerformer = await User.findById(task.taskPerformerId)
-	const advertserWallet = await Wallet.find({ userId: task.advertiserId })
-
-	if (!task) {
-		throw new Error('Cannot find task')
+	// Fetch related data
+	if (!task.advertId || !task.taskPerformerId || !task.advertiserId) {
+		throw new Error('Task is missing necessary references');
 	}
 
+	const advert = await Advert.findOne(task.advertId);
+	const wallet = await Wallet.findOne({ userId: task.taskPerformerId });
+	const taskPerformer = await User.findOne(task.taskPerformerId);
+	const advertiserWallet = await Wallet.findOne({ userId: task.advertiserId });
+
+	// Check for missing data
+	if (!advert || !wallet || !taskPerformer || !advertiserWallet) {
+		throw new Error('Required related data not found');
+	}
+
+	// Task status checks
 	if (task.status === 'Rejected') {
-		throw new Error(
-			'This task has already being rejected, read the admins message and follow the instructions',
-		)
+		throw new Error('This task has already been rejected.');
 	}
-
 	if (task.status === 'Approved') {
-		throw new Error(
-			'This task has already being approved, to avoid double payments and confusion to the system, you cant reject and already approved task. Contact Admin',
-		)
+		throw new Error('Cannot reject an already approved task.');
 	}
 
-	if (!wallet) {
-		throw new Error('Cannot find user Wallet')
-	}
-
-	if (!taskPerformer) {
-		throw new Error('Cannot find task performer details')
-	}
-
-	if (!advertserWallet) {
-		throw new Error('Cannot find user Wallet Advertisers for payment retrieval')
-	}
-
-	if (!advert) {
-		throw new Error('Cannot find user Wallet to update')
-	}
-
-	// Check if admin is the moderator asigned to the advert for this task
-	//Check if user is an admin
-	if (advert.tasksModerator && req.user._id !== advert.tasksModerator) {
-		throw new Error('You are not assigned to moderate this task')
+	// Moderator check
+	if (advert.tasksModerator && req.user._id.toString() !== advert.tasksModerator.toString()) {
+		throw new Error('You are not assigned to moderate this task');
 	}
 
 	if (advert.desiredROI === 0) {
-		throw new Error('Ad campaign is no longer active')
+		throw new Error('Ad campaign is no longer active');
 	}
 
-	//Update task status after user submit screenshot
-	task.status = 'Rejected'
-	task.message = message
+	// Update task status
+	task.status = 'Rejected';
+	task.message = message;
+	await task.save();
 
-	//save the update on task model
-	const updatedTask = await task.save()
-
-	if (!updatedTask) {
-		throw new Error('Failed to approve task')
-	}
-
+	// Handle free tasks
 	if (advert.isFree === true) {
-		taskPerformer.freeTaskCount += 1
-
-		//save the update on user model
-		const addFreeTaskCount = await taskPerformer.save()
-
-		if (!addFreeTaskCount) {
-			throw new Error('Failed to return rejected free task count')
-		}
+		taskPerformer.freeTaskCount += 1;
+		await taskPerformer.save();
 	}
 
-	// Subtract Task performer's Wallets
+	// Update wallet and advert
+	wallet.pendingBalance -= task.toEarn || 0;
+	await wallet.save();
 
-	// Update the pendingBalance
-	wallet.pendingBalance -= task.toEarn
+	advert.desiredROI = Math.max(0, advert.desiredROI + 1);
+	advert.tasks = Math.max(0, advert.tasks - 1);
+	advert.status = 'Running';
+	await advert.save();
 
-	//save subtracted user wallet
-	const walletSubUpdate = await wallet.save()
-
-	if (!walletSubUpdate) {
-		res
-			.status(500)
-			.json({ message: 'Failed to subtract user pending balance wallet' })
-		throw new Error('Failed to update user wallet')
-	}
-
-	// Whether free task or paid task
-	// desiredROI for the advert should be added back by 1, ad status should be changed to Running
-	//Add 1 back to the desired roi
-	//Subtract the number of tasks completed on an advert
-	advert.desiredROI += 1
-	advert.tasks -= 1
-	advert.status = 'Running'
-
-	//save the update on user model
-	const updatedAdvert = await advert.save()
-
-	if (!updatedAdvert) {
-		throw new Error('Failed to failed task')
-	}
-
-	res.status(400).json(task)
-})
+	// Respond with updated task
+	res.status(200).json(task);
+});
 export const getAllSubmittedTask = asyncHandler(async (req: Request, res: Response) => {
 	try {
         const submittedTask = await Task.countDocuments({
