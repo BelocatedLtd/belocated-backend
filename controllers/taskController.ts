@@ -502,16 +502,14 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             return;
         }
     }
+	
 try {
-      if (status === 'Approved') {
-	io.emit('taskNotification', {
-		message: `Task has been ${status.toLowerCase()}!`,
-	});
+    io.emit('taskNotification', {
+        message: `Task has been ${status.toLowerCase()}!`,
+    });
+} catch (error) {
+    console.error('WebSocket Emit Error:', error);
 }
-
-    } catch (error) {
-        console.error('WebSocket Emit Error:', error);
-    }
 	
 
     try {
@@ -584,6 +582,13 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	task.message = message;
 	await task.save();
 
+	try {
+    io.emit('taskNotification', {
+        message: `Task has been ${status.toLowerCase()}!`,
+    });
+} catch (error) {
+    console.error('WebSocket Emit Error:', error);
+}
 	// Handle free tasks
 	if (advert.isFree === true) {
 		taskPerformer.freeTaskCount += 1;
