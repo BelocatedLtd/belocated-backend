@@ -541,7 +541,7 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	}
 
 	// Fetch task
-	const task = await Task.findOne(taskId);
+	const task = await Task.findOne({ _id: new mongoose.Types.ObjectId(taskId) });
 	if (!task) {
 		throw new Error('Cannot find task');
 	}
@@ -551,9 +551,10 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 		throw new Error('Task is missing necessary references');
 	}
 
-	const advert = await Advert.findOne(task.advertId);
+	
+	const advert = await Advert.findOne({ _id: new mongoose.Types.ObjectId(task.advertId) });
 	const wallet = await Wallet.findOne({ userId: task.taskPerformerId });
-	const taskPerformer = await User.findOne(task.taskPerformerId);
+	const taskPerformer = await User.findOne({_id: new mongoose.Types.ObjectId(task.taskPerformerId)});
 	const advertiserWallet = await Wallet.findOne({ userId: task.advertiserId });
 
 	// Check for missing data
