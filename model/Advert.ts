@@ -21,7 +21,7 @@ const advertSchema = new mongoose.Schema(
 		},
 		TD: {
 			type: String,
-			required: true,
+			
 		},
 		desiredROI: {
 			type: Number,
