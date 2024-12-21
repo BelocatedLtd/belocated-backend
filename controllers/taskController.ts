@@ -394,6 +394,10 @@ export const submitTask = asyncHandler(
       );
 
       if (!updatedUserWallet) {
+	      res.status(500).json({
+    message: 'An error occurred while updating the user pending balance. Please try again later.'
+});
+
         throw new Error('Failed to update user pending balance');
       }
 
@@ -425,7 +429,7 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
     const { taskId, status, message } = req.body;
 
     if (!taskId || !status) {
-        res.status(400);
+        res.status(400).json({message: 'Task ID and status are required.'});
         throw new Error('Task ID and status are required.');
     }
 
@@ -541,11 +545,13 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	// Fetch task
 	const task = await Task.findOne({ _id: new mongoose.Types.ObjectId(taskId) });
 	if (!task) {
+		res.status(404).json({message:'Cannot Find Task'})
 		throw new Error('Cannot find task');
 	}
 
 	// Fetch related data
 	if (!task.advertId || !task.taskPerformerId || !task.advertiserId) {
+		res.status(400).json({message:'Task is missing necessary references'})
 		throw new Error('Task is missing necessary references');
 	}
 
@@ -557,23 +563,28 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 
 	// Check for missing data
 	if (!advert || !wallet || !taskPerformer || !advertiserWallet) {
+		res.status(404).json({message:'Required related data not found'})
 		throw new Error('Required related data not found');
 	}
 
 	// Task status checks
 	if (task.status === 'Rejected') {
-		throw new Error('This task has already been rejected.');
+		res.status(400).json({message: 'This task has already been rejected.'});
+                throw new Error('This task has already been rejected.');
 	}
 	if (task.status === 'Approved') {
+		res.status(400).json({message: 'Cannot reject an already approved task.'});
 		throw new Error('Cannot reject an already approved task.');
 	}
 
 	// Moderator check
 	if (advert.tasksModerator && req.user._id.toString() !== advert.tasksModerator.toString()) {
+		res.status(403).json({message: 'You are not assigned to moderate this task.'});
 		throw new Error('You are not assigned to moderate this task');
 	}
 
 	if (advert.desiredROI === 0) {
+		res.status(404).json({message: 'Ad campaign is no longer active.'});
 		throw new Error('Ad campaign is no longer active');
 	}
 
@@ -628,9 +639,7 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
 		req.user.accountType !== 'Admin' &&
 		req.user.accountType !== 'Super Admin'
 	) {
-		res
-			.status(401)
-			.json({ message: 'User not authorized to perform this action' })
+		res.status(403).json({ message: 'User not authorized to perform this action' })
 		throw new Error('User not authorized to perform this action')
 	}
 
