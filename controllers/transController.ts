@@ -71,74 +71,74 @@ export const getSingleUserWallet = asyncHandler(
 
 //Fund User Wallet
 export const fundUserWallet = asyncHandler(async (req: Request, res: Response) => {
-  const { userId, email, date, chargedAmount, trxId, paymentRef, status } = req.body;
+	const { userId, email, date, chargedAmount, trxId, paymentRef, status } = req.body;
 
-  // Validation
-  if (!userId || !chargedAmount || !trxId || !paymentRef) {
-    res.status(400).json({ message: 'Some required fields are missing!' });
-    throw new Error('Some required fields are empty');
-  }
+	// Validation
+	if (!userId || !chargedAmount || !trxId || !paymentRef) {
+		res.status(400).json({ message: 'Some required fields are missing!' });
+		throw new Error('Some required fields are empty');
+	}
 
-  try {
-    // Fetch Wallet
-    const wallet = await Wallet.findOne({ userId: req.user._id.toString() });
-    if (!wallet) {
-      res.status(400).json({ message: 'Wallet not found' });
-      throw new Error('Wallet not found');
-    }
+	try {
+		// Fetch Wallet
+		const wallet = await Wallet.findOne({ userId: req.user._id.toString() });
+		if (!wallet) {
+			res.status(400).json({ message: 'Wallet not found' });
+			throw new Error('Wallet not found');
+		}
 
-    // Match wallet with user
-    if (wallet.userId !== userId) {
-      res.status(401).json({ message: 'User not authorized' });
-      throw new Error('User not authorized');
-    }
+		// Match wallet with user
+		if (wallet.userId !== userId) {
+			res.status(401).json({ message: 'User not authorized' });
+			throw new Error('User not authorized');
+		}
 
-    // Update Wallet
-    const updatedWallet = await Wallet.findOneAndUpdate(
-      { userId: req.user._id.toString() },
-      { $inc: { value: chargedAmount } },
-      { new: true, runValidators: true }
-    );
+		// Update Wallet
+		const updatedWallet = await Wallet.findOneAndUpdate(
+			{ userId: req.user._id.toString() },
+			{ $inc: { value: chargedAmount } },
+			{ new: true, runValidators: true }
+		);
 
-    if (!updatedWallet) {
-      res.status(401).json({ message: 'Failed to fund wallet, contact Admin' });
-      throw new Error('Failed to fund wallet, contact Admin');
-    }
+		if (!updatedWallet) {
+			res.status(401).json({ message: 'Failed to fund wallet, contact Admin' });
+			throw new Error('Failed to fund wallet, contact Admin');
+		}
 
-    // Update or Create Transaction
-    const transaction = await Transaction.findOneAndUpdate(
-      { paymentRef }, // Unique payment reference
-     {
-    $set: {
-      userId: userId, // Explicit if needed
-      email: email,   // Explicit if needed
-      date: date,     // Explicit if needed
-      chargedAmount: chargedAmount, // Explicit if needed
-      trxId: trxId,   // Explicit if needed
-      trxType: 'wallet_funding',
-      status: 'Success', // Explicitly include status
-    },
-  },
-      { new: true, upsert: true }
-    );
+		// Update or Create Transaction
+		const transaction = await Transaction.findOneAndUpdate(
+			{ paymentRef }, // Unique payment reference
+			{
+				$set: {
+					userId: userId, // Explicit if needed
+					email: email,   // Explicit if needed
+					date: date,     // Explicit if needed
+					chargedAmount: chargedAmount, // Explicit if needed
+					trxId: trxId,   // Explicit if needed
+					trxType: 'wallet_funding',
+					status: 'Success', // Explicitly include status
+				},
+			},
+			{ new: true, upsert: true }
+		);
 
-	  if (!transaction) {
-  throw new Error('Failed to save transaction');
-}
+		if (!transaction) {
+			throw new Error('Failed to save transaction');
+		}
 
-    // Update User
-	  if(chargedAmount >= 200 || updatedWallet.value >= 200){
-    const user = await User.findOneAndUpdate(
-      { _id: req.user._id}, // Query by _id
-      { canAccessEarn: true },
-      { new: true }
-    );
-	  }
+		// Update User
+		if (chargedAmount >= 200 || updatedWallet.value >= 200) {
+			const user = await User.findOneAndUpdate(
+				{ _id: req.user._id }, // Query by _id
+				{ canAccessEarn: true },
+				{ new: true }
+			);
+		}
 
-    res.status(201).json(updatedWallet);
-  } catch (error) {
-    res.status(500).json({ error });
-  }
+		res.status(201).json(updatedWallet);
+	} catch (error) {
+		res.status(500).json({ error });
+	}
 });
 
 export const initializeTransaction = asyncHandler(
@@ -335,236 +335,236 @@ export const handlePaystackWebhook = asyncHandler(
 
 
 export const handleFlutterwaveWebhook = asyncHandler(
-    async (req: Request, res: Response) => {
-        const secretHash = process.env.FLW_SECRET_HASH;
+	async (req: Request, res: Response) => {
+		const secretHash = process.env.FLW_SECRET_HASH;
 
-        // Validate webhook signature
-        const signature = req.headers["verif-hash"];
-        if (!signature || signature !== secretHash) {
-            console.warn("Invalid signature from Flutterwave webhook");
-            res.status(401).end();
-		return;
-        }
-
-        const payload = req.body;
-        console.log("Received Flutterwave payload:", payload);
-
-        const { event, data } = payload;
-
-        // Handle successful charge events
-        if (event === "charge.completed" || event === "charge.successful") {
-            const { status, tx_ref, amount, customer } = data;
-
-            if (status === "successful") {
-                console.log("Successful payment:", { tx_ref, amount });
-
-                try {
-                    // Find the transaction using the payment reference
-                    const transaction = await Transaction.findOne({ paymentRef: tx_ref });
-
-                    if (!transaction) {
-                        console.error(`Transaction not found for reference: ${tx_ref}`);
-                        res.status(404).json({ message: "Transaction not found" });
-                 return;
-		    }
-
-                    // Check if transaction is already processed
-                    if (transaction.status === "successful") {
-                        console.log(`Transaction already processed: ${tx_ref}`);
-                        res.status(200).json({ message: "Transaction already processed" });
-                   return;
-		    }
-
-                    // Update the transaction status
-                    transaction.status = status;
-                    await transaction.save();
-
-                    // Handle wallet funding
-                    if (transaction.trxType === "wallet_funding") {
-                        const wallet = await Wallet.findOne({ userId: transaction.userId });
-
-                        if (!wallet) {
-                            throw new Error("Wallet not found");
-                        }
-
-                        wallet.value += amount;
-                        wallet.totalEarning += amount;
-                        await wallet.save();
-
-                        // Update user's earning eligibility if criteria met
-                        if (amount >= 200 || wallet.value >= 200) {
-                            await User.findOneAndUpdate(
-                                { _id: transaction.userId },
-                                { canAccessEarn: true },
-                                { new: true }
-                            );
-                        }
-
-                        console.log(`Wallet funded successfully for user: ${transaction.userId}`);
-                        
-			   res.status(200).json({ message: "Wallet funded successfully" });
-                 return;
-		    }
-
-                    // Handle advert payment
-                    if (transaction.trxType === "advert_payment") {
-                        const advertId = transaction.trxId.split("ad_p")[1];
-
-                        if (!advertId) {
-                            console.error(`Invalid transaction ID format: ${transaction.trxId}`);
-                            res.status(400).json({ message: "Invalid transaction ID format" });
-                       return;
-			}
-
-                        const advert = await Advert.findById(advertId);
-
-                        if (!advert) {
-                            console.error(`Advert not found for ID: ${advertId}`);
-                            res.status(404).json({ message: "Advert not found" });
-                       return;
-			}
-
-                        if (status === "successful") {
-                            advert.status = "Running"; // Update advert status
-                            await advert.save();
-                            console.log(`Advert payment successful for ID: ${advertId}`);
-                            res.status(200).json({ message: "Advert payment successful" });
-                       return;
-			} else {
-                            console.warn(`Advert payment failed for ID: ${advertId}`);
-                             res.status(400).json({ message: "Advert payment failed" });
-                       return;
-			}
-                    }
-                } catch (error) {
-                    console.error("Error processing payment:", error);
-                    res.status(500).json({ message: "An error occurred while processing the payment", error});
-         return;
+		// Validate webhook signature
+		const signature = req.headers["verif-hash"];
+		if (!signature || signature !== secretHash) {
+			console.warn("Invalid signature from Flutterwave webhook");
+			res.status(401).end();
+			return;
 		}
-            } else {
-                console.warn("Payment status not successful:", status);
-                res.status(400).json({ message: "Payment failed" });
-		    return;
-            }
-        }
 
-        console.warn("Unhandled event:", event);
-        res.status(400).send("Unhandled event");
-    }
+		const payload = req.body;
+		console.log("Received Flutterwave payload:", payload);
+
+		const { event, data } = payload;
+
+		// Handle successful charge events
+		if (event === "charge.completed" || event === "charge.successful") {
+			const { status, tx_ref, amount, customer } = data;
+
+			if (status === "successful") {
+				console.log("Successful payment:", { tx_ref, amount });
+
+				try {
+					// Find the transaction using the payment reference
+					const transaction = await Transaction.findOne({ paymentRef: tx_ref });
+
+					if (!transaction) {
+						console.error(`Transaction not found for reference: ${tx_ref}`);
+						res.status(404).json({ message: "Transaction not found" });
+						return;
+					}
+
+					// Check if transaction is already processed
+					if (transaction.status === "successful") {
+						console.log(`Transaction already processed: ${tx_ref}`);
+						res.status(200).json({ message: "Transaction already processed" });
+						return;
+					}
+
+					// Update the transaction status
+					transaction.status = status;
+					await transaction.save();
+
+					// Handle wallet funding
+					if (transaction.trxType === "wallet_funding") {
+						const wallet = await Wallet.findOne({ userId: transaction.userId });
+
+						if (!wallet) {
+							throw new Error("Wallet not found");
+						}
+
+						wallet.value += amount;
+						wallet.totalEarning += amount;
+						await wallet.save();
+
+						// Update user's earning eligibility if criteria met
+						if (amount >= 200 || wallet.value >= 200) {
+							await User.findOneAndUpdate(
+								{ _id: transaction.userId },
+								{ canAccessEarn: true },
+								{ new: true }
+							);
+						}
+
+						console.log(`Wallet funded successfully for user: ${transaction.userId}`);
+
+						res.status(200).json({ message: "Wallet funded successfully" });
+						return;
+					}
+
+					// Handle advert payment
+					if (transaction.trxType === "advert_payment") {
+						const advertId = transaction.trxId.split("ad_p")[1];
+
+						if (!advertId) {
+							console.error(`Invalid transaction ID format: ${transaction.trxId}`);
+							res.status(400).json({ message: "Invalid transaction ID format" });
+							return;
+						}
+
+						const advert = await Advert.findById(advertId);
+
+						if (!advert) {
+							console.error(`Advert not found for ID: ${advertId}`);
+							res.status(404).json({ message: "Advert not found" });
+							return;
+						}
+
+						if (status === "successful") {
+							advert.status = "Running"; // Update advert status
+							await advert.save();
+							console.log(`Advert payment successful for ID: ${advertId}`);
+							res.status(200).json({ message: "Advert payment successful" });
+							return;
+						} else {
+							console.warn(`Advert payment failed for ID: ${advertId}`);
+							res.status(400).json({ message: "Advert payment failed" });
+							return;
+						}
+					}
+				} catch (error) {
+					console.error("Error processing payment:", error);
+					res.status(500).json({ message: "An error occurred while processing the payment", error });
+					return;
+				}
+			} else {
+				console.warn("Payment status not successful:", status);
+				res.status(400).json({ message: "Payment failed" });
+				return;
+			}
+		}
+
+		console.warn("Unhandled event:", event);
+		res.status(400).send("Unhandled event");
+	}
 );
 
 export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.body;
-    const signature = req.headers['x-korapay-signature'];
-    const secretKey = process.env.KORA_PAY_SECKEY;
+	const payload = req.body;
+	const signature = req.headers['x-korapay-signature'];
+	const secretKey = process.env.KORA_PAY_SECKEY;
 
-    // Ensure the secret key is defined
-    if (!secretKey) {
-        console.error('Webhook secret key is missing');
-        res.status(500).send('Webhook secret key is missing');
-        return;
-    }
+	// Ensure the secret key is defined
+	if (!secretKey) {
+		console.error('Webhook secret key is missing');
+		res.status(500).send('Webhook secret key is missing');
+		return;
+	}
 
-    // Verify the webhook signature
-    const hash = crypto.createHmac('sha256', secretKey)
-        .update(JSON.stringify(payload.data)) // Assuming payload.data is the transaction data
-        .digest('hex');
+	// Verify the webhook signature
+	const hash = crypto.createHmac('sha256', secretKey)
+		.update(JSON.stringify(payload.data)) // Assuming payload.data is the transaction data
+		.digest('hex');
 
-    if (hash !== signature) {
-        console.error('Invalid webhook signature');
-        res.status(401).send('Invalid signature');
-        return;
-    }
+	if (hash !== signature) {
+		console.error('Invalid webhook signature');
+		res.status(401).send('Invalid signature');
+		return;
+	}
 
-    const { event, data } = payload;
+	const { event, data } = payload;
 
-    // Supported events
-    if (event === 'transfer.success' || event === 'charge.success') {
-        const { status, reference, amount, customer } = data;
+	// Supported events
+	if (event === 'transfer.success' || event === 'charge.success') {
+		const { status, reference, amount, customer } = data;
 
-        // Normalize status to handle "success" and "successful"
-        const normalizedStatus = status === 'success' || status === 'successful' ? 'success' : status;
+		// Normalize status to handle "success" and "successful"
+		const normalizedStatus = status === 'success' || status === 'successful' ? 'success' : status;
 
-        if (normalizedStatus === 'success') {
-            try {
-                // Check if the transaction exists
-                const transaction = await Transaction.findOne({ paymentRef: reference });
+		if (normalizedStatus === 'success') {
+			try {
+				// Check if the transaction exists
+				const transaction = await Transaction.findOne({ paymentRef: reference });
 
-                if (!transaction) {
-                    console.error(`Transaction not found: ${reference}`);
-                    res.status(404).json({ message: 'Transaction not found' });
-                    return;
-                }
+				if (!transaction) {
+					console.error(`Transaction not found: ${reference}`);
+					res.status(404).json({ message: 'Transaction not found' });
+					return;
+				}
 
-                // Prevent duplicate processing
-                if (transaction.status === 'success') {
-                    console.log(`Transaction already processed: ${reference}`);
-                    res.status(200).send('Transaction already processed');
-                    return;
-                }
+				// Prevent duplicate processing
+				if (transaction.status === 'success') {
+					console.log(`Transaction already processed: ${reference}`);
+					res.status(200).send('Transaction already processed');
+					return;
+				}
 
-                // Update transaction status
-                transaction.status = 'success';
-                await transaction.save();
+				// Update transaction status
+				transaction.status = 'success';
+				await transaction.save();
 
-                if (transaction.trxType === 'wallet_funding') {
-                    const wallet = await Wallet.findOne({ userId: transaction.userId });
+				if (transaction.trxType === 'wallet_funding') {
+					const wallet = await Wallet.findOne({ userId: transaction.userId });
 
-                    if (!wallet) {
-                        console.error(`Wallet not found for user: ${transaction.userId}`);
-                        res.status(404).json({ message: 'Wallet not found' });
-                        return;
-                    }
+					if (!wallet) {
+						console.error(`Wallet not found for user: ${transaction.userId}`);
+						res.status(404).json({ message: 'Wallet not found' });
+						return;
+					}
 
-                    // Update wallet balances
-                    wallet.value += amount;
-                    wallet.totalEarning += amount;
-                    await wallet.save();
+					// Update wallet balances
+					wallet.value += amount;
+					wallet.totalEarning += amount;
+					await wallet.save();
 
-                    // Check and update earning access
-                    if (amount >= 200 || wallet.value >= 200) {
-                        await User.findOneAndUpdate(
-                            { _id: transaction.userId },
-                            { canAccessEarn: true },
-                            { new: true }
-                        );
-                    }
+					// Check and update earning access
+					if (amount >= 200 || wallet.value >= 200) {
+						await User.findOneAndUpdate(
+							{ _id: transaction.userId },
+							{ canAccessEarn: true },
+							{ new: true }
+						);
+					}
 
-                    console.log(`Wallet funded successfully for user: ${transaction.userId}`);
-                    res.status(200).json({ message: 'Wallet funded successfully' });
-                    return;
-                } else if (transaction.trxType === 'advert_payment') {
-                    const advertId = transaction.trxId.split('ad_p')[1];
-                    const advert = await Advert.findById(advertId);
+					console.log(`Wallet funded successfully for user: ${transaction.userId}`);
+					res.status(200).json({ message: 'Wallet funded successfully' });
+					return;
+				} else if (transaction.trxType === 'advert_payment') {
+					const advertId = transaction.trxId.split('ad_p')[1];
+					const advert = await Advert.findById(advertId);
 
-                    if (!advert) {
-                        console.error(`Advert not found for ID: ${advertId}`);
-                        res.status(404).json({ message: 'Advert not found' });
-                        return;
-                    }
+					if (!advert) {
+						console.error(`Advert not found for ID: ${advertId}`);
+						res.status(404).json({ message: 'Advert not found' });
+						return;
+					}
 
-                    advert.status = 'Running';
-                    await advert.save();
+					advert.status = 'Running';
+					await advert.save();
 
-                    console.log(`Advert payment successful for advert ID: ${advertId}`);
-                    res.status(200).json({ message: 'Advert payment successful' });
-                    return;
-                }
-            } catch (error) {
-                console.error('Error processing webhook:', error);
-                res.status(500).json({ message: 'Internal server error', error });
-                return;
-            }
-        } else {
-            console.log(`Payment failed for reference: ${reference}`);
-            res.status(400).json({ message: 'Transaction not successful' });
-            return;
-        }
-    } else {
-        console.log(`Unhandled event type: ${event}`);
-        res.status(400).send('Unhandled event type');
-        return;
-    }
+					console.log(`Advert payment successful for advert ID: ${advertId}`);
+					res.status(200).json({ message: 'Advert payment successful' });
+					return;
+				}
+			} catch (error) {
+				console.error('Error processing webhook:', error);
+				res.status(500).json({ message: 'Internal server error', error });
+				return;
+			}
+		} else {
+			console.log(`Payment failed for reference: ${reference}`);
+			res.status(400).json({ message: 'Transaction not successful' });
+			return;
+		}
+	} else {
+		console.log(`Unhandled event type: ${event}`);
+		res.status(400).send('Unhandled event type');
+		return;
+	}
 });
 
 
@@ -934,118 +934,124 @@ export const getTransactions = asyncHandler(
 
 		const startIndex = (currentPage - 1) * currentLimit
 
-	const transactions = await Transaction.aggregate([
-  { $sort: { createdAt: -1 } }, // Sort by newest first
-  { $skip: startIndex }, // Pagination: Skip records
-  { $limit: currentLimit }, // Pagination: Limit records
-  {
-    $lookup: {
-      from: 'outline', // Replace with your user collection name
-      localField: 'userId', // Field in transactions to match
-      foreignField: '_id', // Field in users to match
-      as: 'userDetails', // Result field
-    },
-  },
-  {
-    $unwind: {
-      path: '$userDetails',
-      preserveNullAndEmptyArrays: true, // Include transactions without a user
-    },
-  },
-  {
-    $project: {
-      _id: 1,
-      trxId: 1,
-      trxType: 1,
-      chargedAmount: 1,
-      date: 1,
-      status: 1,
-      username: '$userDetails.username', // Extract username
-      fullname: '$userDetails.fullname', // Extract fullname
-    },
-  },
-]);
+		const mongoose = require('mongoose');
+		const transactions = await Transaction.aggregate([
+			{ $sort: { createdAt: -1 } }, // Sort by newest first
+			{ $skip: startIndex }, // Pagination: Skip records
+			{ $limit: currentLimit }, // Pagination: Limit records
+			{
+				$addFields: {
+					userId: { $toObjectId: "$userId" } // Cast userId to ObjectId
+				},
+			},
+			{
+				$lookup: {
+					from: 'users', // Collection name of the users table
+					localField: 'userId', // Field in the transactions collection
+					foreignField: '_id', // Field in the users collection
+					as: 'userDetails', // New field in the output
+				},
+			},
+			{
+				$unwind: {
+					path: '$userDetails',
+					preserveNullAndEmptyArrays: true, // Keep transactions even if no user is found
+				},
+			},
+			{
+				$project: {
+					_id: 1,
+					trxId: 1,
+					trxType: 1,
+					chargedAmount: 1,
+					date: 1,
+					status: 1,
+					username: '$userDetails.username', // Username from joined data
+					fullname: '$userDetails.fullname', // Fullname from joined data
+				},
+			},
+		]);
 
-if (!transactions || transactions.length === 0) {
-  res.status(400).json({ message: 'No transactions found in the database' });
-  throw new Error('No transactions found in the database');
-}
+		if (!transactions || transactions.length === 0) {
+			res.status(400).json({ message: 'No transactions found in the database' });
+			throw new Error('No transactions found in the database');
+		}
 
-const totalTransactions = await Transaction.countDocuments();
-const totalPages = Math.ceil(totalTransactions / currentLimit);
-console.log(transactions)
-res.status(200).json({
-  transactions,
-  page: currentPage,
-  totalPages,
-  totalTransactions,
-  hasNextPage: currentPage < totalPages,
-  hasPreviousPage: currentPage > 1,
-});
+		const totalTransactions = await Transaction.countDocuments();
+		const totalPages = Math.ceil(totalTransactions / currentLimit);
+		console.log(transactions)
+		res.status(200).json({
+			transactions,
+			page: currentPage,
+			totalPages,
+			totalTransactions,
+			hasNextPage: currentPage < totalPages,
+			hasPreviousPage: currentPage > 1,
+		});
 
 	},
 )
 
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
-    try {
-        // List of user emails
-        const userEmails = [
-            'princejp4christ@gmail.com',
-            'jessedaniel882@gmail.com',
-            'olawoleoluwanifemi0@gmail.com',
-            'healthtalkwithjolly@gmail.com',
-            'amuluckysamuel@gmail.com',
-            'chinecherem337@gmail.com',
-            'kemisola910@gmail.com',
-            'ifalolaayomide304@gmail.com',
-            'balikisabdulwasiu36@gmail.com',
-            'ojonyamargaretameh@gmail.com',
-            'abdulshakurbello362@gmail.com',
-            'martinsolamide88@gmail.com',
-            'zubairhakeem308@gmail.com',
-        ];
+	try {
+		// List of user emails
+		const userEmails = [
+			'princejp4christ@gmail.com',
+			'jessedaniel882@gmail.com',
+			'olawoleoluwanifemi0@gmail.com',
+			'healthtalkwithjolly@gmail.com',
+			'amuluckysamuel@gmail.com',
+			'chinecherem337@gmail.com',
+			'kemisola910@gmail.com',
+			'ifalolaayomide304@gmail.com',
+			'balikisabdulwasiu36@gmail.com',
+			'ojonyamargaretameh@gmail.com',
+			'abdulshakurbello362@gmail.com',
+			'martinsolamide88@gmail.com',
+			'zubairhakeem308@gmail.com',
+		];
 
-        // Loop through each email to process updates
-        for (const email of userEmails) {
-            // Find the user
-            const user = await User.findOne({ email });
-            if (!user) {
-                console.warn(`User not found for email: ${email}`);
-                continue; // Skip to the next user if not found
-            }
+		// Loop through each email to process updates
+		for (const email of userEmails) {
+			// Find the user
+			const user = await User.findOne({ email });
+			if (!user) {
+				console.warn(`User not found for email: ${email}`);
+				continue; // Skip to the next user if not found
+			}
 
-            // Update user's canAccessEarn field
-            user.canAccessEarn = true;
-            await user.save();
+			// Update user's canAccessEarn field
+			user.canAccessEarn = true;
+			await user.save();
 
-            // Find the transaction for the user
-            const transaction = await Transaction.findOne({ email: user.email });
-            if (!transaction) {
-                console.warn(`Transaction not found for user: ${user.email}`);
-                continue; // Skip to the next user if not found
-            }
+			// Find the transaction for the user
+			const transaction = await Transaction.findOne({ email: user.email });
+			if (!transaction) {
+				console.warn(`Transaction not found for user: ${user.email}`);
+				continue; // Skip to the next user if not found
+			}
 
-            // Update transaction status
-            transaction.status = 'Successful';
-            await transaction.save();
+			// Update transaction status
+			transaction.status = 'Successful';
+			await transaction.save();
 
-            // Find the wallet for the user
-            const wallet = await Wallet.findOne({ userId: transaction.userId });
-            if (!wallet) {
-                console.warn(`Wallet not found for user: ${user.email}`);
-                continue; // Skip to the next user if not found
-            }
+			// Find the wallet for the user
+			const wallet = await Wallet.findOne({ userId: transaction.userId });
+			if (!wallet) {
+				console.warn(`Wallet not found for user: ${user.email}`);
+				continue; // Skip to the next user if not found
+			}
 
-            // Update wallet values
-            const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
-            wallet.value += amount;
-            wallet.totalEarning += amount;
-            await wallet.save();
-        }
+			// Update wallet values
+			const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
+			wallet.value += amount;
+			wallet.totalEarning += amount;
+			await wallet.save();
+		}
 
-        res.status(200).json({ message: 'Documents updated successfully.' });
-    } catch (error) {
-        console.error('Error updating documents:', error);
-        res.status(500).json({ message: 'Internal server error.', error });
-    }
+		res.status(200).json({ message: 'Documents updated successfully.' });
+	} catch (error) {
+		console.error('Error updating documents:', error);
+		res.status(500).json({ message: 'Internal server error.', error });
+	}
 });
