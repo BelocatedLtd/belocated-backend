@@ -973,7 +973,7 @@ if (!transactions || transactions.length === 0) {
 
 const totalTransactions = await Transaction.countDocuments();
 const totalPages = Math.ceil(totalTransactions / currentLimit);
-
+console.log(transactions)
 res.status(200).json({
   transactions,
   page: currentPage,
