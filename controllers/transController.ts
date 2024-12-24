@@ -934,28 +934,55 @@ export const getTransactions = asyncHandler(
 
 		const startIndex = (currentPage - 1) * currentLimit
 
-		const transactions = await Transaction.find()
-			.sort('-createdAt')
-			.skip(startIndex)
-			.limit(currentLimit)
+	const transactions = await Transaction.aggregate([
+  { $sort: { createdAt: -1 } }, // Sort by newest first
+  { $skip: startIndex }, // Pagination: Skip records
+  { $limit: currentLimit }, // Pagination: Limit records
+  {
+    $lookup: {
+      from: 'outline', // Replace with your user collection name
+      localField: 'userId', // Field in transactions to match
+      foreignField: '_id', // Field in users to match
+      as: 'userDetails', // Result field
+    },
+  },
+  {
+    $unwind: {
+      path: '$userDetails',
+      preserveNullAndEmptyArrays: true, // Include transactions without a user
+    },
+  },
+  {
+    $project: {
+      _id: 1,
+      trxId: 1,
+      trxType: 1,
+      chargedAmount: 1,
+      date: 1,
+      status: 1,
+      username: '$userDetails.username', // Extract username
+      fullname: '$userDetails.fullname', // Extract fullname
+    },
+  },
+]);
 
-		if (!transactions) {
-			res.status(400).json({ message: 'No transaction found in the database' })
-			throw new Error('No transaction found in the database')
-		}
+if (!transactions || transactions.length === 0) {
+  res.status(400).json({ message: 'No transactions found in the database' });
+  throw new Error('No transactions found in the database');
+}
 
-		const totalTransactions = await Transaction.countDocuments()
+const totalTransactions = await Transaction.countDocuments();
+const totalPages = Math.ceil(totalTransactions / currentLimit);
 
-		const totalPages = Math.ceil(totalTransactions / currentLimit)
+res.status(200).json({
+  transactions,
+  page: currentPage,
+  totalPages,
+  totalTransactions,
+  hasNextPage: currentPage < totalPages,
+  hasPreviousPage: currentPage > 1,
+});
 
-		res.status(200).json({
-			transactions,
-			page: currentPage,
-			totalPages,
-			totalTransactions,
-			hasNextPage: currentPage < totalPages,
-			hasPreviousPage: currentPage > 1,
-		})
 	},
 )
 
