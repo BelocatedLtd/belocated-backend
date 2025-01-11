@@ -357,25 +357,43 @@ export const handleFlutterwaveWebhook = asyncHandler(
 			const { status, tx_ref, amount, customer } = data;
 
 			if (status === "successful") {
-				console.log("Successful payment:", { tx_ref, amount });
-				const emitData = {
-								 userId: user.id,
-                                action: `@${user.username} just funded wallet with ₦${amount}`,
-							  };
-					  
-							  // Emit the activity event to all connected clients
-							  io.emit('sendActivity', emitData);
-							   saveActivity(emitData)
+
 
 				try {
 					// Find the transaction using the payment reference
 					const transaction = await Transaction.findOne({ paymentRef: tx_ref });
 
 					if (!transaction) {
+						throw new Error("Transaction not found");
+					}
+
+					const user = await User.findOne({ userId: transaction.userId }); // Correct syntax and await
+
+					if (!user) {
+						throw new Error("User not found");
+					}
+
+					console.log("Successful payment:", { tx_ref, amount });
+
+					const emitData = {
+						userId: transaction.userId,
+						action: `@${user.username} just funded wallet with ₦${amount}`,
+					};
+
+					// Emit the activity event to all connected clients
+					io.emit('sendActivity', emitData);
+
+					// Save the activity in the database or log it
+					saveActivity(emitData);
+
+
+
+					if (!transaction) {
 						console.error(`Transaction not found for reference: ${tx_ref}`);
 						res.status(404).json({ message: "Transaction not found" });
 						return;
 					}
+
 
 					// Check if transaction is already processed
 					if (transaction.status === "successful") {
@@ -496,23 +514,39 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 
 		if (normalizedStatus === 'success') {
 
-			const emitData = {
-								 userId: user.id,
-                                action: `@${user.username} just funded wallet with ₦${amount}`,
-							  };
-					  
-							  // Emit the activity event to all connected clients
-							  io.emit('sendActivity', emitData);
-							   saveActivity(emitData)
+
 			try {
 				// Check if the transaction exists
 				const transaction = await Transaction.findOne({ paymentRef: reference });
+
+
+
 
 				if (!transaction) {
 					console.error(`Transaction not found: ${reference}`);
 					res.status(404).json({ message: 'Transaction not found' });
 					return;
 				}
+
+
+				const user = await User.findOne({ userId: transaction.userId }); // Correct syntax and await
+
+				if (!user) {
+					throw new Error("User not found");
+				}
+
+				console.log("Successful payment:", { reference, amount });
+
+				const emitData = {
+					userId: transaction.userId,
+					action: `@${user.username} just funded wallet with ₦${amount}`,
+				};
+
+				// Emit the activity event to all connected clients
+				io.emit('sendActivity', emitData);
+
+				// Save the activity in the database or log it
+				saveActivity(emitData);
 
 				// Prevent duplicate processing
 				if (transaction.status === 'success') {
