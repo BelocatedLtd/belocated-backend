@@ -357,6 +357,14 @@ export const handleFlutterwaveWebhook = asyncHandler(
 
 			if (status === "successful") {
 				console.log("Successful payment:", { tx_ref, amount });
+				const emitData = {
+								 userId: user.id,
+                                action: `@${user.username} just funded wallet with ₦${amount}`,
+							  };
+					  
+							  // Emit the activity event to all connected clients
+							  io.emit('sendActivity', emitData);
+							   saveActivity(emitData)
 
 				try {
 					// Find the transaction using the payment reference
@@ -486,6 +494,15 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 		const normalizedStatus = status === 'success' || status === 'successful' ? 'success' : status;
 
 		if (normalizedStatus === 'success') {
+
+			const emitData = {
+								 userId: user.id,
+                                action: `@${user.username} just funded wallet with ₦${amount}`,
+							  };
+					  
+							  // Emit the activity event to all connected clients
+							  io.emit('sendActivity', emitData);
+							   saveActivity(emitData)
 			try {
 				// Check if the transaction exists
 				const transaction = await Transaction.findOne({ paymentRef: reference });
