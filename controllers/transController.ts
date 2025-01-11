@@ -6,7 +6,8 @@ import Transaction from '../model/Transaction'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
 import Withdraw from '../model/Withdraw'
-
+import { io } from '../app';
+import { saveActivity } from '../controllers/feedController'
 //Get User Wallet
 export const getUserWallet = asyncHandler(
 	async (req: Request, res: Response) => {
