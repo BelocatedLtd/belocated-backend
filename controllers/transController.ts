@@ -1037,7 +1037,8 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 		res.status(400).json({ message: 'No transactions found in the database' });
 		throw new Error('No transactions found in the database');
 	}
-
+console.log('Date Filter:', new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000));
+console.log('Transactions:', transactions);
 	// Count total transactions
 	const totalTransactions = await Transaction.countDocuments(matchFilter);
 
