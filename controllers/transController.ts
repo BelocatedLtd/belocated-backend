@@ -969,105 +969,120 @@ export const getUserTransactions = asyncHandler(
 /*  GET ALL TRANSACTIONS */
 // http://localhost:6001/api/transactions/all
 export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
-	// Authorization check
-	if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-		res.status(400).json({ message: 'Not authorized' });
-		throw new Error('Not authorized');
-	}
+    // Authorization check
+    if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
+        return res.status(403).json({ message: 'Not authorized' });
+    }
 
-	// Extract and parse query parameters
-	const page = Math.max(1, parseInt(req.query.page as string) || 1);
-	const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-	const filterType = req.query.filter as string || 'all';
-	const filterValue = Math.max(1, parseInt(req.query.filterValue as string) || 30);
+    // Extract and parse query parameters
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10); // Default limit, but we'll override this
+    const filterType = (req.query.filter as string)?.toLowerCase() || 'all';
+    let filterValue = parseInt(req.query.filterValue as string) || 0; // Default to 0 if not provided
 
-	const currentPage = page;
-	const currentLimit = limit;
-	const startIndex = (currentPage - 1) * currentLimit;
+    const currentPage = page;
+    const startIndex = (currentPage - 1) * limit;
 
-	// Time filters for aggregation
-	const timeFilters: { [key: string]: any } = {
-		all: {},
-		day: { createdAt: { $gte: new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000) } }
-	};
+    let matchFilter = {};
 
-	const matchFilter = timeFilters[filterType] || {};
+    // Time filters for aggregation
+    switch(filterType) {
+        case 'day':
+            matchFilter = {
+                createdAt: { $gte: new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000) }
+            };
+            break;
+        // Add more cases here for different filter types if needed
+        default: // 'all' or any unspecified type
+            matchFilter = {};
+    }
 
-	// Aggregation pipeline
-	const transactions = await Transaction.aggregate([
-		{ $match: matchFilter }, // Apply the time filter
-		{ $sort: { createdAt: -1 } }, // Sort by newest first
-		{ $skip: startIndex }, // Pagination: Skip records
-		{ $limit: currentLimit }, // Pagination: Limit records
-		{
-			$addFields: {
-				userId: { $toObjectId: "$userId" } // Cast userId to ObjectId
-			},
-		},
-		{
-			$lookup: {
-				from: 'users', // Collection name of the users table
-				localField: 'userId', // Field in the transactions collection
-				foreignField: '_id', // Field in the users collection
-				as: 'userDetails', // New field in the output
-			},
-		},
-		{
-			$unwind: {
-				path: '$userDetails',
-				preserveNullAndEmptyArrays: true, // Keep transactions even if no user is found
-			},
-		},
-		{
-			$project: {
-				_id: 1,
-				trxId: 1,
-				trxType: 1,
-				chargedAmount: 1,
-				date: 1,
-				status: 1,
-				username: '$userDetails.username', // Username from joined data
-				fullname: '$userDetails.fullname', // Fullname from joined data
-			},
-		},
-	]);
+    console.log('Filter Type:', filterType);
+    console.log('Filter Value:', filterValue);
+    console.log('Date Filter:', new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000));
 
-	// Handle no transactions found
-	if (!transactions || transactions.length === 0) {
-		res.status(400).json({ message: 'No transactions found in the database' });
-		throw new Error('No transactions found in the database');
-	}
-console.log('Date Filter:', new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000));
-console.log('Transactions:', transactions);
-	// Count total transactions
-	const totalTransactions = await Transaction.countDocuments(matchFilter);
+    try {
+        // First, count all transactions matching the filter to set the limit
+        const totalMatchingTransactions = await Transaction.countDocuments(matchFilter);
+        const currentLimit = Math.min(totalMatchingTransactions, limit); // Limit cannot exceed the number of matched transactions
 
-	// Aggregation for successful transactions
-	const successfulTransactions = await Transaction.aggregate([
-		{ $match: { ...matchFilter, status: { $in: ['success', 'successful'] } } },
-		{
-			$group: {
-				_id: null,
-				totalAmount: { $sum: '$chargedAmount' }, // Sum the chargedAmount
-				count: { $sum: 1 }, // Count the successful transactions
-			},
-		},
-	]);
+        console.log('Total transactions matching filter:', totalMatchingTransactions);
 
-	const totalPages = Math.ceil(totalTransactions / currentLimit);
+        // Aggregation pipeline
+        const transactions = await Transaction.aggregate([
+            { $match: matchFilter }, // Apply the time filter
+            { $sort: { createdAt: -1 } }, // Sort by newest first
+            { $skip: startIndex }, // Pagination: Skip records
+            { $limit: currentLimit }, // Limit now matches or is less than the total matched transactions
+            {
+                $addFields: {
+                    userId: { $toObjectId: "$userId" } // Cast userId to ObjectId
+                },
+            },
+            {
+                $lookup: {
+                    from: 'users', // Collection name of the users table
+                    localField: 'userId', // Field in the transactions collection
+                    foreignField: '_id', // Field in the users collection
+                    as: 'userDetails', // New field in the output
+                },
+            },
+            {
+                $unwind: {
+                    path: '$userDetails',
+                    preserveNullAndEmptyArrays: true, // Keep transactions even if no user is found
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    trxId: 1,
+                    trxType: 1,
+                    chargedAmount: 1,
+                    date: 1,
+                    status: 1,
+                    username: '$userDetails.username', // Username from joined data
+                    fullname: '$userDetails.fullname', // Fullname from joined data
+                },
+            },
+        ]);
 
-	res.status(200).json({
-		transactions,
-		page: currentPage,
-		totalPages,
-		totalTransactions,
-		hasNextPage: currentPage < totalPages,
-		hasPreviousPage: currentPage > 1,
-		successfulTransactionCount: successfulTransactions[0]?.count || 0,
-		successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
-	});
+        // Handle no transactions found
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: 'No transactions found with the specified filter' });
+        }
+
+        // Count total transactions matching the filter for pagination info
+        const totalTransactions = totalMatchingTransactions;
+
+        // Aggregation for successful transactions with the filter applied
+        const successfulTransactions = await Transaction.aggregate([
+            { $match: { ...matchFilter, status: { $in: ['success', 'successful'] } } },
+            {
+                $group: {
+                    _id: null,
+                    totalAmount: { $sum: '$chargedAmount' }, // Sum the chargedAmount
+                    count: { $sum: 1 }, // Count the successful transactions
+                },
+            },
+        ]);
+
+        const totalPages = Math.ceil(totalTransactions / limit);
+
+        res.status(200).json({
+            transactions,
+            page: currentPage,
+            totalPages,
+            totalTransactions,
+            hasNextPage: currentPage < totalPages,
+            hasPreviousPage: currentPage > 1,
+            successfulTransactionCount: successfulTransactions[0]?.count || 0,
+            successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching transactions', error: error.message });
+    }
 });
-
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
 	try {
 		// List of user emails
