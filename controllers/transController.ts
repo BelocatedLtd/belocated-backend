@@ -991,7 +991,7 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
     day: { createdAt: { $gte: new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000) } }
   };
 
-    const matchFilter = timeFilters[filter] || {};
+    const matchFilter = timeFilters[filterType] || {};
 
     // Aggregation pipeline
     const transactions = await Transaction.aggregate([
