@@ -1,3 +1,4 @@
+
 import * as crypto from 'crypto'
 import { Request, Response } from 'express'
 import asyncHandler from 'express-async-handler'
@@ -971,7 +972,8 @@ export const getUserTransactions = asyncHandler(
 export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
     // Authorization check
     if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-        return res.status(403).json({ message: 'Not authorized' });
+        res.status(403).json({ message: 'Not authorized' });
+		return ;
     }
 
     // Extract and parse query parameters
@@ -1049,7 +1051,8 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 
         // Handle no transactions found
         if (transactions.length === 0) {
-            return res.status(404).json({ message: 'No transactions found with the specified filter' });
+            res.status(404).json({ message: 'No transactions found with the specified filter' });
+			return 
         }
 
         // Count total transactions matching the filter for pagination info
@@ -1079,10 +1082,11 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
             successfulTransactionCount: successfulTransactions[0]?.count || 0,
             successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
         });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: 'Error fetching transactions', error: error.message });
     }
 });
+
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
 	try {
 		// List of user emails
