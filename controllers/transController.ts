@@ -978,20 +978,18 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
     // Extract and parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-    const filter = req.query.filter as string || 'all';
+    const filterType = req.query.filter as string || 'all';
+    const filterValue = Math.max(1, parseInt(req.query.filterValue as string) || 30);
 
     const currentPage = page;
     const currentLimit = limit;
     const startIndex = (currentPage - 1) * currentLimit;
 
     // Time filters for aggregation
-    const timeFilters: { [key: string]: any } = {
-        all: {}, // No filter
-        hour: { createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) } },
-        day: { createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-        month: { createdAt: { $gte: new Date(new Date().setDate(1)) } },
-        year: { createdAt: { $gte: new Date(new Date().getFullYear(), 0, 1) } },
-    };
+     const timeFilters = {
+	     all:{},
+    day: { createdAt: { $gte: new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000) } }
+  };
 
     const matchFilter = timeFilters[filter] || {};
 
