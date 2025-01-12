@@ -979,7 +979,7 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
     // Extract and parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10); // Default limit, but we'll override this
-    const filterType = (req.query.filter as string)?.toLowerCase() || 'all';
+    const filterType = (req.query.filterType as string)?.toLowerCase() || 'all';
     let filterValue = parseInt(req.query.filterValue as string) || 0; // Default to 0 if not provided
 
     const currentPage = page;
