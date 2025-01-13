@@ -972,39 +972,39 @@ export const getUserTransactions = asyncHandler(
 export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
     // Authorization check
     if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-      res.status(403).json({ message: 'Not authorized' });
-	  return;
+        res.status(403).json({ message: 'Not authorized' });
+		return;
     }
 
     // Extract and parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-    
-    // New parameters for date range filtering
-    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : null;
-    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : null;
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
 
     const currentPage = page;
     const startIndex = (currentPage - 1) * limit;
 
     let matchFilter = {};
 
-    if (startDate && endDate) {
-        // Ensure start date is before or at the end date
-        if (startDate <= endDate) {
-            matchFilter = {
-                createdAt: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            };
-        } else {
-           res.status(400).json({ message: 'Start date must be before or equal to end date' });
-		   return;
+    if (startDateStr && endDateStr) {
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+
+        if (startDate > endDate) {
+             res.status(400).json({ message: 'Start date must be before or equal to end date' });
+			 return;
         }
-    } else if (startDate || endDate) {
-         res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
-		 return;
+
+        matchFilter = {
+            createdAt: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+    } else if (startDateStr || endDateStr) {
+        res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
+		return;
     }
 
     console.log('Date Range Filter:', matchFilter);
@@ -1073,6 +1073,21 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
             },
         ]);
 
+        // Aggregation for pending transactions within the date range
+        const pendingTransactions = await Transaction.aggregate([
+            { $match: { ...matchFilter, status: { $in: ['pending'] } } },
+            {
+                $group: {
+                    _id: null,
+                    totalAmount: { $sum: '$chargedAmount' },
+                    count: { $sum: 1 },
+                },
+            },
+        ]);
+
+        // Fetching unique users who made transactions within this date range
+        const usersWithTransactions = await Transaction.distinct('userId', matchFilter);
+
         const totalPages = Math.ceil(totalTransactions / limit);
 
         res.status(200).json({
@@ -1084,10 +1099,12 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
             hasPreviousPage: currentPage > 1,
             successfulTransactionCount: successfulTransactions[0]?.count || 0,
             successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
+            pendingTransactionCount: pendingTransactions[0]?.count || 0,
+            pendingTransactionAmount: pendingTransactions[0]?.totalAmount || 0,
+            totalUsers: usersWithTransactions.length 
         });
     } catch (error:any) {
         res.status(500).json({ message: 'Error fetching transactions', error: error.message });
-		
     }
 });
 
