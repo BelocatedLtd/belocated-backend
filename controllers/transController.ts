@@ -1063,7 +1063,7 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 
         // Aggregation for successful transactions within the date range
         const successfulTransactions = await Transaction.aggregate([
-            { $match: { ...matchFilter, status: { $in: ['success', 'successful'] } } },
+            { $match: { ...matchFilter, status: { $in: ['Success', 'Successful'] }, trxType: 'wallet_funding' } },
             {
                 $group: {
                     _id: null,
@@ -1075,7 +1075,7 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 
         // Aggregation for pending transactions within the date range
         const pendingTransactions = await Transaction.aggregate([
-            { $match: { ...matchFilter, status: { $in: ['pending'] } } },
+            { $match: { ...matchFilter, status: { $in: ['Pending'] }, trxType: 'wallet_funding' } },
             {
                 $group: {
                     _id: null,
