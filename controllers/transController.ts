@@ -972,67 +972,72 @@ export const getUserTransactions = asyncHandler(
 export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
     // Authorization check
     if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-        res.status(403).json({ message: 'Not authorized' });
-		return ;
+      res.status(403).json({ message: 'Not authorized' });
+	  return;
     }
 
     // Extract and parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10); // Default limit, but we'll override this
-    const filterType = (req.query.filterType as string)?.toLowerCase() || 'all';
-    let filterValue = parseInt(req.query.filterValue as string) || 0; // Default to 0 if not provided
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    
+    // New parameters for date range filtering
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : null;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : null;
 
     const currentPage = page;
     const startIndex = (currentPage - 1) * limit;
 
     let matchFilter = {};
 
-    // Time filters for aggregation
-    switch(filterType) {
-        case 'day':
+    if (startDate && endDate) {
+        // Ensure start date is before or at the end date
+        if (startDate <= endDate) {
             matchFilter = {
-                createdAt: { $gte: new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000) }
+                createdAt: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
             };
-            break;
-        // Add more cases here for different filter types if needed
-        default: // 'all' or any unspecified type
-            matchFilter = {};
+        } else {
+           res.status(400).json({ message: 'Start date must be before or equal to end date' });
+		   return;
+        }
+    } else if (startDate || endDate) {
+         res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
+		 return;
     }
 
-    console.log('Filter Type:', filterType);
-    console.log('Filter Value:', filterValue);
-    console.log('Date Filter:', new Date(Date.now() - filterValue * 24 * 60 * 60 * 1000));
+    console.log('Date Range Filter:', matchFilter);
 
     try {
-        // First, count all transactions matching the filter to set the limit
         const totalMatchingTransactions = await Transaction.countDocuments(matchFilter);
-        const currentLimit = Math.min(totalMatchingTransactions, limit); // Limit cannot exceed the number of matched transactions
+        const currentLimit = Math.min(totalMatchingTransactions, limit);
 
         console.log('Total transactions matching filter:', totalMatchingTransactions);
 
         // Aggregation pipeline
         const transactions = await Transaction.aggregate([
-            { $match: matchFilter }, // Apply the time filter
-            { $sort: { createdAt: -1 } }, // Sort by newest first
-            { $skip: startIndex }, // Pagination: Skip records
-            { $limit: currentLimit }, // Limit now matches or is less than the total matched transactions
+            { $match: matchFilter },
+            { $sort: { createdAt: -1 } }, 
+            { $skip: startIndex }, 
+            { $limit: currentLimit }, 
             {
                 $addFields: {
-                    userId: { $toObjectId: "$userId" } // Cast userId to ObjectId
+                    userId: { $toObjectId: "$userId" }
                 },
             },
             {
                 $lookup: {
-                    from: 'users', // Collection name of the users table
-                    localField: 'userId', // Field in the transactions collection
-                    foreignField: '_id', // Field in the users collection
-                    as: 'userDetails', // New field in the output
+                    from: 'users', 
+                    localField: 'userId', 
+                    foreignField: '_id', 
+                    as: 'userDetails', 
                 },
             },
             {
                 $unwind: {
                     path: '$userDetails',
-                    preserveNullAndEmptyArrays: true, // Keep transactions even if no user is found
+                    preserveNullAndEmptyArrays: true, 
                 },
             },
             {
@@ -1043,29 +1048,27 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
                     chargedAmount: 1,
                     date: 1,
                     status: 1,
-                    username: '$userDetails.username', // Username from joined data
-                    fullname: '$userDetails.fullname', // Fullname from joined data
+                    username: '$userDetails.username', 
+                    fullname: '$userDetails.fullname', 
                 },
             },
         ]);
 
-        // Handle no transactions found
         if (transactions.length === 0) {
-            res.status(404).json({ message: 'No transactions found with the specified filter' });
-			return 
+           res.status(404).json({ message: 'No transactions found within the specified date range' });
+		   return;
         }
 
-        // Count total transactions matching the filter for pagination info
         const totalTransactions = totalMatchingTransactions;
 
-        // Aggregation for successful transactions with the filter applied
+        // Aggregation for successful transactions within the date range
         const successfulTransactions = await Transaction.aggregate([
             { $match: { ...matchFilter, status: { $in: ['success', 'successful'] } } },
             {
                 $group: {
                     _id: null,
-                    totalAmount: { $sum: '$chargedAmount' }, // Sum the chargedAmount
-                    count: { $sum: 1 }, // Count the successful transactions
+                    totalAmount: { $sum: '$chargedAmount' },
+                    count: { $sum: 1 },
                 },
             },
         ]);
@@ -1082,8 +1085,9 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
             successfulTransactionCount: successfulTransactions[0]?.count || 0,
             successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
         });
-    } catch (error: any) {
+    } catch (error:any) {
         res.status(500).json({ message: 'Error fetching transactions', error: error.message });
+		
     }
 });
 
