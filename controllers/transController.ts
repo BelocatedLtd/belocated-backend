@@ -376,18 +376,6 @@ export const handleFlutterwaveWebhook = asyncHandler(
 
 					console.log("Successful payment:", { tx_ref, amount });
 
-					const emitData = {
-						userId: transaction.userId,
-						action: `@${user.username} just funded wallet with ₦${amount}`,
-					};
-
-					// Emit the activity event to all connected clients
-					io.emit('sendActivity', emitData);
-
-					// Save the activity in the database or log it
-					saveActivity(emitData);
-
-
 
 					if (!transaction) {
 						console.error(`Transaction not found for reference: ${tx_ref}`);
@@ -426,6 +414,23 @@ export const handleFlutterwaveWebhook = asyncHandler(
 								{ canAccessEarn: true },
 								{ new: true }
 							);
+						}
+
+						try {
+							const emitData = {
+								userId: transaction.userId,
+								action: `@${user.username} just funded wallet with ₦${amount}`,
+							};
+
+							console.log("Preparing to emit activity:", emitData);
+
+							// Emit activity event
+							io.emit('sendActivity', emitData);
+							saveActivity(emitData);
+
+							console.log("Activity emitted successfully");
+						} catch (error) {
+							console.error("Error during emit:", error);
 						}
 
 						console.log(`Wallet funded successfully for user: ${transaction.userId}`);
@@ -538,16 +543,7 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 
 				console.log("Successful payment:", { reference, amount });
 
-				const emitData = {
-					userId: transaction.userId,
-					action: `@${user.username} just funded wallet with ₦${amount}`,
-				};
 
-				// Emit the activity event to all connected clients
-				io.emit('sendActivity', emitData);
-
-				// Save the activity in the database or log it
-				saveActivity(emitData);
 
 				// Prevent duplicate processing
 				if (transaction.status === 'success') {
@@ -581,6 +577,22 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 							{ canAccessEarn: true },
 							{ new: true }
 						);
+					}
+					try {
+						const emitData = {
+							userId: transaction.userId,
+							action: `@${user.username} just funded wallet with ₦${amount}`,
+						};
+
+						console.log("Preparing to emit activity:", emitData);
+
+						// Emit activity event
+						io.emit('sendActivity', emitData);
+						saveActivity(emitData);
+
+						console.log("Activity emitted successfully");
+					} catch (error) {
+						console.error("Error during emit:", error);
 					}
 
 					console.log(`Wallet funded successfully for user: ${transaction.userId}`);
@@ -970,142 +982,142 @@ export const getUserTransactions = asyncHandler(
 /*  GET ALL TRANSACTIONS */
 // http://localhost:6001/api/transactions/all
 export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
-    // Authorization check
-    if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-        res.status(403).json({ message: 'Not authorized' });
+	// Authorization check
+	if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
+		res.status(403).json({ message: 'Not authorized' });
 		return;
-    }
+	}
 
-    // Extract and parse query parameters
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-    const startDateStr = req.query.startDate as string;
-    const endDateStr = req.query.endDate as string;
+	// Extract and parse query parameters
+	const page = Math.max(1, parseInt(req.query.page as string) || 1);
+	const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+	const startDateStr = req.query.startDate as string;
+	const endDateStr = req.query.endDate as string;
 
-    const currentPage = page;
-    const startIndex = (currentPage - 1) * limit;
+	const currentPage = page;
+	const startIndex = (currentPage - 1) * limit;
 
-    let matchFilter = {};
+	let matchFilter = {};
 
-    if (startDateStr && endDateStr) {
-        const startDate = new Date(startDateStr);
-        const endDate = new Date(endDateStr);
+	if (startDateStr && endDateStr) {
+		const startDate = new Date(startDateStr);
+		const endDate = new Date(endDateStr);
 
-        if (startDate > endDate) {
-             res.status(400).json({ message: 'Start date must be before or equal to end date' });
-			 return;
-        }
+		if (startDate > endDate) {
+			res.status(400).json({ message: 'Start date must be before or equal to end date' });
+			return;
+		}
 
-        matchFilter = {
-            createdAt: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        };
-    } else if (startDateStr || endDateStr) {
-        res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
+		matchFilter = {
+			createdAt: {
+				$gte: startDate,
+				$lte: endDate
+			}
+		};
+	} else if (startDateStr || endDateStr) {
+		res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
 		return;
-    }
+	}
 
-    console.log('Date Range Filter:', matchFilter);
+	console.log('Date Range Filter:', matchFilter);
 
-    try {
-        const totalMatchingTransactions = await Transaction.countDocuments(matchFilter);
-        const currentLimit = Math.min(totalMatchingTransactions, limit);
+	try {
+		const totalMatchingTransactions = await Transaction.countDocuments(matchFilter);
+		const currentLimit = Math.min(totalMatchingTransactions, limit);
 
-        console.log('Total transactions matching filter:', totalMatchingTransactions);
+		console.log('Total transactions matching filter:', totalMatchingTransactions);
 
-        // Aggregation pipeline
-        const transactions = await Transaction.aggregate([
-            { $match: matchFilter },
-            { $sort: { createdAt: -1 } }, 
-            { $skip: startIndex }, 
-            { $limit: currentLimit }, 
-            {
-                $addFields: {
-                    userId: { $toObjectId: "$userId" }
-                },
-            },
-            {
-                $lookup: {
-                    from: 'users', 
-                    localField: 'userId', 
-                    foreignField: '_id', 
-                    as: 'userDetails', 
-                },
-            },
-            {
-                $unwind: {
-                    path: '$userDetails',
-                    preserveNullAndEmptyArrays: true, 
-                },
-            },
-            {
-                $project: {
-                    _id: 1,
-                    trxId: 1,
-                    trxType: 1,
-                    chargedAmount: 1,
-                    date: 1,
-                    status: 1,
-                    username: '$userDetails.username', 
-                    fullname: '$userDetails.fullname', 
-                },
-            },
-        ]);
+		// Aggregation pipeline
+		const transactions = await Transaction.aggregate([
+			{ $match: matchFilter },
+			{ $sort: { createdAt: -1 } },
+			{ $skip: startIndex },
+			{ $limit: currentLimit },
+			{
+				$addFields: {
+					userId: { $toObjectId: "$userId" }
+				},
+			},
+			{
+				$lookup: {
+					from: 'users',
+					localField: 'userId',
+					foreignField: '_id',
+					as: 'userDetails',
+				},
+			},
+			{
+				$unwind: {
+					path: '$userDetails',
+					preserveNullAndEmptyArrays: true,
+				},
+			},
+			{
+				$project: {
+					_id: 1,
+					trxId: 1,
+					trxType: 1,
+					chargedAmount: 1,
+					date: 1,
+					status: 1,
+					username: '$userDetails.username',
+					fullname: '$userDetails.fullname',
+				},
+			},
+		]);
 
-        if (transactions.length === 0) {
-           res.status(404).json({ message: 'No transactions found within the specified date range' });
-		   return;
-        }
+		if (transactions.length === 0) {
+			res.status(404).json({ message: 'No transactions found within the specified date range' });
+			return;
+		}
 
-        const totalTransactions = totalMatchingTransactions;
+		const totalTransactions = totalMatchingTransactions;
 
-        // Aggregation for successful transactions within the date range
-        const successfulTransactions = await Transaction.aggregate([
-            { $match: { ...matchFilter, status: { $in: ['Success', 'Successful','success','successful'] }, trxType: 'wallet_funding' } },
-            {
-                $group: {
-                    _id: null,
-                    totalAmount: { $sum: '$chargedAmount' },
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
+		// Aggregation for successful transactions within the date range
+		const successfulTransactions = await Transaction.aggregate([
+			{ $match: { ...matchFilter, status: { $in: ['Success', 'Successful', 'success', 'successful'] }, trxType: 'wallet_funding' } },
+			{
+				$group: {
+					_id: null,
+					totalAmount: { $sum: '$chargedAmount' },
+					count: { $sum: 1 },
+				},
+			},
+		]);
 
-        // Aggregation for pending transactions within the date range
-        const pendingTransactions = await Transaction.aggregate([
-            { $match: { ...matchFilter, status: { $in: ['Pending'] }, trxType: 'wallet_funding' } },
-            {
-                $group: {
-                    _id: null,
-                    totalAmount: { $sum: '$chargedAmount' },
-                    count: { $sum: 1 },
-                },
-            },
-        ]);
+		// Aggregation for pending transactions within the date range
+		const pendingTransactions = await Transaction.aggregate([
+			{ $match: { ...matchFilter, status: { $in: ['Pending'] }, trxType: 'wallet_funding' } },
+			{
+				$group: {
+					_id: null,
+					totalAmount: { $sum: '$chargedAmount' },
+					count: { $sum: 1 },
+				},
+			},
+		]);
 
-        // Fetching unique users who made transactions within this date range
-        const usersWithTransactions = await Transaction.distinct('userId', matchFilter);
+		// Fetching unique users who made transactions within this date range
+		const usersWithTransactions = await Transaction.distinct('userId', matchFilter);
 
-        const totalPages = Math.ceil(totalTransactions / limit);
+		const totalPages = Math.ceil(totalTransactions / limit);
 
-        res.status(200).json({
-            transactions,
-            page: currentPage,
-            totalPages,
-            totalTransactions,
-            hasNextPage: currentPage < totalPages,
-            hasPreviousPage: currentPage > 1,
-            successfulTransactionCount: successfulTransactions[0]?.count || 0,
-            successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
-            pendingTransactionCount: pendingTransactions[0]?.count || 0,
-            pendingTransactionAmount: pendingTransactions[0]?.totalAmount || 0,
-            totalUsers: usersWithTransactions.length 
-        });
-    } catch (error:any) {
-        res.status(500).json({ message: 'Error fetching transactions', error: error.message });
-    }
+		res.status(200).json({
+			transactions,
+			page: currentPage,
+			totalPages,
+			totalTransactions,
+			hasNextPage: currentPage < totalPages,
+			hasPreviousPage: currentPage > 1,
+			successfulTransactionCount: successfulTransactions[0]?.count || 0,
+			successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
+			pendingTransactionCount: pendingTransactions[0]?.count || 0,
+			pendingTransactionAmount: pendingTransactions[0]?.totalAmount || 0,
+			totalUsers: usersWithTransactions.length
+		});
+	} catch (error: any) {
+		res.status(500).json({ message: 'Error fetching transactions', error: error.message });
+	}
 });
 
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
