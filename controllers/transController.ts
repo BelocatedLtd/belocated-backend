@@ -7,8 +7,7 @@ import Transaction from '../model/Transaction'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
 import Withdraw from '../model/Withdraw'
-import { io } from '../app';
-import { saveActivity } from '../controllers/feedController'
+
 //Get User Wallet
 export const getUserWallet = asyncHandler(
 	async (req: Request, res: Response) => {
@@ -358,31 +357,17 @@ export const handleFlutterwaveWebhook = asyncHandler(
 			const { status, tx_ref, amount, customer } = data;
 
 			if (status === "successful") {
-
+				console.log("Successful payment:", { tx_ref, amount });
 
 				try {
 					// Find the transaction using the payment reference
 					const transaction = await Transaction.findOne({ paymentRef: tx_ref });
 
 					if (!transaction) {
-						throw new Error("Transaction not found");
-					}
-
-					const user = await User.findOne({ userId: transaction.userId }); // Correct syntax and await
-
-					if (!user) {
-						throw new Error("User not found");
-					}
-
-					console.log("Successful payment:", { tx_ref, amount });
-
-
-					if (!transaction) {
 						console.error(`Transaction not found for reference: ${tx_ref}`);
 						res.status(404).json({ message: "Transaction not found" });
 						return;
 					}
-
 
 					// Check if transaction is already processed
 					if (transaction.status === "successful") {
@@ -414,23 +399,6 @@ export const handleFlutterwaveWebhook = asyncHandler(
 								{ canAccessEarn: true },
 								{ new: true }
 							);
-						}
-
-						try {
-							const emitData = {
-								userId: transaction.userId,
-								action: `@${user.username} just funded wallet with ₦${amount}`,
-							};
-
-							console.log("Preparing to emit activity:", emitData);
-
-							// Emit activity event
-							io.emit('sendActivity', emitData);
-							saveActivity(emitData);
-
-							console.log("Activity emitted successfully");
-						} catch (error) {
-							console.error("Error during emit:", error);
 						}
 
 						console.log(`Wallet funded successfully for user: ${transaction.userId}`);
@@ -519,31 +487,15 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 		const normalizedStatus = status === 'success' || status === 'successful' ? 'success' : status;
 
 		if (normalizedStatus === 'success') {
-
-
 			try {
 				// Check if the transaction exists
 				const transaction = await Transaction.findOne({ paymentRef: reference });
-
-
-
 
 				if (!transaction) {
 					console.error(`Transaction not found: ${reference}`);
 					res.status(404).json({ message: 'Transaction not found' });
 					return;
 				}
-
-
-				const user = await User.findOne({ userId: transaction.userId }); // Correct syntax and await
-
-				if (!user) {
-					throw new Error("User not found");
-				}
-
-				console.log("Successful payment:", { reference, amount });
-
-
 
 				// Prevent duplicate processing
 				if (transaction.status === 'success') {
@@ -577,22 +529,6 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 							{ canAccessEarn: true },
 							{ new: true }
 						);
-					}
-					try {
-						const emitData = {
-							userId: transaction.userId,
-							action: `@${user.username} just funded wallet with ₦${amount}`,
-						};
-
-						console.log("Preparing to emit activity:", emitData);
-
-						// Emit activity event
-						io.emit('sendActivity', emitData);
-						saveActivity(emitData);
-
-						console.log("Activity emitted successfully");
-					} catch (error) {
-						console.error("Error during emit:", error);
 					}
 
 					console.log(`Wallet funded successfully for user: ${transaction.userId}`);
@@ -981,75 +917,46 @@ export const getUserTransactions = asyncHandler(
 
 /*  GET ALL TRANSACTIONS */
 // http://localhost:6001/api/transactions/all
-export const getTransactions = asyncHandler(async (req: Request, res: Response) => {
-	// Authorization check
-	if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-		res.status(403).json({ message: 'Not authorized' });
-		return;
-	}
-
-	// Extract and parse query parameters
-	const page = Math.max(1, parseInt(req.query.page as string) || 1);
-	const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-	const startDateStr = req.query.startDate as string;
-	const endDateStr = req.query.endDate as string;
-
-	const currentPage = page;
-	const startIndex = (currentPage - 1) * limit;
-
-	let matchFilter = {};
-
-	if (startDateStr && endDateStr) {
-		const startDate = new Date(startDateStr);
-		const endDate = new Date(endDateStr);
-
-		if (startDate > endDate) {
-			res.status(400).json({ message: 'Start date must be before or equal to end date' });
-			return;
+export const getTransactions = asyncHandler(
+	async (req: Request, res: Response) => {
+		if (
+			req.user.accountType !== 'Admin' &&
+			req.user.accountType !== 'Super Admin'
+		) {
+			res.status(400).json({ message: 'Not authorized' })
+			throw new Error('Not authorized')
 		}
 
-		matchFilter = {
-			createdAt: {
-				$gte: startDate,
-				$lte: endDate
-			}
-		};
-	} else if (startDateStr || endDateStr) {
-		res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
-		return;
-	}
+		const page = parseInt(req.query.page as string) || 1
+		const limit = parseInt(req.query.limit as string) || 10
 
-	console.log('Date Range Filter:', matchFilter);
+		const currentPage = page || 1
+		const currentLimit = limit || 10
 
-	try {
-		const totalMatchingTransactions = await Transaction.countDocuments(matchFilter);
-		const currentLimit = Math.min(totalMatchingTransactions, limit);
+		const startIndex = (currentPage - 1) * currentLimit
 
-		console.log('Total transactions matching filter:', totalMatchingTransactions);
-
-		// Aggregation pipeline
+		const mongoose = require('mongoose');
 		const transactions = await Transaction.aggregate([
-			{ $match: matchFilter },
-			{ $sort: { createdAt: -1 } },
-			{ $skip: startIndex },
-			{ $limit: currentLimit },
+			{ $sort: { createdAt: -1 } }, // Sort by newest first
+			{ $skip: startIndex }, // Pagination: Skip records
+			{ $limit: currentLimit }, // Pagination: Limit records
 			{
 				$addFields: {
-					userId: { $toObjectId: "$userId" }
+					userId: { $toObjectId: "$userId" } // Cast userId to ObjectId
 				},
 			},
 			{
 				$lookup: {
-					from: 'users',
-					localField: 'userId',
-					foreignField: '_id',
-					as: 'userDetails',
+					from: 'users', // Collection name of the users table
+					localField: 'userId', // Field in the transactions collection
+					foreignField: '_id', // Field in the users collection
+					as: 'userDetails', // New field in the output
 				},
 			},
 			{
 				$unwind: {
 					path: '$userDetails',
-					preserveNullAndEmptyArrays: true,
+					preserveNullAndEmptyArrays: true, // Keep transactions even if no user is found
 				},
 			},
 			{
@@ -1060,48 +967,20 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 					chargedAmount: 1,
 					date: 1,
 					status: 1,
-					username: '$userDetails.username',
-					fullname: '$userDetails.fullname',
+					username: '$userDetails.username', // Username from joined data
+					fullname: '$userDetails.fullname', // Fullname from joined data
 				},
 			},
 		]);
 
-		if (transactions.length === 0) {
-			res.status(404).json({ message: 'No transactions found within the specified date range' });
-			return;
+		if (!transactions || transactions.length === 0) {
+			res.status(400).json({ message: 'No transactions found in the database' });
+			throw new Error('No transactions found in the database');
 		}
 
-		const totalTransactions = totalMatchingTransactions;
-
-		// Aggregation for successful transactions within the date range
-		const successfulTransactions = await Transaction.aggregate([
-			{ $match: { ...matchFilter, status: { $in: ['Success', 'Successful', 'success', 'successful'] }, trxType: 'wallet_funding' } },
-			{
-				$group: {
-					_id: null,
-					totalAmount: { $sum: '$chargedAmount' },
-					count: { $sum: 1 },
-				},
-			},
-		]);
-
-		// Aggregation for pending transactions within the date range
-		const pendingTransactions = await Transaction.aggregate([
-			{ $match: { ...matchFilter, status: { $in: ['Pending'] }, trxType: 'wallet_funding' } },
-			{
-				$group: {
-					_id: null,
-					totalAmount: { $sum: '$chargedAmount' },
-					count: { $sum: 1 },
-				},
-			},
-		]);
-
-		// Fetching unique users who made transactions within this date range
-		const usersWithTransactions = await Transaction.distinct('userId', matchFilter);
-
-		const totalPages = Math.ceil(totalTransactions / limit);
-
+		const totalTransactions = await Transaction.countDocuments();
+		const totalPages = Math.ceil(totalTransactions / currentLimit);
+		console.log(transactions)
 		res.status(200).json({
 			transactions,
 			page: currentPage,
@@ -1109,16 +988,10 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 			totalTransactions,
 			hasNextPage: currentPage < totalPages,
 			hasPreviousPage: currentPage > 1,
-			successfulTransactionCount: successfulTransactions[0]?.count || 0,
-			successfulTransactionAmount: successfulTransactions[0]?.totalAmount || 0,
-			pendingTransactionCount: pendingTransactions[0]?.count || 0,
-			pendingTransactionAmount: pendingTransactions[0]?.totalAmount || 0,
-			totalUsers: usersWithTransactions.length
 		});
-	} catch (error: any) {
-		res.status(500).json({ message: 'Error fetching transactions', error: error.message });
-	}
-});
+
+	},
+)
 
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
 	try {
