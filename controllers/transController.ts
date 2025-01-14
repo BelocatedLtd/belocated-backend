@@ -994,65 +994,69 @@ export const getTransactions = asyncHandler(
 )
 
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
-	try {
-		// List of user emails
-		const userEmails = [
-			'princejp4christ@gmail.com',
-			'jessedaniel882@gmail.com',
-			'olawoleoluwanifemi0@gmail.com',
-			'healthtalkwithjolly@gmail.com',
-			'amuluckysamuel@gmail.com',
-			'chinecherem337@gmail.com',
-			'kemisola910@gmail.com',
-			'ifalolaayomide304@gmail.com',
-			'balikisabdulwasiu36@gmail.com',
-			'ojonyamargaretameh@gmail.com',
-			'abdulshakurbello362@gmail.com',
-			'martinsolamide88@gmail.com',
-			'zubairhakeem308@gmail.com',
-		];
+    try {
+        // List of user emails and references
+        const userEmails = [
+            'olanikeboopo@gmail.com',
+            'jessedaniel882@gmail.com',
+            'abidemio221@gmail.com',
+            'maiarabi887@gmail.com',
+            'mlifemoshob9@gmail.com',
+        ];
+        const references = [
+            'ad_p1736833068870',
+			'ad_p1736806038308',
+			'ad_p1736803137575',
+			'ad_p1736805750154',
+            'ad_p1736820880285',
+           
+           
+        ];
 
-		// Loop through each email to process updates
-		for (const email of userEmails) {
-			// Find the user
-			const user = await User.findOne({ email });
-			if (!user) {
-				console.warn(`User not found for email: ${email}`);
-				continue; // Skip to the next user if not found
-			}
+        // Loop through each email to process updates
+        for (let i = 0; i < userEmails.length; i++) {
+            const email = userEmails[i];
+            const trxId = references[i]; // Use the corresponding trxId
 
-			// Update user's canAccessEarn field
-			user.canAccessEarn = true;
-			await user.save();
+            // Find the user
+            const user = await User.findOne({ email });
+            if (!user) {
+                console.warn(`User not found for email: ${email}`);
+                continue; // Skip to the next user if not found
+            }
 
-			// Find the transaction for the user
-			const transaction = await Transaction.findOne({ email: user.email });
-			if (!transaction) {
-				console.warn(`Transaction not found for user: ${user.email}`);
-				continue; // Skip to the next user if not found
-			}
+            // Update user's canAccessEarn field
+            user.canAccessEarn = true;
+            await user.save();
 
-			// Update transaction status
-			transaction.status = 'Successful';
-			await transaction.save();
+            // Find the transaction for the user with the specific trxId
+            const transaction = await Transaction.findOne({ email: user.email, trxId });
+            if (!transaction) {
+                console.warn(`Transaction not found for email: ${user.email} with trxId: ${trxId}`);
+                continue; // Skip to the next user if not found
+            }
 
-			// Find the wallet for the user
-			const wallet = await Wallet.findOne({ userId: transaction.userId });
-			if (!wallet) {
-				console.warn(`Wallet not found for user: ${user.email}`);
-				continue; // Skip to the next user if not found
-			}
+            // Update transaction status
+            transaction.status = 'Successful';
+            await transaction.save();
 
-			// Update wallet values
-			const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
-			wallet.value += amount;
-			wallet.totalEarning += amount;
-			await wallet.save();
-		}
+            // Find the wallet for the user
+            const wallet = await Wallet.findOne({ userId: transaction.userId });
+            if (!wallet) {
+                console.warn(`Wallet not found for user: ${user.email}`);
+                continue; // Skip to the next user if not found
+            }
 
-		res.status(200).json({ message: 'Documents updated successfully.' });
-	} catch (error) {
-		console.error('Error updating documents:', error);
-		res.status(500).json({ message: 'Internal server error.', error });
-	}
+            // Update wallet values
+            const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
+            wallet.value += amount;
+            wallet.totalEarning += amount;
+            await wallet.save();
+        }
+
+        res.status(200).json({ message: 'Documents updated successfully.' });
+    } catch (error) {
+        console.error('Error updating documents:', error);
+        res.status(500).json({ message: 'Internal server error.', error });
+    }
 });
