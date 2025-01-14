@@ -43,7 +43,7 @@ router.post('/initialize-transaction', initializeTransaction)
 router.post('/paystack-webhook', handlePaystackWebhook)
 router.post('/flutterwave-webhook', handleFlutterwaveWebhook)
 router.post('/korapay-webhook', handleKoraPayWebhook)
-// router.post('/updateDocs', updateDocuments)
+router.post('/updateDocs', updateDocuments)
 
 router.get('/userall', protect, getUserTransactions)
 router.get('/all', protect, getTransactions)
