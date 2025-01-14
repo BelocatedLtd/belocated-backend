@@ -1,4 +1,3 @@
-
 import * as crypto from 'crypto'
 import { Request, Response } from 'express'
 import asyncHandler from 'express-async-handler'
@@ -506,6 +505,7 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 
 				// Update transaction status
 				transaction.status = 'success';
+				transaction.paymentMethod ='KoraPay';
 				await transaction.save();
 
 				if (transaction.trxType === 'wallet_funding') {
