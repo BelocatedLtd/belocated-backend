@@ -616,64 +616,102 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-	const page = Number(req.query.page) || 1
-	const limit = Number(req.query.limit) || 10
-	const search = (req.query.search as string) || ''
-	console.log('🚀 ~ getUsers ~ search:', search)
-	const searchRegex = new RegExp(search, 'i');
+    // Extract and parse query parameters
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
 
-	const currentPage = page
+    const currentPage = page;
+    const startIndex = (currentPage - 1) * limit;
 
-	const queryFilter: any = {
-		$or: [
-			{ username: { $regex: searchRegex } },
-			{ email: { $regex: searchRegex } },
-			{ fullname: { $regex: searchRegex } },
-			
-		],
-	}
-	 if (!isNaN(Number(search))) {
-        queryFilter.$or.push({ phone: Number(search) }); // Match phone numbers as exact values
+    // Initialize date range filter
+    let dateFilter: any = {};
+    if (startDateStr && endDateStr) {
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+
+        if (startDate > endDate) {
+            res.status(400).json({ message: 'Start date must be before or equal to end date' });
+            return;
+        }
+
+        dateFilter = {
+            createdAt: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+    } else if (startDateStr || endDateStr) {
+        res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
+        return;
     }
 
-	const users = await User.find(queryFilter, { password: 0 })
-		.skip((page - 1) * limit)
-		.limit(limit)
+    try {
+        // Referrals: Count users who referred at least one person and total referrals
+        const referralStats = await User.aggregate([
+            { $match: dateFilter },
+            {
+                $lookup: {
+                    from: 'users', // Assuming referrals are stored in the same `users` collection
+                    localField: '_id',
+                    foreignField: 'referrals', // Replace with the actual field that stores the referrer ID
+                    as: 'referrals',
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    username: 1,
+                    fullname: 1,
+                    totalReferrals: { $size: '$referrals' },
+                },
+            },
+            { $match: { totalReferrals: { $gt: 0 } } },
+        ]);
 
-	const totalUsers = await User.countDocuments(queryFilter)
+        const totalReferralsByAllUsers = referralStats.reduce((sum, user) => sum + user.totalReferrals, 0);
 
-	const totalPages = Math.ceil(totalUsers / limit)
+        // Tasks: Total completed, ongoing, and submitted tasks
+        const completedTasks = await Task.aggregate([
+            { $match: { ...dateFilter, status: { $in: ['Completed', 'Approved'] } } },
+            { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
+        ]);
 
-	const usersWithStats = await Promise.all(
-		users.map(async (user) => {
-			const adsCreated = await Advert.countDocuments({ userId: user._id.toString() })
-			const taskOngoing = await Task.countDocuments({
-				taskPerformerId: user._id.toString(),
-				status: { $nin: ['Submitted', 'Awaiting Submission'] },
-			})
-			const taskCompleted = await Task.countDocuments({
-				taskPerformerId: user._id.toString(),
-				status: { $in: ['Completed', 'Approved'] },
-			})
-			return { ...user.toObject(), adsCreated, taskOngoing, taskCompleted }
-		}),
-	)
+        const ongoingTasks = await Task.aggregate([
+            { $match: { ...dateFilter, status: { $nin: ['Submitted', 'Awaiting Submission'] } } },
+            { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
+        ]);
 
-	if (users.length === 0) {
-		res.status(404).json({ message: 'No users found' })
-		throw new Error('No users found in the database')
-	}
+        const totalTasksCompleted = completedTasks.reduce((sum, task) => sum + task.count, 0);
+        const totalTasksOngoing = ongoingTasks.reduce((sum, task) => sum + task.count, 0);
 
-	res.status(200).json({
-		users: usersWithStats,
-		page: currentPage,
-		totalPages,
-		totalUsers,
-		hasNextPage: currentPage < totalPages,
-		hasPreviousPage: currentPage > 1,
-	})
-})
+        // Paginated users
+        const users = await User.find(dateFilter, { password: 0 })
+            .skip(startIndex)
+            .limit(limit);
 
+        const totalUsers = await User.countDocuments(dateFilter);
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        res.status(200).json({
+            users,
+            page: currentPage,
+            totalPages,
+            totalUsers,
+            hasNextPage: currentPage < totalPages,
+            hasPreviousPage: currentPage > 1,
+            referralStats,
+            totalReferralsByAllUsers,
+            totalTasksCompleted,
+            totalTasksOngoing,
+            usersWithCompletedTasks: completedTasks.length,
+            usersWithOngoingTasks: ongoingTasks.length,
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error fetching user data', error: error.message });
+    }
+});
 //>>>>  LOGOUT USERS
 // http://localhost:6001/api/user/logout
 // export const logoutUser = asyncHandler(async(req: Request, res: Response) => {
