@@ -56,6 +56,8 @@ const corsOptions = {
     'Accept',
     'Origin',
     'User-Agent',
+    'X-Custom-Header', 
+    'headers'
   ],
 	// This allows credentials (cookies) to be sent with the request
   };
