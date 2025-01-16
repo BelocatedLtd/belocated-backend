@@ -616,6 +616,12 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+
+	if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
+		res.status(403).json({ message: 'Not authorized' });
+		return;
+	}
+
     // Extract and parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
@@ -669,6 +675,9 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
             },
             { $match: { totalReferrals: { $gt: 0 } } },
         ]);
+		if(!referralStats){
+			console.log('Cannot access referral stats')
+		}
 
         const totalReferralsByAllUsers = referralStats.reduce((sum, user) => sum + user.totalReferrals, 0);
 
@@ -677,11 +686,19 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
             { $match: { ...dateFilter, status: { $in: ['Completed', 'Approved'] } } },
             { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
         ]);
+		if(!completedTasks){
+			console.log('Cannot access completed tasks')
+		}
+
 
         const ongoingTasks = await Task.aggregate([
-            { $match: { ...dateFilter, status: { $nin: ['Submitted', 'Awaiting Submission'] } } },
+            { $match: { ...dateFilter, status: { $nin: ['Submitted'] } } },
             { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
         ]);
+		if(!ongoingTasks){
+			console.log('Cannot access ongoing stats')
+		}
+
 
         const totalTasksCompleted = completedTasks.reduce((sum, task) => sum + task.count, 0);
         const totalTasksOngoing = ongoingTasks.reduce((sum, task) => sum + task.count, 0);
