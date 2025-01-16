@@ -616,55 +616,37 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 //>>>>  GET ALL USERS
 // http://localhost:6001/api/user/all
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+    // Authorization Check
+    if (!req.user || (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin')) {
+        res.status(403).json({ message: 'Not authorized' });
+        return;
+    }
 
-	if (req.user.accountType !== 'Admin' && req.user.accountType !== 'Super Admin') {
-		res.status(403).json({ message: 'Not authorized' });
-		return;
-	}
-
-    // Extract and parse query parameters
+    // Parse query parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
     const startDateStr = req.query.startDate as string;
     const endDateStr = req.query.endDate as string;
+    const startIndex = (page - 1) * limit;
 
-    const currentPage = page;
-    const startIndex = (currentPage - 1) * limit;
-
-    // Initialize date range filter
+    // Date range filtering
     let dateFilter: any = {};
     if (startDateStr && endDateStr) {
         const startDate = new Date(startDateStr);
         const endDate = new Date(endDateStr);
 
-        if (startDate > endDate) {
-            res.status(400).json({ message: 'Start date must be before or equal to end date' });
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) {
+            res.status(400).json({ message: 'Invalid or inconsistent date range' });
             return;
         }
 
-        dateFilter = {
-            createdAt: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        };
-    } else if (startDateStr || endDateStr) {
-        res.status(400).json({ message: 'Both start and end date must be provided for date range filtering' });
-        return;
+        dateFilter.createdAt = { $gte: startDate, $lte: endDate };
     }
 
     try {
-        // Referrals: Count users who referred at least one person and total referrals
+        // Calculate referral stats
         const referralStats = await User.aggregate([
             { $match: dateFilter },
-            {
-                $lookup: {
-                    from: 'users', // Assuming referrals are stored in the same `users` collection
-                    localField: '_id',
-                    foreignField: 'referrals', // Replace with the actual field that stores the referrer ID
-                    as: 'referrals',
-                },
-            },
             {
                 $project: {
                     _id: 1,
@@ -675,30 +657,19 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
             },
             { $match: { totalReferrals: { $gt: 0 } } },
         ]);
-		if(!referralStats){
-			console.log('Cannot access referral stats')
-		}
 
         const totalReferralsByAllUsers = referralStats.reduce((sum, user) => sum + user.totalReferrals, 0);
 
-        // Tasks: Total completed, ongoing, and submitted tasks
+        // Tasks aggregation
         const completedTasks = await Task.aggregate([
             { $match: { ...dateFilter, status: { $in: ['Completed', 'Approved'] } } },
             { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
         ]);
-		if(!completedTasks){
-			console.log('Cannot access completed tasks')
-		}
-
 
         const ongoingTasks = await Task.aggregate([
             { $match: { ...dateFilter, status: { $nin: ['Submitted'] } } },
             { $group: { _id: '$taskPerformerId', count: { $sum: 1 } } },
         ]);
-		if(!ongoingTasks){
-			console.log('Cannot access ongoing stats')
-		}
-
 
         const totalTasksCompleted = completedTasks.reduce((sum, task) => sum + task.count, 0);
         const totalTasksOngoing = ongoingTasks.reduce((sum, task) => sum + task.count, 0);
@@ -710,14 +681,18 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 
         const totalUsers = await User.countDocuments(dateFilter);
         const totalPages = Math.ceil(totalUsers / limit);
+console.log(totalTasksCompleted);
+console.log(totalTasksOngoing);
+console.log(totalReferralsByAllUsers);
+console.log(referralStats);
 
         res.status(200).json({
             users,
-            page: currentPage,
+            page,
             totalPages,
             totalUsers,
-            hasNextPage: currentPage < totalPages,
-            hasPreviousPage: currentPage > 1,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
             referralStats,
             totalReferralsByAllUsers,
             totalTasksCompleted,
@@ -726,9 +701,12 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
             usersWithOngoingTasks: ongoingTasks.length,
         });
     } catch (error: any) {
+        console.error('Error fetching user data:', error.message);
         res.status(500).json({ message: 'Error fetching user data', error: error.message });
     }
 });
+
+
 //>>>>  LOGOUT USERS
 // http://localhost:6001/api/user/logout
 // export const logoutUser = asyncHandler(async(req: Request, res: Response) => {
