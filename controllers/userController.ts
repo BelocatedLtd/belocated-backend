@@ -690,10 +690,6 @@ const { totalUsersWithReferrals = 0, totalReferrals = 0 } = referralStats[0] || 
 
         const totalUsers = await User.countDocuments(dateFilter);
         const totalPages = Math.ceil(totalUsers / limit);
-console.log(totalTasksCompleted);
-console.log(totalTasksOngoing);
-console.log(totalReferralsByAllUsers);
-console.log(referralStats);
 
         res.status(200).json({
             users,
