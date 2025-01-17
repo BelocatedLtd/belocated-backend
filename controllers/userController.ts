@@ -647,19 +647,27 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
     try {
         // Calculate referral stats
         const referralStats = await User.aggregate([
-            { $match: dateFilter },
-            {
-                $project: {
-                    _id: 1,
-                    username: 1,
-                    fullname: 1,
-                    totalReferrals: { $size: '$referrals' },
-                },
-            },
-            { $match: { totalReferrals: { $gt: 0 } } },
-        ]);
+    { $match: dateFilter }, // Apply the date filter
+    {
+        $project: {
+            _id: 1,
+            username: 1,
+            fullname: 1,
+            totalReferrals: { $size: '$referrals' }, // Calculate the size of the referrals array
+        },
+    },
+    { $match: { totalReferrals: { $gt: 0 } } }, // Filter users with at least one referral
+    {
+        $group: {
+            _id: null, // Group everything into one document
+            totalUsersWithReferrals: { $sum: 1 }, // Count the number of users
+            totalReferrals: { $sum: '$totalReferrals' }, // Sum up all referrals
+        },
+    },
+]);
 
-        const totalReferralsByAllUsers = referralStats.reduce((sum, user) => sum + user.totalReferrals, 0);
+// Extract results
+const { totalUsersWithReferrals = 0, totalReferrals = 0 } = referralStats[0] || {};
 
         // Tasks aggregation
         const completedTasks = await Task.aggregate([
@@ -694,8 +702,8 @@ console.log(referralStats);
             totalUsers,
             hasNextPage: page < totalPages,
             hasPreviousPage: page > 1,
-            referralStats,
-            totalReferralsByAllUsers,
+            totalUsersWithReferrals,
+            totalReferrals,
             totalTasksCompleted,
             totalTasksOngoing,
             usersWithCompletedTasks: completedTasks.length,
