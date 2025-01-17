@@ -631,7 +631,7 @@ export const getQualifiedAdverts = asyncHandler(
             const userTasks = await Task.find({
                 taskPerformerId: _id?.toString(),
                 platform: platformName,
-                status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected', 'Awaiting Submission'] },
+                status: { $in: ['Submitted', 'Completed', 'Approved', 'Rejected'] },
             }).select('advertId');
 
             const completedTaskIds = new Set(userTasks.map(task => task.advertId?.toString() || ''));
