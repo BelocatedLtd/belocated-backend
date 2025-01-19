@@ -693,7 +693,7 @@ export const withdrawWallet = asyncHandler(
 )
 
 //Get all user Withdrawals
-export const getWithdrawals = asyncHandler(
+ export const getWithdrawals = asyncHandler(
 	async (req: Request, res: Response) => {
 	  if (
 		req.user.accountType !== 'Admin' &&
@@ -704,21 +704,26 @@ export const getWithdrawals = asyncHandler(
 	  }
   
 	  try {
-		// Fetch withdrawals and populate all user details
-		const withdrawals = await Withdraw.find()
-		  .sort('-createdAt')
-		  .populate('userId','-password'); // Fetch all fields for the user
-  
+		const withdrawals = await Withdraw.find().sort('-createdAt');
+		
 		if (!withdrawals || withdrawals.length === 0) {
 		  res.status(400).json({ message: 'Withdrawal request list empty' });
 		  throw new Error('Withdrawal request list empty');
 		}
   
-		res.status(200).json(withdrawals);
-	  } catch (error: any) {
-		res.status(500).json({ error: error.message });
+		// Manually populate user details for each withdrawal and exclude password
+		const populatedWithdrawals = await Promise.all(
+		  withdrawals.map(async (withdrawal) => {
+			const user = await User.findOne({ _id: withdrawal.userId }, '-password').lean();
+			return { ...withdrawal.toObject(), user };
+		  })
+		);
+  
+		res.status(200).json(populatedWithdrawals);
+	  } catch (error) {
+		res.status(500).json({ error });
 	  }
-	},
+	}
   );
 //Confirm Withdrawal Request
 export const confirmWithdrawalRequest = asyncHandler(
