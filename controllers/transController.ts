@@ -707,7 +707,7 @@ export const getWithdrawals = asyncHandler(
 		// Fetch withdrawals and populate all user details
 		const withdrawals = await Withdraw.find()
 		  .sort('-createdAt')
-		  .populate('userId'); // Fetch all fields for the user
+		  .populate('userId','-password'); // Fetch all fields for the user
   
 		if (!withdrawals || withdrawals.length === 0) {
 		  res.status(400).json({ message: 'Withdrawal request list empty' });
