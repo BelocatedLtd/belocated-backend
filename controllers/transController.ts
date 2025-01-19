@@ -6,6 +6,8 @@ import Transaction from '../model/Transaction'
 import User from '../model/User'
 import Wallet from '../model/Wallet'
 import Withdraw from '../model/Withdraw'
+import { io } from '../app';
+import { saveActivity } from '../controllers/feedController'
 
 //Get User Wallet
 export const getUserWallet = asyncHandler(
@@ -391,6 +393,13 @@ export const handleFlutterwaveWebhook = asyncHandler(
 						wallet.totalEarning += amount;
 						await wallet.save();
 
+
+						const user = await User.findOne({ _id: transaction.userId });
+
+						if (!user) {
+							throw new Error("User not found");
+						}
+
 						// Update user's earning eligibility if criteria met
 						if (amount >= 200 || wallet.value >= 200) {
 							await User.findOneAndUpdate(
@@ -401,6 +410,15 @@ export const handleFlutterwaveWebhook = asyncHandler(
 						}
 
 						console.log(`Wallet funded successfully for user: ${transaction.userId}`);
+
+						const emitData = {
+							userId: transaction.userId,
+							action: `@${user.username} just funded wallet with ₦${amount}`,
+						};
+						io.emit('sendActivity', emitData); // Emit event to all connected clients
+						saveActivity(emitData); // Save the activity
+
+
 
 						res.status(200).json({ message: "Wallet funded successfully" });
 						return;
@@ -505,7 +523,7 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 
 				// Update transaction status
 				transaction.status = 'success';
-				transaction.paymentMethod ='KoraPay';
+				transaction.paymentMethod = 'KoraPay';
 				await transaction.save();
 
 				if (transaction.trxType === 'wallet_funding') {
@@ -522,6 +540,12 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 					wallet.totalEarning += amount;
 					await wallet.save();
 
+					const user = await User.findOne({ _id: transaction.userId });
+
+					if (!user) {
+						throw new Error("User not found");
+					}
+
 					// Check and update earning access
 					if (amount >= 200 || wallet.value >= 200) {
 						await User.findOneAndUpdate(
@@ -530,6 +554,14 @@ export const handleKoraPayWebhook = asyncHandler(async (req: Request, res: Respo
 							{ new: true }
 						);
 					}
+
+					const emitData = {
+						userId: transaction.userId,
+						action: `@${user.username} just funded wallet with ₦${amount}`,
+					};
+					io.emit('sendActivity', emitData); // Emit event to all connected clients
+					saveActivity(emitData); // Save the activity
+
 
 					console.log(`Wallet funded successfully for user: ${transaction.userId}`);
 					res.status(200).json({ message: 'Wallet funded successfully' });
@@ -1057,69 +1089,69 @@ export const getTransactions = asyncHandler(async (req: Request, res: Response) 
 });
 
 export const updateDocuments = asyncHandler(async (req: Request, res: Response) => {
-    try {
-        // List of user emails and references
-        const userEmails = [
-            'olanikeboopo@gmail.com',
-            'jessedaniel882@gmail.com',
-            'abidemio221@gmail.com',
-            'maiarabi887@gmail.com',
-            'mlifemoshob9@gmail.com',
-        ];
-        const references = [
-            'ad_p1736833068870',
+	try {
+		// List of user emails and references
+		const userEmails = [
+			'olanikeboopo@gmail.com',
+			'jessedaniel882@gmail.com',
+			'abidemio221@gmail.com',
+			'maiarabi887@gmail.com',
+			'mlifemoshob9@gmail.com',
+		];
+		const references = [
+			'ad_p1736833068870',
 			'ad_p1736806038308',
 			'ad_p1736803137575',
 			'ad_p1736805750154',
-            'ad_p1736820880285',
-           
-           
-        ];
+			'ad_p1736820880285',
 
-        // Loop through each email to process updates
-        for (let i = 0; i < userEmails.length; i++) {
-            const email = userEmails[i];
-            const trxId = references[i]; // Use the corresponding trxId
 
-            // Find the user
-            const user = await User.findOne({ email });
-            if (!user) {
-                console.warn(`User not found for email: ${email}`);
-                continue; // Skip to the next user if not found
-            }
+		];
 
-            // Update user's canAccessEarn field
-            user.canAccessEarn = true;
-            await user.save();
+		// Loop through each email to process updates
+		for (let i = 0; i < userEmails.length; i++) {
+			const email = userEmails[i];
+			const trxId = references[i]; // Use the corresponding trxId
 
-            // Find the transaction for the user with the specific trxId
-            const transaction = await Transaction.findOne({ email: user.email, trxId });
-            if (!transaction) {
-                console.warn(`Transaction not found for email: ${user.email} with trxId: ${trxId}`);
-                continue; // Skip to the next user if not found
-            }
+			// Find the user
+			const user = await User.findOne({ email });
+			if (!user) {
+				console.warn(`User not found for email: ${email}`);
+				continue; // Skip to the next user if not found
+			}
 
-            // Update transaction status
-            transaction.status = 'Successful';
-            await transaction.save();
+			// Update user's canAccessEarn field
+			user.canAccessEarn = true;
+			await user.save();
 
-            // Find the wallet for the user
-            const wallet = await Wallet.findOne({ userId: transaction.userId });
-            if (!wallet) {
-                console.warn(`Wallet not found for user: ${user.email}`);
-                continue; // Skip to the next user if not found
-            }
+			// Find the transaction for the user with the specific trxId
+			const transaction = await Transaction.findOne({ email: user.email, trxId });
+			if (!transaction) {
+				console.warn(`Transaction not found for email: ${user.email} with trxId: ${trxId}`);
+				continue; // Skip to the next user if not found
+			}
 
-            // Update wallet values
-            const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
-            wallet.value += amount;
-            wallet.totalEarning += amount;
-            await wallet.save();
-        }
+			// Update transaction status
+			transaction.status = 'Successful';
+			await transaction.save();
 
-        res.status(200).json({ message: 'Documents updated successfully.' });
-    } catch (error) {
-        console.error('Error updating documents:', error);
-        res.status(500).json({ message: 'Internal server error.', error });
-    }
+			// Find the wallet for the user
+			const wallet = await Wallet.findOne({ userId: transaction.userId });
+			if (!wallet) {
+				console.warn(`Wallet not found for user: ${user.email}`);
+				continue; // Skip to the next user if not found
+			}
+
+			// Update wallet values
+			const amount = transaction.chargedAmount || 0; // Ensure transaction amount is valid
+			wallet.value += amount;
+			wallet.totalEarning += amount;
+			await wallet.save();
+		}
+
+		res.status(200).json({ message: 'Documents updated successfully.' });
+	} catch (error) {
+		console.error('Error updating documents:', error);
+		res.status(500).json({ message: 'Internal server error.', error });
+	}
 });
