@@ -695,30 +695,31 @@ export const withdrawWallet = asyncHandler(
 //Get all user Withdrawals
 export const getWithdrawals = asyncHandler(
 	async (req: Request, res: Response) => {
-		if (
-			req.user.accountType !== 'Admin' &&
-			req.user.accountType !== 'Super Admin'
-		) {
-			res.status(401).json({ message: 'Unauthorized user' })
-			throw new Error('Unauthorized user')
+	  if (
+		req.user.accountType !== 'Admin' &&
+		req.user.accountType !== 'Super Admin'
+	  ) {
+		res.status(401).json({ message: 'Unauthorized user' });
+		throw new Error('Unauthorized user');
+	  }
+  
+	  try {
+		// Fetch withdrawals and populate all user details
+		const withdrawals = await Withdraw.find()
+		  .sort('-createdAt')
+		  .populate('userId'); // Fetch all fields for the user
+  
+		if (!withdrawals || withdrawals.length === 0) {
+		  res.status(400).json({ message: 'Withdrawal request list empty' });
+		  throw new Error('Withdrawal request list empty');
 		}
-
-		try {
-			const withdrawals = await Withdraw.find().sort('-createdAt')
-			if (!withdrawals) {
-				res.status(400).json({ message: 'Withdrawal request list empty' })
-				throw new Error('Withdrawal request list empty')
-			}
-
-			if (withdrawals) {
-				res.status(200).json(withdrawals)
-			}
-		} catch (error) {
-			res.status(500).json({ error })
-		}
+  
+		res.status(200).json(withdrawals);
+	  } catch (error: any) {
+		res.status(500).json({ error: error.message });
+	  }
 	},
-)
-
+  );
 //Confirm Withdrawal Request
 export const confirmWithdrawalRequest = asyncHandler(
 	async (req: Request, res: Response) => {
