@@ -6,6 +6,12 @@ const withdrawSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
+		proofOfWorkMediaURL: [
+			{
+				secure_url: { type: String },
+				public_id: { type: String },
+			},
+		],
 		withdrawAmount: {
 			type: Number,
 			required: true,
