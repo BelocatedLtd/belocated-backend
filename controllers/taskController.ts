@@ -510,7 +510,7 @@ export const approveTask = asyncHandler(async (req: Request, res: Response) => {
             return;
         }
     }
-	
+/*	
 try {
     io.emit('taskNotification', {
         message: `Task has been ${status.toLowerCase()}!`,
@@ -518,7 +518,7 @@ try {
 } catch (error) {
     console.error('WebSocket Emit Error:', error);
 }
-	
+	*/
 
     try {
         advert.taskPerformers.push(taskPerformer._id);
@@ -597,10 +597,16 @@ export const rejectTask = asyncHandler(async (req: Request, res: Response) => {
 	task.message = message;
 	await task.save();
 
+	
+
+
 	try {
-    io.emit('taskNotification', {
-        message: `Task has been ${status.toLowerCase()}!`,
-    });
+    io.to(task.taskPerformerId.toString()).emit('taskNotification', {
+	message: `Your task "${task.title}" has been rejected.`,
+	taskId: task._id,
+	status: 'Rejected',
+});
+
 } catch (error) {
     console.error('WebSocket Emit Error:', error);
 }
