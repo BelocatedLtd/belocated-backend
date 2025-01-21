@@ -8,6 +8,7 @@ import Wallet from '../model/Wallet'
 import Withdraw from '../model/Withdraw'
 import { io } from '../app';
 import { saveActivity } from '../controllers/feedController'
+import { v2 as cloudinary } from 'cloudinary'
 
 //Get User Wallet
 export const getUserWallet = asyncHandler(
@@ -758,10 +759,34 @@ export const confirmWithdrawalRequest = asyncHandler(
 			throw new Error('This withdrawal request has already being approved')
 		}
 
+		cloudinary.config({
+			cloud_name: process.env.CLOUDINARY_NAME,
+			api_key: process.env.CLOUDINARY_API_KEY,
+			api_secret: process.env.CLOUDINARY_API_SECRET,
+		})
+
+
+    // Upload screenshots if provided
+    let uploadedImages = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'Task Submit Screenshots',
+        });
+        uploadedImages.push({
+          secure_url: result.secure_url,
+          public_id: result.public_id,
+        });
+      }
+    }
+
+   
+
 		//Update task status after user submit screenshot
 		const updatedwdRequest = await Withdraw.findByIdAndUpdate(
 			{ _id: withdrawalRequestId },
 			{
+					proofOfWorkMediaURL: uploadedImages,
 				status: 'Approved',
 			},
 			{
