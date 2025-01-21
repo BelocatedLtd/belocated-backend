@@ -104,28 +104,47 @@ cron.schedule('0 19 * * 0', endRefChallenge) // Ref challenge ends 7pm on sunday
 //endRefChallenge()
 
 io.on('connection', (socket) => {
-	console.log(`User Connected: ${socket.id}`)
+	console.log(`User Connected: ${socket.id}`);
+
+	// Listen for user ID and join the user-specific room
+	socket.on('joinRoom', (userId) => {
+		if (userId) {
+			socket.join(userId); // Join a room with the user's ID
+			console.log(`User ${userId} joined their room.`);
+		}
+	});
 
 	// Listen for events coming from client
 	socket.on('sendActivity', (data) => {
-		//Save event to db
-		saveActivity(data)
+		// Save event to DB
+		saveActivity(data);
 
-		//Emit events back to client
-		socket.broadcast.emit('recievedActivity', data)
-	})
+		// Emit events back to all other clients
+		socket.broadcast.emit('recievedActivity', data);
+	});
 
-	//Handle disconnection
+	// Emit taskNotification to a specific user
+	socket.on('taskNotification', (data) => {
+		const { userId, message } = data;
+		if (userId) {
+			io.to(userId).emit('taskNotification', { message });
+			console.log(`Notification sent to user ${userId}: ${message}`);
+		}
+	});
+
+	// Handle disconnection
 	socket.on('disconnect', () => {
-		console.log('A user disconnected')
-	})
-})
+		console.log('A user disconnected');
+	});
+});
 
+// Allow CORS
 server.prependListener('request', (req: Request, res: Response) => {
-	res.setHeader('Access-Control-Allow-Origin', '*')
-})
+	res.setHeader('Access-Control-Allow-Origin', '*');
+});
 
 export { server, io };
+
 /*  MONGOOSE SETUP */
 const PORT = process.env.PORT || 7001
 mongoose
