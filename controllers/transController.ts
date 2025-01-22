@@ -1000,7 +1000,7 @@ export const getUserTransactions = asyncHandler(async (req: Request, res: Respon
 			const totalTransactions = await Transaction.countDocuments(matchStage)
 			const totalPages = Math.ceil(totalTransactions / currentLimit)
 
-			return res.status(200).json({
+			res.status(200).json({
 				transactions,
 				page: currentPage,
 				totalPages,
@@ -1008,6 +1008,7 @@ export const getUserTransactions = asyncHandler(async (req: Request, res: Respon
 				hasNextPage: currentPage < totalPages,
 				hasPreviousPage: currentPage > 1,
 			})
+			return;
 		}
 
 		if (!transactions || transactions.length === 0) {
