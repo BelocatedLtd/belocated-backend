@@ -1017,7 +1017,7 @@ export const getUserTransactions = asyncHandler(async (req: Request, res: Respon
 		}
 
 		res.status(200).json(transactions)
-	} catch (error) {
+	} catch (error:any) {
 		res.status(500).json({ error: error.message || error })
 	}
 })
