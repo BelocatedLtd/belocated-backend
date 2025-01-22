@@ -921,62 +921,106 @@ export const getUserWithdrawals = asyncHandler(
 
 //Get user Transactions
 // http://localhost:6001/api/transactions/userall
-export const getUserTransactions = asyncHandler(
-	async (req: Request, res: Response) => {
-		try {
-			const page = parseInt(req.query.page as string) || 1
-			const limit = parseInt(req.query.limit as string) || 10
 
-			let transactions
+export const getUserTransactions = asyncHandler(async (req: Request, res: Response) => {
+	try {
+		const page = parseInt(req.query.page as string) || 1
+		const limit = parseInt(req.query.limit as string) || 10
 
-			if (!page && !limit) {
-				transactions = await Transaction.find({
-					userId: req.user._id,
-				}).sort('-createdAt')
-			} else {
-				const currentPage = page || 1
-				const currentLimit = limit || 10
+		let transactions
 
-				const startIndex = (currentPage - 1) * currentLimit
+		const matchStage = { userId: req.user._id } // Match transactions by userId
 
-				const totalTransactions = await Transaction.countDocuments({
-					userId: req.user._id,
-				})
+		if (!page && !limit) {
+			// Fetch all transactions with withdrawal proof
+			transactions = await Transaction.aggregate([
+				{ $match: matchStage }, // Filter by userId
+				{
+					$lookup: {
+						from: 'withdraw', // Collection name for Withdrawals
+						localField: 'paymentRef', // Field in Transaction
+						foreignField: '_id', // Field in Withdrawals
+						as: 'withdrawalDetails', // Alias for joined data
+					},
+				},
+				{
+					$unwind: {
+						path: '$withdrawalDetails',
+						preserveNullAndEmptyArrays: true, // Keep transactions without withdrawal info
+					},
+				},
+				{
+					$project: {
+						_id: 1,
+						amount: 1,
+						status: 1,
+						createdAt: 1,
+						withdrawalProof: '$withdrawalDetails.proofOfWorkMediaURL', // Include proof
+					},
+				},
+				{ $sort: { createdAt: -1 } },
+			])
+		} else {
+			const currentPage = page || 1
+			const currentLimit = limit || 10
 
-				transactions = await Transaction.find({
-					userId: req.user._id,
-				})
-					.sort('-createdAt')
-					.skip(startIndex)
-					.limit(currentLimit)
+			const startIndex = (currentPage - 1) * currentLimit
 
-				const totalPages = Math.ceil(totalTransactions / currentLimit)
+			// Paginated transactions with withdrawal proof
+			transactions = await Transaction.aggregate([
+				{ $match: matchStage }, // Filter by userId
+				{
+					$lookup: {
+						from: 'withdraw', // Collection name for Withdrawals
+						localField: 'paymentRef', // Field in Transaction
+						foreignField: '_id', // Field in Withdrawals
+						as: 'withdrawalDetails', // Alias for joined data
+					},
+				},
+				{
+					$unwind: {
+						path: '$withdrawalDetails',
+						preserveNullAndEmptyArrays: true, // Keep transactions without withdrawal info
+					},
+				},
+				{
+					$project: {
+						_id: 1,
+						amount: 1,
+						status: 1,
+						createdAt: 1,
+						withdrawalProof: '$withdrawalDetails.proofOfWorkMediaURL', // Include proof
+					},
+				},
+				{ $sort: { createdAt: -1 } },
+				{ $skip: startIndex },
+				{ $limit: currentLimit },
+			])
 
-				res.status(200).json({
-					transactions,
-					page: currentPage,
-					totalPages,
-					totalTransactions,
-					hasNextPage: currentPage < totalPages,
-					hasPreviousPage: currentPage > 1,
-				})
-			}
+			const totalTransactions = await Transaction.countDocuments(matchStage)
+			const totalPages = Math.ceil(totalTransactions / currentLimit)
 
-			if (!transactions) {
-				res
-					.status(400)
-					.json({ message: 'Cannot find any transaction made by this user' })
-				throw new Error('Cannot find any transaction made by this user')
-			}
-
-			if (transactions) {
-				res.status(200).json(transactions)
-			}
-		} catch (error) {
-			res.status(500).json({ error })
+			return res.status(200).json({
+				transactions,
+				page: currentPage,
+				totalPages,
+				totalTransactions,
+				hasNextPage: currentPage < totalPages,
+				hasPreviousPage: currentPage > 1,
+			})
 		}
-	},
-)
+
+		if (!transactions || transactions.length === 0) {
+			res.status(400).json({ message: 'Cannot find any transaction made by this user' })
+			throw new Error('Cannot find any transaction made by this user')
+		}
+
+		res.status(200).json(transactions)
+	} catch (error) {
+		res.status(500).json({ error: error.message || error })
+	}
+})
+
 
 /*  GET ALL TRANSACTIONS */
 // http://localhost:6001/api/transactions/all
